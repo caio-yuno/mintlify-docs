@@ -1,68 +1,156 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "Yuno API Documentation",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#6C5CE7",
+    "light": "#A29BFE",
+    "dark": "#5A4BD1"
   },
   "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "openapi": ["/api-reference/openapi.json"],
   "navigation": {
     "tabs": [
       {
         "tab": "Guides",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
               "index",
               "quickstart",
-              "development"
+              "authentication",
+              "environments"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Payment Flows",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
+              "guides/payment-flows/card",
+              "guides/payment-flows/pix",
+              "guides/payment-flows/bank-transfer",
+              "guides/payment-flows/boleto",
+              "guides/payment-flows/oxxo",
+              "guides/payment-flows/bnpl",
+              "guides/payment-flows/wallet",
+              "guides/payment-flows/payment-links"
             ]
           },
           {
-            "group": "Writing content",
+            "group": "SDK Integration",
             "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
+              "guides/sdk/overview",
+              "guides/sdk/sdk-lite",
+              "guides/sdk/server-side",
+              "guides/sdk/continue-payment",
+              "guides/sdk/error-handling",
+              "guides/sdk/testing"
             ]
           },
           {
-            "group": "AI tools",
+            "group": "Webhooks",
             "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "guides/webhooks/overview",
+              "guides/webhooks/events"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "API Reference",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
               "api-reference/introduction"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "Checkout Sessions",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "api-reference/checkout-sessions/create",
+              "api-reference/checkout-sessions/get"
+            ]
+          },
+          {
+            "group": "Payments",
+            "pages": [
+              "api-reference/payments/create",
+              "api-reference/payments/get",
+              "api-reference/payments/list",
+              "api-reference/payments/capture",
+              "api-reference/payments/cancel",
+              "api-reference/payments/refund"
+            ]
+          },
+          {
+            "group": "Installments Plans",
+            "pages": [
+              "api-reference/installments-plans/list",
+              "api-reference/installments-plans/create",
+              "api-reference/installments-plans/get",
+              "api-reference/installments-plans/update",
+              "api-reference/installments-plans/delete"
+            ]
+          },
+          {
+            "group": "Issuers",
+            "pages": [
+              "api-reference/issuers/list"
+            ]
+          },
+          {
+            "group": "Customers",
+            "pages": [
+              "api-reference/customers/create",
+              "api-reference/customers/get",
+              "api-reference/customers/list"
+            ]
+          },
+          {
+            "group": "Payouts",
+            "pages": [
+              "api-reference/payouts/create",
+              "api-reference/payouts/get"
+            ]
+          },
+          {
+            "group": "Reports",
+            "pages": [
+              "api-reference/reports/create",
+              "api-reference/reports/get"
+            ]
+          },
+          {
+            "group": "Recipients",
+            "pages": [
+              "api-reference/recipients/create",
+              "api-reference/recipients/get",
+              "api-reference/recipients/list"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Reference Lists",
+        "groups": [
+          {
+            "group": "Reference Data",
+            "pages": [
+              "reference-lists/countries",
+              "reference-lists/payment-types",
+              "reference-lists/eci-indicators",
+              "reference-lists/industry-categories",
+              "reference-lists/item-categories",
+              "reference-lists/purposes",
+              "reference-lists/transaction-categories",
+              "reference-lists/shipping-reference",
+              "reference-lists/airline-information",
+              "reference-lists/merchant-advice-codes"
             ]
           }
         ]
@@ -71,52 +159,34 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
+          "anchor": "Old Documentation",
+          "href": "https://docs.y.uno",
           "icon": "book-open-cover"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "GitHub",
+          "href": "https://github.com/yuno-payments",
+          "icon": "github"
         }
       ]
     }
-  },
-  "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
   },
   "navbar": {
     "links": [
       {
         "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "href": "mailto:support@y.uno"
       }
     ],
     "primary": {
       "type": "button",
       "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "href": "https://dashboard.y.uno"
     }
-  },
-  "contextual": {
-    "options": [
-     "copy",
-     "view",
-     "chatgpt",
-     "claude",
-     "perplexity",
-     "mcp",
-     "cursor",
-     "vscode"
-   ]
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "github": "https://github.com/yuno-payments"
     }
   }
 }

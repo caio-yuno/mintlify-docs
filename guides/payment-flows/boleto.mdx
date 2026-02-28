@@ -1,0 +1,51 @@
+---
+title: "Boleto Payments"
+description: "Accept boleto bancario payments in Brazil"
+---
+
+## Overview
+
+Boleto bancario is a popular payment method in Brazil. A payment voucher (boleto) is generated for the customer to pay at banks, ATMs, or online banking.
+
+## Prerequisites
+
+- Country: `BR`, Currency: `BRL`
+- Customer document: CPF (11 digits) or CNPJ (14 digits) required
+- Boleto enabled in Dashboard
+
+## Payment Flow
+
+<Steps>
+  <Step title="Create payment">
+    ```json
+    {
+      "checkout_session": "session-id",
+      "payment_method": {"type": "BOLETO"},
+      "amount": {"currency": "BRL", "value": 200.00},
+      "country": "BR",
+      "customer": {
+        "document": {"document_type": "CPF", "document_number": "12345678901"},
+        "email": "customer@example.com",
+        "first_name": "John",
+        "last_name": "Doe"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Display boleto to customer">
+    The response includes:
+    - Barcode image
+    - Digitable line (numeric code for online banking)
+    - Expiration date
+    - PDF URL for printing
+  </Step>
+
+  <Step title="Await payment">
+    Boletos typically have a 1-3 day expiration window. Set up [webhooks](/guides/webhooks/overview) to receive payment confirmation when the customer pays.
+  </Step>
+</Steps>
+
+<Note>
+Boleto payments can take 1-3 business days to be confirmed after the customer pays. Factor this into your order fulfillment process.
+</Note>

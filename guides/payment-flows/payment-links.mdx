@@ -1,0 +1,45 @@
+---
+title: "Payment Links"
+description: "Generate hosted payment pages with no frontend code"
+---
+
+## Overview
+
+Payment Links provide a hosted payment page that you can share with customers via email, SMS, or messaging apps. No frontend integration is required.
+
+## How It Works
+
+1. Create a checkout session with your server
+2. Use the checkout session URL as a payment link
+3. Share the link with your customer
+4. The customer completes payment on the hosted page
+5. Receive payment status via webhooks
+
+## Creating a Payment Link
+
+```bash
+curl -X POST https://api-sandbox.y.uno/v1/checkout/sessions \
+  -H "public-api-key: $PUBLIC_KEY" \
+  -H "private-secret-key: $PRIVATE_KEY" \
+  -H "account-code: $ACCOUNT_CODE" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": {"currency": "BRL", "value": 100.00},
+    "country": "BR",
+    "merchant_order_id": "link-001",
+    "payment_description": "Order #001"
+  }'
+```
+
+The response includes a URL that you can share directly with the customer.
+
+## Use Cases
+
+- **Invoice payments** — Send payment links in invoices
+- **Social commerce** — Share links via WhatsApp, Instagram
+- **Phone orders** — Create links during phone conversations
+- **Email campaigns** — Include payment links in marketing emails
+
+<Note>
+Checkout sessions expire after a configured time period. Generate new links for expired sessions.
+</Note>

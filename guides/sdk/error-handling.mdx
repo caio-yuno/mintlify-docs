@@ -1,0 +1,83 @@
+---
+title: "Error Handling"
+description: "Handle SDK and API errors in your Yuno integration"
+---
+
+## Common Error Scenarios
+
+### SDK Initialization Errors
+
+| Error | Cause | Solution |
+|-------|-------|----------|
+| Invalid public API key | Incorrect or expired key | Verify key in Dashboard > API Keys |
+| Checkout session expired | Session timed out | Create a new checkout session |
+| SDK version mismatch | Using deprecated API | Update to latest SDK version |
+
+### Payment Errors
+
+| Error Code | Description | Action |
+|------------|-------------|--------|
+| `INVALID_FIELD` | Missing or malformed field | Check the error message for the specific field |
+| `PAYMENT_METHOD_NOT_AVAILABLE` | Method not enabled | Enable in Dashboard > Payment Methods |
+| `INSUFFICIENT_FUNDS` | Customer has insufficient funds | Ask customer for alternative payment method |
+| `CARD_DECLINED` | Card declined by issuer | Check [MAC codes](/reference-lists/merchant-advice-codes) for retry guidance |
+| `AUTHENTICATION_FAILED` | 3DS authentication failed | Prompt customer to retry or use different card |
+
+### Network Errors
+
+Handle network timeouts and connection failures:
+
+```javascript
+try {
+  const response = await fetch('https://api-sandbox.y.uno/v1/payments', {
+    method: 'POST',
+    headers: { /* ... */ },
+    body: JSON.stringify(paymentData),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    console.error('API error:', error.error.code, error.error.message);
+    // Handle specific error codes
+  }
+} catch (networkError) {
+  console.error('Network error:', networkError);
+  // Retry with exponential backoff for transient errors
+}
+```
+
+## Rate Limiting
+
+If you receive HTTP `429`, implement exponential backoff:
+
+```javascript
+async function retryWithBackoff(fn, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fn();
+    } catch (error) {
+      if (error.status === 429 && i < maxRetries - 1) {
+        const delay = Math.pow(2, i) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+```
+
+## Logging
+
+Enable verbose logging during development:
+
+```javascript
+// Log all API requests and responses
+const response = await fetch(url, options);
+console.log('Request:', url, JSON.stringify(options.body));
+console.log('Response:', response.status, await response.clone().text());
+```
+
+<Warning>
+Redact sensitive data (API keys, card numbers, customer documents) from logs before deploying to production.
+</Warning>

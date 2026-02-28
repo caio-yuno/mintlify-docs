@@ -1,0 +1,48 @@
+---
+title: "Webhook Events"
+description: "Available webhook event types and their payloads"
+---
+
+## Event Types
+
+| Event | Description | Triggered When |
+|-------|-------------|----------------|
+| `payment.created` | Payment was created | A new payment is initiated |
+| `payment.updated` | Payment status changed | Payment succeeds, fails, or changes state |
+| `payment.refunded` | Payment was refunded | A refund is processed |
+| `payout.created` | Payout was created | A new payout is initiated |
+| `payout.updated` | Payout status changed | Payout succeeds or fails |
+| `customer.created` | Customer was created | A new customer record is created |
+
+## Payment Status Transitions
+
+```
+PENDING → SUCCEEDED
+PENDING → DECLINED
+PENDING → CANCELLED
+AUTHORIZED → CAPTURED (SUCCEEDED)
+AUTHORIZED → CANCELLED
+SUCCEEDED → REFUNDED
+SUCCEEDED → PARTIALLY_REFUNDED
+```
+
+## Event Payload Structure
+
+All events follow this structure:
+
+```json
+{
+  "event": "string",
+  "data": { },
+  "timestamp": "ISO 8601 datetime"
+}
+```
+
+The `data` object contains the full resource (payment, payout, customer) at the time of the event.
+
+## Best Practices
+
+- Process events idempotently — you may receive the same event multiple times
+- Use the `timestamp` field to handle out-of-order events
+- Store the payment `id` and `status` to detect duplicate events
+- Log all received events for debugging and audit purposes

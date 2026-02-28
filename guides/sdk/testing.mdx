@@ -1,0 +1,64 @@
+---
+title: "Testing"
+description: "Test your Yuno integration with sandbox credentials"
+---
+
+## Sandbox Environment
+
+Use the sandbox environment for all testing. Sandbox transactions do not process real payments.
+
+| Setting | Value |
+|---------|-------|
+| Base URL | `https://api-sandbox.y.uno` |
+| API Keys | Sandbox keys from Dashboard |
+
+## Test Card Numbers
+
+Use these card numbers in the sandbox environment:
+
+| Card Number | Result | Brand |
+|-------------|--------|-------|
+| `4111111111111111` | Approved | Visa |
+| `5500000000000004` | Approved | Mastercard |
+| `378282246310005` | Approved | Amex |
+| `4000000000000002` | Declined | Visa |
+| `4000000000000069` | Expired Card | Visa |
+| `4000000000000127` | Incorrect CVV | Visa |
+
+<Note>
+Test card numbers work only in the sandbox environment. Use any future expiration date and any 3-digit CVV (4 digits for Amex).
+</Note>
+
+## Testing PIX
+
+For PIX payments in sandbox:
+1. Create a payment with `payment_method.type: "PIX"`
+2. Include `customer.document` with a valid CPF format (11 digits)
+3. The response will include a test QR code
+4. The payment status will automatically transition to `SUCCEEDED` in sandbox
+
+## Testing Boleto
+
+For Boleto payments in sandbox:
+1. Create a payment with `payment_method.type: "BOLETO"`
+2. Include `customer.document` with a valid CPF/CNPJ
+3. The response will include a test barcode/digitable line
+4. Use webhooks to track status changes
+
+## Testing 3DS
+
+To trigger 3DS authentication in sandbox:
+1. Use the test card `4000000000003220` (Visa with 3DS challenge)
+2. Complete the test challenge in the 3DS iframe
+3. The payment will process after successful authentication
+
+## Verification Checklist
+
+- [ ] Checkout session creation returns HTTP 200
+- [ ] Payment form renders correctly with SDK Lite
+- [ ] Successful payment with test card returns `SUCCEEDED` status
+- [ ] Declined payment returns appropriate error code
+- [ ] 3DS challenge displays and completes correctly
+- [ ] PIX QR code is generated for PIX payments
+- [ ] Webhooks receive payment status updates
+- [ ] Error responses are handled gracefully in the UI

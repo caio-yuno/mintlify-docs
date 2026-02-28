@@ -1,0 +1,39 @@
+---
+title: "Buy Now Pay Later"
+description: "Accept BNPL payments through Yuno"
+---
+
+## Overview
+
+Buy Now Pay Later (BNPL) allows customers to split their purchase into installments with a third-party provider. The customer is redirected to the BNPL provider's page to approve the financing.
+
+## Payment Flow
+
+<Steps>
+  <Step title="Create payment">
+    ```json
+    {
+      "checkout_session": "session-id",
+      "payment_method": {"type": "BNPL"},
+      "amount": {"currency": "BRL", "value": 500.00},
+      "country": "BR",
+      "customer": {
+        "document": {"document_type": "CPF", "document_number": "12345678901"},
+        "email": "customer@example.com"
+      }
+    }
+    ```
+  </Step>
+
+  <Step title="Redirect customer">
+    The response includes a redirect URL. The customer completes the BNPL application on the provider's page.
+  </Step>
+
+  <Step title="Handle callback">
+    After the customer completes or cancels, they are redirected back to your site. Use [webhooks](/guides/webhooks/overview) for the definitive payment status.
+  </Step>
+</Steps>
+
+<Note>
+BNPL availability depends on provider configuration and may vary by country. Check your Dashboard for enabled BNPL providers.
+</Note>

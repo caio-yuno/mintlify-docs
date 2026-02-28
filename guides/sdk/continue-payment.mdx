@@ -1,0 +1,63 @@
+---
+title: "Continue Payment"
+description: "Handle 3DS authentication and asynchronous payment flows"
+---
+
+## Overview
+
+After creating a payment server-side, some payment methods require additional steps before completion:
+
+- **3D Secure (3DS)** — Card payments may require cardholder authentication
+- **Redirect flows** — PSE, SPEI, and bank transfers redirect the customer to complete payment
+- **Async methods** — PIX, Boleto, and OXXO generate payment instructions for the customer
+
+The `continuePayment()` method handles these scenarios automatically.
+
+## Usage
+
+After your server creates the payment and returns the result to the client:
+
+```javascript
+// Client-side: after receiving payment result from server
+yuno.continuePayment();
+```
+
+The SDK will automatically:
+1. Detect if 3DS authentication is needed and display the challenge
+2. Handle redirect-based payment methods
+3. Display payment instructions (QR codes, vouchers) for async methods
+
+## 3DS Flow
+
+For card payments with 3DS:
+
+```
+Client → Server: Create payment
+Server → Yuno API: POST /v1/payments
+Yuno API → Server: Payment requires 3DS
+Server → Client: Return payment result
+Client: yuno.continuePayment() → displays 3DS challenge
+Customer: Completes authentication
+SDK → Callback: Payment result (success/failure)
+```
+
+## Handling Results
+
+Listen for payment completion in your SDK callbacks:
+
+```javascript
+yuno.startCheckout({
+  // ...
+  yunoCreatePayment: async (token) => {
+    const result = await createPaymentOnServer(token);
+    return result;
+  },
+});
+
+// continuePayment handles the rest automatically
+yuno.continuePayment();
+```
+
+## Webhooks for Async Payments
+
+For payment methods like PIX, Boleto, and OXXO, the payment status is `PENDING` after creation. Set up [webhooks](/guides/webhooks/overview) to receive the final payment status when the customer completes the payment.

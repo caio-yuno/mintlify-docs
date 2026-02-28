@@ -1,0 +1,76 @@
+---
+title: "Webhooks Overview"
+description: "Receive real-time payment status notifications"
+---
+
+## Overview
+
+Webhooks notify your server when payment events occur (e.g., payment succeeded, payment failed). This is essential for asynchronous payment methods like PIX, Boleto, and OXXO.
+
+## Configuration
+
+Configure webhook endpoints in the [Yuno Dashboard](https://dashboard.y.uno) under **Settings > Webhooks**.
+
+<Warning>
+**Sandbox limitation:** Webhook management endpoints (`POST /v1/webhooks` and `GET /v1/webhooks`) may return 404 in the sandbox environment. Configure webhooks through the Dashboard instead.
+</Warning>
+
+## Webhook Payload
+
+Yuno sends a POST request to your webhook URL with event data:
+
+```json
+{
+  "event": "payment.updated",
+  "data": {
+    "id": "payment-uuid",
+    "status": "SUCCEEDED",
+    "amount": {"currency": "BRL", "value": 100.00},
+    "payment_method": {"type": "PIX"},
+    "merchant_order_id": "order-001",
+    "created_at": "2026-01-15T10:30:00.000Z"
+  },
+  "timestamp": "2026-01-15T10:30:05.000Z"
+}
+```
+
+## Handling Webhooks
+
+Your webhook endpoint should:
+
+1. Respond with HTTP `200` within 5 seconds
+2. Verify the webhook signature (if configured)
+3. Process the event asynchronously
+4. Be idempotent (handle duplicate deliveries)
+
+```javascript
+app.post('/webhooks/yuno', (req, res) => {
+  const event = req.body;
+
+  // Respond immediately
+  res.status(200).send('OK');
+
+  // Process asynchronously
+  processWebhookEvent(event);
+});
+
+async function processWebhookEvent(event) {
+  switch (event.event) {
+    case 'payment.updated':
+      await updateOrderStatus(event.data.merchant_order_id, event.data.status);
+      break;
+    // Handle other events...
+  }
+}
+```
+
+## Security
+
+- Use HTTPS for your webhook endpoint
+- Verify webhook signatures to ensure authenticity
+- Reject requests that fail signature verification
+- Store raw webhook payloads for debugging
+
+## Retry Policy
+
+If your endpoint does not respond with HTTP `200`, Yuno will retry the webhook delivery with exponential backoff.

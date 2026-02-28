@@ -1,33 +1,53 @@
 ---
-title: 'Introduction'
-description: 'Example section for showcasing API endpoints'
+title: "API Reference"
+description: "Yuno Payments API reference documentation"
 ---
 
-<Note>
-  If you're not looking to build API reference documentation, you can delete
-  this section by removing the api-reference folder.
-</Note>
+## Base URLs
 
-## Welcome
-
-There are two ways to build API documentation: [OpenAPI](https://mintlify.com/docs/api-playground/openapi/setup) and [MDX components](https://mintlify.com/docs/api-playground/mdx/configuration). For the starter kit, we are using the following OpenAPI specification.
-
-<Card
-  title="Plant Store Endpoints"
-  icon="leaf"
-  href="https://github.com/mintlify/starter/blob/main/api-reference/openapi.json"
->
-  View the OpenAPI specification file
-</Card>
+| Environment | Base URL |
+|-------------|----------|
+| Sandbox | `https://api-sandbox.y.uno` |
+| Production | `https://api.y.uno` |
 
 ## Authentication
 
-All API endpoints are authenticated using Bearer tokens and picked up from the specification file.
+All API requests require three headers:
+
+<Snippet file="auth-headers.mdx" />
+
+See the [Authentication](/authentication) page for details on obtaining and managing API keys.
+
+## Common Response Codes
+
+| Code | Description |
+|------|-------------|
+| 200 | Success |
+| 201 | Resource created |
+| 400 | Invalid request — check the error object for details |
+| 401 | Authentication failed — verify your API keys |
+| 403 | Forbidden — payment method not enabled or permission denied |
+| 404 | Resource not found |
+| 429 | Rate limit exceeded — implement exponential backoff |
+| 500 | Server error — retry or contact Yuno support |
+
+## Error Format
+
+All errors return a JSON object:
 
 ```json
-"security": [
-  {
-    "bearerAuth": []
+{
+  "error": {
+    "code": "INVALID_FIELD",
+    "message": "customer.document is required for PIX"
   }
-]
+}
 ```
+
+## Rate Limiting
+
+If you receive a `429` response, implement exponential backoff retry logic. Wait progressively longer between retries (e.g., 1s, 2s, 4s, 8s).
+
+## Pagination
+
+List endpoints support cursor-based pagination with `limit`, `starting_after`, and `ending_before` query parameters.

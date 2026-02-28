@@ -1,0 +1,31 @@
+---
+title: "Transaction Categories"
+description: "Transaction type categories in Yuno"
+---
+
+## Transaction Categories
+
+Transactions in Yuno are categorized by type. These categories appear in payment responses and reports.
+
+| Category | Description |
+|----------|-------------|
+| `PAYMENT` | Standard payment transaction |
+| `AUTHORIZATION` | Pre-authorization (capture required) |
+| `CAPTURE` | Capture of a previously authorized payment |
+| `REFUND` | Full or partial refund |
+| `VOID` | Cancellation of an authorized payment |
+| `CHARGEBACK` | Disputed transaction initiated by cardholder |
+| `REPRESENTMENT` | Merchant response to a chargeback |
+| `PAYOUT` | Disbursement to a recipient |
+| `VERIFICATION` | Zero-amount card verification |
+| `RECURRING` | Recurring subscription payment |
+
+## Transaction Lifecycle
+
+```
+Authorization → Capture → (optional) Refund
+     ↓
+    Void
+```
+
+For most payment methods, authorization and capture happen simultaneously. Card payments can be configured for separate authorization and capture.

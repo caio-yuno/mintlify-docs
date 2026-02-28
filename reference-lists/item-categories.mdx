@@ -1,0 +1,38 @@
+---
+title: "Item Categories"
+description: "Line item categories for payment requests"
+---
+
+## Item Categories
+
+Use these categories in the `items[].category` field when providing line item details in payment requests.
+
+| Category | Description |
+|----------|-------------|
+| `PHYSICAL` | Physical goods that require shipping |
+| `DIGITAL` | Digital goods (software, e-books, media) |
+| `SERVICE` | Services (consulting, subscriptions) |
+| `TICKET` | Event tickets |
+| `TRAVEL` | Travel and transportation |
+| `FOOD` | Food and beverages |
+| `DONATION` | Charitable donations |
+| `SUBSCRIPTION` | Recurring subscription payments |
+| `GAMING` | Gaming and in-app purchases |
+| `OTHER` | Other categories not listed above |
+
+## Item Object Structure
+
+```json
+{
+  "items": [
+    {
+      "name": "Product Name",
+      "category": "PHYSICAL",
+      "quantity": 2,
+      "unit_price": 50.00,
+      "total_amount": 100.00,
+      "description": "Product description"
+    }
+  ]
+}
+```

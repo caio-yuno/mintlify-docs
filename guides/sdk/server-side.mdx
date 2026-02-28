@@ -1,0 +1,109 @@
+---
+title: "Server-Side Setup"
+description: "Create checkout sessions and payments from your server"
+---
+
+## Overview
+
+Server-side code handles two key operations:
+
+1. **Create checkout sessions** — Initialize a payment flow
+2. **Create payments** — Process the actual payment
+
+All server-side calls require the `private-secret-key` header, which must never be exposed to the client.
+
+## Create Checkout Session
+
+<CodeGroup>
+```javascript Node.js
+const express = require('express');
+const app = express();
+
+app.post('/api/checkout-session', async (req, res) => {
+  const { amount, currency, country, orderId } = req.body;
+
+  const response = await fetch('https://api-sandbox.y.uno/v1/checkout/sessions', {
+    method: 'POST',
+    headers: {
+      'public-api-key': process.env.YUNO_PUBLIC_KEY,
+      'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+      'account-code': process.env.YUNO_ACCOUNT_CODE,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      amount: { currency, value: amount },
+      country,
+      merchant_order_id: orderId,
+    }),
+  });
+
+  const session = await response.json();
+  res.json({ checkoutSession: session.checkout_session });
+});
+```
+
+```python Python
+from flask import Flask, request, jsonify
+import requests
+import os
+
+app = Flask(__name__)
+
+@app.route('/api/checkout-session', methods=['POST'])
+def create_checkout_session():
+    data = request.json
+    response = requests.post(
+        'https://api-sandbox.y.uno/v1/checkout/sessions',
+        headers={
+            'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+            'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+            'account-code': os.environ['YUNO_ACCOUNT_CODE'],
+            'Content-Type': 'application/json',
+        },
+        json={
+            'amount': {'currency': data['currency'], 'value': data['amount']},
+            'country': data['country'],
+            'merchant_order_id': data['orderId'],
+        },
+    )
+    session = response.json()
+    return jsonify({'checkoutSession': session['checkout_session']})
+```
+</CodeGroup>
+
+## Create Payment
+
+<CodeGroup>
+```javascript Node.js
+app.post('/api/create-payment', async (req, res) => {
+  const { checkoutSession, token, amount, currency, country, customer } = req.body;
+
+  const response = await fetch('https://api-sandbox.y.uno/v1/payments', {
+    method: 'POST',
+    headers: {
+      'public-api-key': process.env.YUNO_PUBLIC_KEY,
+      'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+      'account-code': process.env.YUNO_ACCOUNT_CODE,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      checkout_session: checkoutSession,
+      payment_method: { type: 'CARD', token },
+      amount: { currency, value: amount },
+      country,
+      customer,
+    }),
+  });
+
+  const payment = await response.json();
+  res.json(payment);
+});
+```
+</CodeGroup>
+
+## Security Considerations
+
+- Store API keys in environment variables
+- Validate all input from the client before forwarding to Yuno
+- Log request and response payloads (redact sensitive fields) for debugging
+- Implement proper error handling for all API calls

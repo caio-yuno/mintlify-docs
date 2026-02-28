@@ -1,0 +1,64 @@
+---
+title: "Bank Transfer"
+description: "Accept bank transfer payments via PSE (Colombia) and SPEI (Mexico)"
+---
+
+## Overview
+
+Bank transfers redirect customers to their bank's website to authorize the payment.
+
+## PSE (Colombia)
+
+PSE (Pagos Seguros en Linea) is Colombia's online bank transfer system.
+
+### Prerequisites
+- Country: `CO`, Currency: `COP`
+- Customer document required (CC, CE, or NIT)
+
+### Payment Flow
+
+```json
+{
+  "checkout_session": "session-id",
+  "payment_method": {"type": "PSE"},
+  "amount": {"currency": "COP", "value": 50000},
+  "country": "CO",
+  "customer": {
+    "document": {"document_type": "CC", "document_number": "1234567890"},
+    "email": "customer@example.com"
+  }
+}
+```
+
+The response includes a redirect URL. Redirect the customer to complete payment at their bank.
+
+### Issuers
+
+Use the [Issuers API](/api-reference/issuers/list) with `country=CO` to get the list of available banks for PSE.
+
+## SPEI (Mexico)
+
+SPEI is Mexico's interbank electronic payment system.
+
+### Prerequisites
+- Country: `MX`, Currency: `MXN`
+
+### Payment Flow
+
+```json
+{
+  "checkout_session": "session-id",
+  "payment_method": {"type": "SPEI"},
+  "amount": {"currency": "MXN", "value": 1000.00},
+  "country": "MX",
+  "customer": {
+    "email": "customer@example.com"
+  }
+}
+```
+
+The response includes a CLABE (bank account number) for the customer to transfer funds to.
+
+<Note>
+Both PSE and SPEI are asynchronous. Set up [webhooks](/guides/webhooks/overview) to receive the final payment status.
+</Note>

@@ -1,0 +1,59 @@
+---
+title: "SDK Overview"
+description: "Choose the right Yuno SDK integration for your checkout experience"
+---
+
+## Integration Options
+
+Yuno offers three SDK integration modes, each providing different levels of customization.
+
+| Mode | Description | Customization | Effort |
+|------|-------------|--------------|--------|
+| **Full Checkout** | Pre-built, hosted checkout UI | Low | Low |
+| **SDK Lite** | Embeddable payment form in your page | Medium | Medium |
+| **Headless** | API-only, build your own UI | Full | High |
+
+## SDK Lite (Recommended)
+
+SDK Lite is the most popular integration mode. It embeds a lightweight payment form directly in your checkout page while Yuno handles PCI compliance and payment processing.
+
+See the [SDK Lite guide](/guides/sdk/sdk-lite) for complete integration instructions.
+
+## Installation
+
+Install the Yuno Web SDK via npm or CDN:
+
+<CodeGroup>
+```bash npm
+npm install @yuno-payments/sdk-web
+```
+
+```html CDN
+<script src="https://sdk-web.y.uno/v1/static/js/main.js"></script>
+```
+</CodeGroup>
+
+## SDK Versions
+
+When integrating, always check the latest version of `@yuno-payments/sdk-web` on [npm](https://www.npmjs.com/package/@yuno-payments/sdk-web) to ensure compatibility.
+
+<Warning>
+If you are upgrading from a previous SDK version, review the [migration notes](https://github.com/yuno-payments) for breaking changes in the initialization API.
+</Warning>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="SDK Lite" icon="window" href="/guides/sdk/sdk-lite">
+    Complete SDK Lite integration guide.
+  </Card>
+  <Card title="Server-Side Setup" icon="server" href="/guides/sdk/server-side">
+    Server-side session and payment creation.
+  </Card>
+  <Card title="Continue Payment" icon="rotate" href="/guides/sdk/continue-payment">
+    Handle 3DS and async payment flows.
+  </Card>
+  <Card title="Testing" icon="flask" href="/guides/sdk/testing">
+    Test your integration with sandbox credentials.
+  </Card>
+</CardGroup>

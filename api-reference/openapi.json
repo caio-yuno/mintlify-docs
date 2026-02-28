@@ -1,54 +1,153 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "OpenAPI Plant Store",
-    "description": "A sample API that uses a plant store as an example to demonstrate features in the OpenAPI specification",
-    "license": {
-      "name": "MIT"
-    },
-    "version": "1.0.0"
+    "title": "Yuno Payments API",
+    "description": "Yuno payment orchestration API for processing payments across Latin America",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Yuno Support",
+      "email": "support@y.uno"
+    }
   },
   "servers": [
     {
-      "url": "http://sandbox.mintlify.com"
+      "url": "https://api-sandbox.y.uno",
+      "description": "Sandbox"
+    },
+    {
+      "url": "https://api.y.uno",
+      "description": "Production"
     }
   ],
   "security": [
     {
-      "bearerAuth": []
+      "publicApiKey": [],
+      "privateSecretKey": [],
+      "accountCode": []
     }
   ],
   "paths": {
-    "/plants": {
-      "get": {
-        "description": "Returns all plants from the system that the user has access to",
-        "parameters": [
-          {
-            "name": "limit",
-            "in": "query",
-            "description": "The maximum number of results to return",
-            "schema": {
-              "type": "integer",
-              "format": "int32"
+    "/v1/checkout/sessions": {
+      "post": {
+        "operationId": "createCheckoutSession",
+        "summary": "Create checkout session",
+        "description": "Creates a new checkout session to initialize a payment flow. Returns HTTP 200 (not 201).",
+        "tags": ["Checkout Sessions"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckoutSessionRequest"
+              }
             }
           }
-        ],
+        },
         "responses": {
           "200": {
-            "description": "Plant response",
+            "description": "Checkout session created successfully",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Plant"
-                  }
+                  "$ref": "#/components/schemas/CheckoutSession"
                 }
               }
             }
           },
           "400": {
-            "description": "Unexpected error",
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/checkout/sessions/{checkout_session_id}": {
+      "get": {
+        "operationId": "getCheckoutSession",
+        "summary": "Get checkout session",
+        "description": "Retrieves the details of an existing checkout session.",
+        "tags": ["Checkout Sessions"],
+        "parameters": [
+          {
+            "name": "checkout_session_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the checkout session",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Checkout session details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSession"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments": {
+      "post": {
+        "operationId": "createPayment",
+        "summary": "Create payment",
+        "description": "Creates a new payment using a checkout session.",
+        "tags": ["Payments"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
             "content": {
               "application/json": {
                 "schema": {
@@ -59,32 +158,86 @@
           }
         }
       },
-      "post": {
-        "description": "Creates a new plant in the store",
-        "requestBody": {
-          "description": "Plant to add to the store",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/NewPlant"
-              }
+      "get": {
+        "operationId": "listPayments",
+        "summary": "List payments",
+        "description": "Returns a list of payments. Supports pagination.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results to return",
+            "schema": {
+              "type": "integer",
+              "default": 20
             }
           },
-          "required": true
-        },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "Cursor for forward pagination",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "description": "Cursor for backward pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "plant response",
+            "description": "List of payments",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Plant"
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Payment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{payment_id}": {
+      "get": {
+        "operationId": "getPayment",
+        "summary": "Get payment",
+        "description": "Retrieves the details of an existing payment.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the payment",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
                 }
               }
             }
           },
-          "400": {
-            "description": "unexpected error",
+          "404": {
+            "description": "Payment not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -96,28 +249,51 @@
         }
       }
     },
-    "/plants/{id}": {
-      "delete": {
-        "description": "Deletes a single plant based on the ID supplied",
+    "/v1/payments/{payment_id}/capture": {
+      "post": {
+        "operationId": "capturePayment",
+        "summary": "Capture payment",
+        "description": "Captures a previously authorized payment.",
+        "tags": ["Payments"],
         "parameters": [
           {
-            "name": "id",
+            "name": "payment_id",
             "in": "path",
-            "description": "ID of plant to delete",
             "required": true,
+            "description": "The unique identifier of the payment to capture",
             "schema": {
-              "type": "integer",
-              "format": "int64"
+              "type": "string",
+              "format": "uuid"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/Amount"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
-          "204": {
-            "description": "Plant deleted",
-            "content": {}
+          "200": {
+            "description": "Payment captured successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
           },
           "400": {
-            "description": "unexpected error",
+            "description": "Capture failed",
             "content": {
               "application/json": {
                 "schema": {
@@ -128,89 +304,1496 @@
           }
         }
       }
-    }
-  },
-  "webhooks": {
-    "/plant/webhook": {
+    },
+    "/v1/payments/{payment_id}/cancel": {
       "post": {
-        "description": "Information about a new plant added to the store",
+        "operationId": "cancelPayment",
+        "summary": "Cancel payment",
+        "description": "Cancels a pending or authorized payment.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the payment to cancel",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment cancelled successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Cancellation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{payment_id}/refund": {
+      "post": {
+        "operationId": "refundPayment",
+        "summary": "Refund payment",
+        "description": "Creates a refund for a completed payment. Supports partial refunds.",
+        "tags": ["Payments"],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the payment to refund",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
         "requestBody": {
-          "description": "Plant added to the store",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/NewPlant"
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/Amount",
+                    "description": "Refund amount. Omit for full refund."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for the refund"
+                  }
+                }
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Return a 200 status to indicate that the data was received successfully"
+            "description": "Refund created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Refund failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/installments-plans": {
+      "get": {
+        "operationId": "listInstallmentsPlans",
+        "summary": "List installment plans",
+        "description": "Returns all installment plans configured for the account.",
+        "tags": ["Installments Plans"],
+        "responses": {
+          "200": {
+            "description": "List of installment plans",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InstallmentsPlan"
+                  }
+                },
+                "example": [
+                  {
+                    "id": "3e599453-e147-4d1c-8643-73e4d980c2ae",
+                    "name": "Standard Plan",
+                    "account_id": ["1a3a576a-01d0-40ff-a68e-494f82145773"],
+                    "merchant_reference": "001 08 Agosto 2023",
+                    "installments_plan": [
+                      {"installment": 1, "rate": 1},
+                      {"installment": 2, "rate": 1.294},
+                      {"installment": 12, "rate": 1.525}
+                    ],
+                    "brand": null,
+                    "iin": null,
+                    "country_code": "BR",
+                    "first_installment_deferral": 1,
+                    "amount": {"Currency": "BRL", "min_value": 0, "max_value": 10000000000}
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createInstallmentsPlan",
+        "summary": "Create installment plan",
+        "description": "Creates a new installment plan for the account.",
+        "tags": ["Installments Plans"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstallmentsPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Installment plan created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallmentsPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/installments-plans/{installments_plan_id}": {
+      "get": {
+        "operationId": "getInstallmentsPlan",
+        "summary": "Get installment plan",
+        "description": "Retrieves a specific installment plan by ID.",
+        "tags": ["Installments Plans"],
+        "parameters": [
+          {
+            "name": "installments_plan_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the installment plan",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Installment plan details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallmentsPlan"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Installment plan not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateInstallmentsPlan",
+        "summary": "Update installment plan",
+        "description": "Updates an existing installment plan.",
+        "tags": ["Installments Plans"],
+        "parameters": [
+          {
+            "name": "installments_plan_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the installment plan",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InstallmentsPlanRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Installment plan updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InstallmentsPlan"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteInstallmentsPlan",
+        "summary": "Delete installment plan",
+        "description": "Deletes an existing installment plan.",
+        "tags": ["Installments Plans"],
+        "parameters": [
+          {
+            "name": "installments_plan_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the installment plan",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Installment plan deleted successfully"
+          },
+          "404": {
+            "description": "Installment plan not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/issuers": {
+      "get": {
+        "operationId": "listIssuers",
+        "summary": "List issuers",
+        "description": "Returns a list of issuers (banks) available for a given country. Note: This endpoint returns HTTP 201 (unusual for GET requests, but confirmed behavior).",
+        "tags": ["Issuers"],
+        "parameters": [
+          {
+            "name": "country",
+            "in": "query",
+            "required": true,
+            "description": "ISO 3166-1 alpha-2 country code",
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Z]{2}$",
+              "example": "CO"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "List of issuers for the specified country",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "issuers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Issuer"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "issuers": [
+                    {"name": "BANCO QUE APRUEBA", "id": "1"},
+                    {"name": "BANCO QUE DECLINA", "id": "2"},
+                    {"name": "BANCO QUE SIMULA UN ERROR", "id": "3"}
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers": {
+      "post": {
+        "operationId": "createCustomer",
+        "summary": "Create customer",
+        "description": "Creates a new customer record.",
+        "tags": ["Customers"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Customer created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listCustomers",
+        "summary": "List customers",
+        "description": "Returns a list of customers.",
+        "tags": ["Customers"],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "Cursor for forward pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of customers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Customer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/customers/{customer_id}": {
+      "get": {
+        "operationId": "getCustomer",
+        "summary": "Get customer",
+        "description": "Retrieves a customer by ID.",
+        "tags": ["Customers"],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the customer",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Customer details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Customer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Customer not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payouts": {
+      "post": {
+        "operationId": "createPayout",
+        "summary": "Create payout",
+        "description": "Creates a new payout to send funds to a recipient.",
+        "tags": ["Payouts"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayoutRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Payout created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payout"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payouts/{payout_id}": {
+      "get": {
+        "operationId": "getPayout",
+        "summary": "Get payout",
+        "description": "Retrieves the details of a payout by ID. Note: The path `/v1/payouts/merchant-ref/{reference}` may require a UUID format for the reference parameter — verify the correct format for your use case.",
+        "tags": ["Payouts"],
+        "parameters": [
+          {
+            "name": "payout_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the payout",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payout details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payout"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Payout not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reports": {
+      "post": {
+        "operationId": "createReport",
+        "summary": "Create report",
+        "description": "Generates a new report for the specified date range.",
+        "tags": ["Reports"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Report generation initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/reports/{report_id}": {
+      "get": {
+        "operationId": "getReport",
+        "summary": "Get report",
+        "description": "Retrieves the status and details of a generated report.",
+        "tags": ["Reports"],
+        "parameters": [
+          {
+            "name": "report_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the report",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Report details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Report"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Report not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients": {
+      "post": {
+        "operationId": "createRecipient",
+        "summary": "Create recipient",
+        "description": "Creates a new payout recipient.",
+        "tags": ["Recipients"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecipientRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Recipient created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipient"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listRecipients",
+        "summary": "List recipients",
+        "description": "Returns a list of payout recipients. Requires `merchant_recipient_id` query parameter.",
+        "tags": ["Recipients"],
+        "parameters": [
+          {
+            "name": "merchant_recipient_id",
+            "in": "query",
+            "required": true,
+            "description": "The merchant-assigned recipient identifier to filter by",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "Cursor for forward pagination",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "description": "Cursor for backward pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of recipients",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Recipient"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients/{recipient_id}": {
+      "get": {
+        "operationId": "getRecipient",
+        "summary": "Get recipient",
+        "description": "Retrieves a recipient by ID.",
+        "tags": ["Recipients"],
+        "parameters": [
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the recipient",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Recipient details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Recipient"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Recipient not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }
     }
   },
   "components": {
+    "securitySchemes": {
+      "publicApiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "public-api-key",
+        "description": "Your public API key from the Yuno Dashboard"
+      },
+      "privateSecretKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "private-secret-key",
+        "description": "Your private secret key (server-side only)"
+      },
+      "accountCode": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "account-code",
+        "description": "Your account identifier. The alias X-Account-Code is also accepted."
+      }
+    },
     "schemas": {
-      "Plant": {
-        "required": [
-          "name"
-        ],
+      "Amount": {
         "type": "object",
+        "required": ["currency", "value"],
         "properties": {
-          "name": {
-            "description": "The name of the plant",
-            "type": "string"
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code",
+            "example": "BRL"
           },
-          "tag": {
-            "description": "Tag to specify the type",
-            "type": "string"
+          "value": {
+            "type": "number",
+            "description": "Payment amount",
+            "example": 100.00
           }
         }
       },
-      "NewPlant": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/Plant"
+      "CustomerDocument": {
+        "type": "object",
+        "required": ["document_type", "document_number"],
+        "properties": {
+          "document_type": {
+            "type": "string",
+            "enum": ["CPF", "CNPJ", "CC", "CE", "NIT", "PP", "CURP", "RFC"],
+            "description": "Type of identification document"
           },
-          {
-            "required": [
-              "id"
-            ],
+          "document_number": {
+            "type": "string",
+            "description": "Document number (digits only). CPF: 11 digits, CNPJ: 14 digits.",
+            "example": "12345678901"
+          }
+        }
+      },
+      "CheckoutSessionRequest": {
+        "type": "object",
+        "required": ["amount", "country", "merchant_order_id"],
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code",
+            "pattern": "^[A-Z]{2}$",
+            "example": "BR"
+          },
+          "merchant_order_id": {
+            "type": "string",
+            "description": "Your unique order identifier",
+            "example": "order-001"
+          },
+          "payment_description": {
+            "type": "string",
+            "description": "Description of the payment"
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Optional existing customer ID"
+          },
+          "workflow": {
+            "type": "string",
+            "enum": ["SDK_CHECKOUT", "SDK_LITE", "DIRECT"],
+            "description": "Integration workflow type"
+          }
+        }
+      },
+      "CheckoutSession": {
+        "type": "object",
+        "properties": {
+          "checkout_session": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The checkout session identifier"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code"
+          },
+          "merchant_order_id": {
+            "type": "string",
+            "description": "Your unique order identifier"
+          },
+          "status": {
+            "type": "string",
+            "description": "Session status"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Session creation timestamp"
+          },
+          "payment_methods": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Payment method type"
+                }
+              }
+            },
+            "description": "Available payment methods for this session"
+          }
+        }
+      },
+      "PaymentRequest": {
+        "type": "object",
+        "required": ["checkout_session", "payment_method", "amount", "country"],
+        "properties": {
+          "checkout_session": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The checkout session ID from the create session response"
+          },
+          "payment_method": {
+            "type": "object",
+            "required": ["type"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["CARD", "PIX", "BOLETO", "PSE", "SPEI", "OXXO", "BNPL", "GOOGLE_PAY", "APPLE_PAY"],
+                "description": "Payment method type"
+              },
+              "token": {
+                "type": "string",
+                "description": "Payment method token (for tokenized card payments)"
+              },
+              "vaulted_token": {
+                "type": "string",
+                "description": "Vaulted payment method token (for returning customers)"
+              }
+            }
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "customer": {
             "type": "object",
             "properties": {
-              "id": {
-                "description": "Identification number of the plant",
-                "type": "integer",
-                "format": "int64"
+              "document": {
+                "$ref": "#/components/schemas/CustomerDocument"
+              },
+              "email": {
+                "type": "string",
+                "format": "email",
+                "description": "Customer email address"
+              },
+              "first_name": {
+                "type": "string"
+              },
+              "last_name": {
+                "type": "string"
+              },
+              "phone": {
+                "type": "string"
+              }
+            }
+          },
+          "description": {
+            "type": "string",
+            "description": "Payment description"
+          },
+          "installments": {
+            "type": "integer",
+            "description": "Number of installments (for card payments)",
+            "minimum": 1
+          }
+        }
+      },
+      "Payment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique payment identifier"
+          },
+          "checkout_session": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["SUCCEEDED", "PENDING", "DECLINED", "REJECTED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED", "AUTHORIZED"],
+            "description": "Current payment status"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "country": {
+            "type": "string"
+          },
+          "payment_method": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string"
+              }
+            }
+          },
+          "provider": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Payment provider name"
+              },
+              "transaction_id": {
+                "type": "string",
+                "description": "Provider transaction reference"
+              }
+            }
+          },
+          "merchant_order_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InstallmentsPlanRequest": {
+        "type": "object",
+        "required": ["account_id", "name", "merchant_reference", "installments_plan", "country_code", "amount"],
+        "properties": {
+          "account_id": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Account IDs this plan applies to"
+          },
+          "name": {
+            "type": "string",
+            "description": "Name of the installment plan",
+            "example": "Standard Plan"
+          },
+          "merchant_reference": {
+            "type": "string",
+            "description": "Merchant reference for the plan",
+            "example": "001 08 Agosto 2023"
+          },
+          "installments_plan": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["installment", "rate"],
+              "properties": {
+                "installment": {
+                  "type": "integer",
+                  "description": "Number of installments",
+                  "example": 2
+                },
+                "rate": {
+                  "type": "number",
+                  "description": "Interest rate multiplier",
+                  "example": 1.294
+                }
+              }
+            },
+            "description": "Array of installment options with rates"
+          },
+          "country_code": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code",
+            "pattern": "^[A-Z]{2}$",
+            "example": "BR"
+          },
+          "amount": {
+            "type": "object",
+            "required": ["Currency", "min_value", "max_value"],
+            "properties": {
+              "Currency": {
+                "type": "string",
+                "description": "ISO 4217 currency code",
+                "example": "BRL"
+              },
+              "min_value": {
+                "type": "number",
+                "description": "Minimum amount for this plan",
+                "example": 0
+              },
+              "max_value": {
+                "type": "number",
+                "description": "Maximum amount for this plan",
+                "example": 10000000000
+              }
+            }
+          },
+          "brand": {
+            "type": "string",
+            "nullable": true,
+            "description": "Card brand filter (optional)"
+          },
+          "iin": {
+            "type": "string",
+            "nullable": true,
+            "description": "IIN/BIN filter (optional)"
+          }
+        }
+      },
+      "InstallmentsPlan": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique installment plan identifier"
+          },
+          "name": {
+            "type": "string"
+          },
+          "account_id": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "merchant_reference": {
+            "type": "string"
+          },
+          "installments_plan": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "installment": {
+                  "type": "integer"
+                },
+                "rate": {
+                  "type": "number"
+                }
+              }
+            }
+          },
+          "brand": {
+            "type": "string",
+            "nullable": true
+          },
+          "iin": {
+            "type": "string",
+            "nullable": true
+          },
+          "country_code": {
+            "type": "string"
+          },
+          "first_installment_deferral": {
+            "type": "integer",
+            "description": "Number of periods before first installment"
+          },
+          "amount": {
+            "type": "object",
+            "properties": {
+              "Currency": {
+                "type": "string"
+              },
+              "min_value": {
+                "type": "number"
+              },
+              "max_value": {
+                "type": "number"
               }
             }
           }
-        ]
+        }
+      },
+      "Issuer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Issuer identifier"
+          },
+          "name": {
+            "type": "string",
+            "description": "Issuer name (bank name)"
+          }
+        }
+      },
+      "CustomerRequest": {
+        "type": "object",
+        "required": ["email"],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "description": "Customer email address"
+          },
+          "first_name": {
+            "type": "string",
+            "description": "Customer first name"
+          },
+          "last_name": {
+            "type": "string",
+            "description": "Customer last name"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Customer phone number"
+          },
+          "document": {
+            "$ref": "#/components/schemas/CustomerDocument"
+          },
+          "merchant_customer_id": {
+            "type": "string",
+            "description": "Your internal customer identifier"
+          }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Yuno customer identifier"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/CustomerDocument"
+          },
+          "merchant_customer_id": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "PayoutRequest": {
+        "type": "object",
+        "required": ["amount", "country", "recipient_id"],
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "recipient_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The recipient to send funds to"
+          },
+          "description": {
+            "type": "string",
+            "description": "Payout description"
+          },
+          "merchant_reference": {
+            "type": "string",
+            "description": "Your internal payout reference"
+          },
+          "purpose": {
+            "type": "string",
+            "description": "Purpose of the payout (see Purposes reference list)"
+          }
+        }
+      },
+      "Payout": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["SUCCEEDED", "PENDING", "FAILED", "CANCELLED"],
+            "description": "Current payout status"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "country": {
+            "type": "string"
+          },
+          "recipient_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchant_reference": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "ReportRequest": {
+        "type": "object",
+        "required": ["date_range"],
+        "properties": {
+          "date_range": {
+            "type": "object",
+            "required": ["from", "to"],
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date-time",
+                "description": "Start date in ISO 8601 datetime format",
+                "example": "2026-01-01T00:00:00.000Z"
+              },
+              "to": {
+                "type": "string",
+                "format": "date-time",
+                "description": "End date in ISO 8601 datetime format",
+                "example": "2026-01-31T23:59:59.999Z"
+              }
+            },
+            "description": "Date range for the report. Must use datetime format (yyyy-MM-dd'T'HH:mm:ss.SSS'Z'), not date-only format."
+          },
+          "type": {
+            "type": "string",
+            "description": "Type of report to generate"
+          }
+        }
+      },
+      "Report": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PROCESSING", "COMPLETED", "FAILED"],
+            "description": "Report generation status"
+          },
+          "date_range": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "to": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "download_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to download the completed report"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecipientRequest": {
+        "type": "object",
+        "required": ["merchant_recipient_id", "country"],
+        "properties": {
+          "merchant_recipient_id": {
+            "type": "string",
+            "description": "Your internal recipient identifier"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "name": {
+            "type": "string",
+            "description": "Recipient name"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "document": {
+            "$ref": "#/components/schemas/CustomerDocument"
+          },
+          "bank_account": {
+            "type": "object",
+            "properties": {
+              "bank_code": {
+                "type": "string"
+              },
+              "account_number": {
+                "type": "string"
+              },
+              "account_type": {
+                "type": "string",
+                "enum": ["CHECKING", "SAVINGS"]
+              }
+            }
+          }
+        }
+      },
+      "Recipient": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "merchant_recipient_id": {
+            "type": "string"
+          },
+          "country": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "document": {
+            "$ref": "#/components/schemas/CustomerDocument"
+          },
+          "bank_account": {
+            "type": "object",
+            "properties": {
+              "bank_code": {
+                "type": "string"
+              },
+              "account_number": {
+                "type": "string"
+              },
+              "account_type": {
+                "type": "string"
+              }
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
       },
       "Error": {
-        "required": [
-          "error",
-          "message"
-        ],
         "type": "object",
         "properties": {
           "error": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "message": {
-            "type": "string"
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable error code"
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable error description"
+              }
+            }
           }
         }
-      }
-    },
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer"
       }
     }
   }

@@ -1,80 +1,133 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Create your first payment with Yuno in minutes"
 ---
 
-## Get started in three steps
+## Prerequisites
 
-Get your documentation site running locally and make your first customization.
+- A Yuno account with sandbox access
+- Your API keys from the [Yuno Dashboard](https://dashboard.y.uno)
 
-### Step 1: Set up your local environment
+## Create Your First Payment
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Get your API keys">
+    Log in to the [Yuno Dashboard](https://dashboard.y.uno) and navigate to **Settings > API Keys**. You need three values:
 
-### Step 2: Deploy your changes
+    - `public-api-key` — Used for client-side SDK initialization
+    - `private-secret-key` — Used for server-side API calls (keep this secret)
+    - `account-code` — Your account identifier
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    <Warning>
+      Never expose your `private-secret-key` in client-side code or version control.
+    </Warning>
+  </Step>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+  <Step title="Create a checkout session">
+    Create a checkout session on your server to initialize the payment flow.
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST https://api-sandbox.y.uno/v1/checkout/sessions \
+      -H "public-api-key: your-public-api-key" \
+      -H "private-secret-key: your-private-secret-key" \
+      -H "account-code: your-account-code" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "amount": {
+          "currency": "BRL",
+          "value": 100.00
+        },
+        "country": "BR",
+        "merchant_order_id": "order-001",
+        "payment_description": "Test payment"
+      }'
+    ```
 
-### Step 3: Go live
+    ```javascript Node.js
+    const response = await fetch('https://api-sandbox.y.uno/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'public-api-key': 'your-public-api-key',
+        'private-secret-key': 'your-private-secret-key',
+        'account-code': 'your-account-code',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: { currency: 'BRL', value: 100.00 },
+        country: 'BR',
+        merchant_order_id: 'order-001',
+        payment_description: 'Test payment',
+      }),
+    });
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    const session = await response.json();
+    // Use session.checkout_session for SDK initialization
+    ```
+    </CodeGroup>
 
-## Next steps
+    <Note>
+      This endpoint returns HTTP **200** (not 201). The checkout session ID is returned in the response body.
+    </Note>
+  </Step>
 
-Now that you have your docs running, explore these key features:
+  <Step title="Create a payment">
+    Use the checkout session to create a payment.
+
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST https://api-sandbox.y.uno/v1/payments \
+      -H "public-api-key: your-public-api-key" \
+      -H "private-secret-key: your-private-secret-key" \
+      -H "account-code: your-account-code" \
+      -H "Content-Type: application/json" \
+      -d '{
+        "checkout_session": "your-checkout-session-id",
+        "payment_method": {
+          "type": "CARD"
+        },
+        "amount": {
+          "currency": "BRL",
+          "value": 100.00
+        },
+        "country": "BR",
+        "customer": {
+          "document": {
+            "document_type": "CPF",
+            "document_number": "12345678901"
+          },
+          "email": "customer@example.com"
+        }
+      }'
+    ```
+    </CodeGroup>
+  </Step>
+
+  <Step title="Handle the response">
+    Check the payment status in the response:
+
+    - `SUCCEEDED` — Payment completed successfully
+    - `PENDING` — Payment is awaiting confirmation (common for PIX, Boleto)
+    - `DECLINED` — Payment was declined by the provider
+    - `REJECTED` — Payment was rejected due to validation errors
+
+    For asynchronous payment methods (PIX, Boleto, OXXO), set up [webhooks](/guides/webhooks/overview) to receive status updates.
+  </Step>
+</Steps>
+
+## Next Steps
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Authentication" icon="lock" href="/authentication">
+    Learn about authentication headers and security best practices.
+  </Card>
+  <Card title="SDK Integration" icon="window" href="/guides/sdk/overview">
+    Use the Yuno SDK for a pre-built checkout experience.
+  </Card>
+  <Card title="Payment Methods" icon="credit-card" href="/guides/payment-flows/card">
+    Explore integration guides for specific payment methods.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Browse all available API endpoints.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
