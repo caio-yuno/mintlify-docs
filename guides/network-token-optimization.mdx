@@ -1,0 +1,212 @@
+---
+title: "Network Token Optimization"
+description: "Improve authorization rates and reduce declines with network tokenization"
+---
+
+
+## Overview
+
+Network tokens are card-network-issued replacements for raw Primary Account Numbers (PANs). Unlike vault tokens that reference stored data in Yuno's systems, network tokens are issued by Visa and Mastercard and recognized at the acquirer and issuer level. This guide covers optimization strategies, lifecycle management, and migration best practices.
+
+<Info>
+For an introduction to network tokens and basic setup, see [Network Tokens](/features/network-tokens).
+</Info>
+
+## Network Tokens vs. PAN
+
+| Characteristic | PAN | Network Token |
+|---------------|-----|---------------|
+| Format | Raw card number | Network-issued token (same format) |
+| Card updates | Fails when card expires or is reissued | Automatically updated by the network |
+| Fraud protection | Static credentials | Dynamic cryptogram per transaction |
+| Issuer trust level | Standard | Elevated (network-verified) |
+| Interchange rates | Standard | Potentially reduced |
+| PCI scope | Full PAN in scope | Reduced scope (token is not reusable without cryptogram) |
+
+## Token Lifecycle
+
+Network tokens progress through a defined lifecycle managed by the card networks:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Provisioning: Card stored
+    Provisioning --> Active: Network approves
+    Provisioning --> Failed: Network declines
+    Active --> Active: Card updated (auto-refresh)
+    Active --> Suspended: Issuer suspends
+    Suspended --> Active: Issuer reactivates
+    Active --> Deactivated: Card closed / merchant request
+    Deactivated --> [*]
+```
+
+### Lifecycle Stages
+
+| Stage | Description | Action Required |
+|-------|-------------|-----------------|
+| **Provisioning** | Token requested from network after card storage | None (automatic) |
+| **Active** | Token is valid and used for transactions | Monitor health |
+| **Refresh** | Card updated (new expiry, reissued) — token mapping updated | None (automatic) |
+| **Suspended** | Issuer temporarily disables the token | Falls back to PAN; monitor for reactivation |
+| **Deactivated** | Token permanently invalidated | Request new card from customer |
+
+<Note>
+Token provisioning is asynchronous. The first transaction after card storage may use the raw PAN while the network token is being provisioned. Subsequent transactions automatically use the network token.
+</Note>
+
+## Authorization Rate Impact
+
+Network tokens typically improve authorization rates by 2-5%. The improvement comes from several factors:
+
+- **Issuer trust**: Issuers recognize network tokens as verified, reducing false declines
+- **Dynamic cryptograms**: Per-transaction cryptograms eliminate replay attacks, increasing issuer confidence
+- **Automatic card updates**: Transactions that would fail due to expired cards succeed because the token maps to the current PAN
+
+### Expected Improvement by Use Case
+
+| Use Case | Typical Lift | Notes |
+|----------|-------------|-------|
+| Recurring payments | +3-5% | Greatest impact due to card expiry handling |
+| Stored credential (COF) | +2-4% | Improved issuer trust |
+| One-time payments | +1-2% | Moderate lift from cryptogram trust |
+| Cross-border | +2-3% | Reduced fraud-related declines |
+
+## Issuer Support Matrix
+
+Network token acceptance depends on the issuing bank's participation in the token service:
+
+| Network | Service Name | Regions | Coverage |
+|---------|-------------|---------|----------|
+| Visa | Visa Token Service (VTS) | Global | 85%+ of Visa issuers |
+| Mastercard | Mastercard Digital Enablement Service (MDES) | Global | 80%+ of Mastercard issuers |
+| American Express | Amex Token Service | US, EU, LATAM | 60%+ of Amex issuers |
+
+<Warning>
+Not all cards are eligible for network tokenization. Eligibility depends on the issuing bank's participation. Ineligible cards process normally using the vaulted PAN with no disruption.
+</Warning>
+
+## Enabling Network Tokens
+
+<Steps>
+  <Step title="Navigate to Dashboard > Settings > Card Processing > Network Tokens" />
+  <Step title="Enable network tokenization for your merchant account" />
+  <Step title="Select target networks (Visa, Mastercard, or both)">
+    Enabling both is recommended for maximum coverage.
+  </Step>
+  <Step title="Configure token provisioning preferences">
+    Choose between automatic provisioning (all eligible cards) or selective provisioning (recurring customers only).
+  </Step>
+  <Step title="Save and verify">
+    Store a test card in sandbox and confirm a `network_token.provisioned` webhook event is received.
+  </Step>
+</Steps>
+
+## Token Provisioning Flow
+
+```mermaid
+sequenceDiagram
+    participant Merchant
+    participant Yuno
+    participant Network as Card Network (Visa/MC)
+    participant Issuer
+
+    Merchant->>Yuno: Store card (POST /v1/customers/{id}/payment-methods)
+    Yuno->>Yuno: Vault card (PCI-compliant)
+    Yuno->>Network: Request network token
+    Network->>Issuer: Validate card eligibility
+    Issuer-->>Network: Approve token
+    Network-->>Yuno: Return network token + TRID
+    Yuno-->>Merchant: Webhook: network_token.provisioned
+    Note over Merchant,Yuno: Subsequent transactions use network token + cryptogram
+```
+
+## Recurring Payment Optimization
+
+Network tokens provide the greatest value for recurring payments (subscriptions, installments):
+
+1. **No expired card failures**: When a card is renewed, the network updates the token mapping automatically. The customer does not need to re-enter card details.
+2. **Higher approval rates**: Issuers apply less friction to network-tokenized recurring charges.
+3. **Reduced involuntary churn**: Fewer payment failures mean fewer subscription cancellations.
+
+```json
+POST /v1/payments
+{
+  "amount": { "currency": "USD", "value": 29.99 },
+  "country": "CO",
+  "payment_method": {
+    "vaulted_token": "tok_card_abc123"
+  },
+  "payment_type": "RECURRING",
+  "merchant_order_id": "sub-renewal-456"
+}
+```
+
+<Info>
+When network tokens are enabled, Yuno automatically uses the network token for vaulted card transactions. No changes to your API integration are required.
+</Info>
+
+## Token Health Monitoring
+
+Monitor network token health in the Dashboard under **Settings > Card Processing > Network Tokens > Token Health**:
+
+| Metric | Description | Healthy Range |
+|--------|-------------|---------------|
+| Provisioning success rate | Percentage of cards that receive a network token | Above 70% |
+| Active token count | Number of currently active tokens | Growing over time |
+| Suspension rate | Percentage of tokens suspended by issuers | Below 5% |
+| Auto-refresh success | Percentage of card updates handled automatically | Above 95% |
+| Token utilization | Percentage of eligible transactions using tokens | Above 80% |
+
+## Token vs. PAN Performance Comparison
+
+Track the impact of network tokens in the Dashboard under **Analytics > Authorization > Token Comparison**:
+
+- **Approval rate split**: Side-by-side approval rates for tokenized vs. non-tokenized transactions
+- **Decline reason analysis**: Compare decline reasons between token and PAN transactions
+- **Revenue impact**: Estimated additional revenue from improved approval rates
+
+## Migration Strategy: PAN to Network Tokens
+
+### Phase 1: Enable and Provision
+
+1. Enable network tokenization in Dashboard
+2. Tokens are provisioned automatically for new stored cards
+3. Trigger bulk provisioning for existing vaulted cards via **Dashboard > Card Processing > Bulk Provision**
+
+### Phase 2: Monitor
+
+1. Compare approval rates between tokenized and non-tokenized transactions (2-4 weeks)
+2. Monitor provisioning success rates across card networks
+3. Review token health dashboard for suspensions or failures
+
+### Phase 3: Optimize
+
+1. Enable automatic provisioning for all eligible stored cards
+2. Set up alerts for provisioning failures and token suspensions
+3. Configure fallback behavior: token first, PAN fallback if token unavailable
+
+<Note>
+Bulk provisioning for existing cards is processed asynchronously. Large portfolios may take several hours to complete. Monitor progress in the Dashboard.
+</Note>
+
+## Troubleshooting Token Provisioning Failures
+
+| Error | Cause | Resolution |
+|-------|-------|------------|
+| `TOKEN_NOT_ELIGIBLE` | Issuer does not support token service | No action; card will use PAN |
+| `TOKEN_PROVISIONING_DECLINED` | Issuer declined the token request | Verify card is active; retry after 24 hours |
+| `TOKEN_NETWORK_TIMEOUT` | Network did not respond in time | Automatic retry; check network status page |
+| `TOKEN_ALREADY_EXISTS` | Token already provisioned for this card | No action; existing token is used |
+| `TOKEN_SUSPENDED` | Issuer suspended the token | Contact customer to verify card status |
+
+<Warning>
+Do not retry provisioning for `TOKEN_NOT_ELIGIBLE` errors. These indicate issuer-level limitations that will not resolve with retries.
+</Warning>
+
+## Best Practices
+
+- **Enable for all stored cards**: Even if not all cards are eligible, the eligible ones benefit immediately.
+- **Monitor approval rate changes**: Track the before/after impact in the Dashboard analytics.
+- **Combine with 3D Secure**: Network tokens and 3DS together provide the highest approval rates and strongest fraud protection.
+- **Use with recurring payments**: Network tokens eliminate the most common cause of recurring payment failure (expired cards).
+- **Review token health regularly**: Monitor provisioning rates and suspension rates to ensure optimal performance.
+- **Plan for fallback**: Ensure your integration handles PAN fallback gracefully when tokens are unavailable.

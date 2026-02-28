@@ -64,6 +64,94 @@ description: "Create your first payment with Yuno in minutes"
     const session = await response.json();
     // Use session.checkout_session for SDK initialization
     ```
+
+    ```python Python
+    import requests
+
+    response = requests.post(
+        'https://api-sandbox.y.uno/v1/checkout/sessions',
+        headers={
+            'public-api-key': 'your-public-api-key',
+            'private-secret-key': 'your-private-secret-key',
+            'account-code': 'your-account-code',
+            'Content-Type': 'application/json',
+        },
+        json={
+            'amount': {'currency': 'BRL', 'value': 100.00},
+            'country': 'BR',
+            'merchant_order_id': 'order-001',
+            'payment_description': 'Test payment',
+        },
+    )
+
+    session = response.json()
+    # Use session['checkout_session'] for SDK initialization
+    ```
+
+    ```go Go
+    package main
+
+    import (
+        "bytes"
+        "encoding/json"
+        "net/http"
+    )
+
+    func createCheckoutSession() (*http.Response, error) {
+        payload := map[string]interface{}{
+            "amount": map[string]interface{}{
+                "currency": "BRL",
+                "value":    100.00,
+            },
+            "country":             "BR",
+            "merchant_order_id":   "order-001",
+            "payment_description": "Test payment",
+        }
+
+        body, _ := json.Marshal(payload)
+        req, _ := http.NewRequest("POST",
+            "https://api-sandbox.y.uno/v1/checkout/sessions",
+            bytes.NewBuffer(body),
+        )
+
+        req.Header.Set("public-api-key", "your-public-api-key")
+        req.Header.Set("private-secret-key", "your-private-secret-key")
+        req.Header.Set("account-code", "your-account-code")
+        req.Header.Set("Content-Type", "application/json")
+
+        return http.DefaultClient.Do(req)
+    }
+    ```
+
+    ```java Java
+    import java.net.URI;
+    import java.net.http.HttpClient;
+    import java.net.http.HttpRequest;
+    import java.net.http.HttpResponse;
+
+    HttpClient client = HttpClient.newHttpClient();
+
+    String body = """
+        {
+          "amount": { "currency": "BRL", "value": 100.00 },
+          "country": "BR",
+          "merchant_order_id": "order-001",
+          "payment_description": "Test payment"
+        }
+        """;
+
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create("https://api-sandbox.y.uno/v1/checkout/sessions"))
+        .header("public-api-key", "your-public-api-key")
+        .header("private-secret-key", "your-private-secret-key")
+        .header("account-code", "your-account-code")
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(body))
+        .build();
+
+    HttpResponse<String> response = client.send(request,
+        HttpResponse.BodyHandlers.ofString());
+    ```
     </CodeGroup>
 
     <Note>
@@ -99,6 +187,121 @@ description: "Create your first payment with Yuno in minutes"
           "email": "customer@example.com"
         }
       }'
+    ```
+
+    ```javascript Node.js
+    const response = await fetch('https://api-sandbox.y.uno/v1/payments', {
+      method: 'POST',
+      headers: {
+        'public-api-key': 'your-public-api-key',
+        'private-secret-key': 'your-private-secret-key',
+        'account-code': 'your-account-code',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        checkout_session: 'your-checkout-session-id',
+        payment_method: { type: 'CARD' },
+        amount: { currency: 'BRL', value: 100.00 },
+        country: 'BR',
+        customer: {
+          document: {
+            document_type: 'CPF',
+            document_number: '12345678901',
+          },
+          email: 'customer@example.com',
+        },
+      }),
+    });
+
+    const payment = await response.json();
+    ```
+
+    ```python Python
+    import requests
+
+    response = requests.post(
+        'https://api-sandbox.y.uno/v1/payments',
+        headers={
+            'public-api-key': 'your-public-api-key',
+            'private-secret-key': 'your-private-secret-key',
+            'account-code': 'your-account-code',
+            'Content-Type': 'application/json',
+        },
+        json={
+            'checkout_session': 'your-checkout-session-id',
+            'payment_method': {'type': 'CARD'},
+            'amount': {'currency': 'BRL', 'value': 100.00},
+            'country': 'BR',
+            'customer': {
+                'document': {
+                    'document_type': 'CPF',
+                    'document_number': '12345678901',
+                },
+                'email': 'customer@example.com',
+            },
+        },
+    )
+
+    payment = response.json()
+    ```
+
+    ```go Go
+    payload := map[string]interface{}{
+        "checkout_session": "your-checkout-session-id",
+        "payment_method":   map[string]interface{}{"type": "CARD"},
+        "amount":           map[string]interface{}{"currency": "BRL", "value": 100.00},
+        "country":          "BR",
+        "customer": map[string]interface{}{
+            "document": map[string]interface{}{
+                "document_type":   "CPF",
+                "document_number": "12345678901",
+            },
+            "email": "customer@example.com",
+        },
+    }
+
+    body, _ := json.Marshal(payload)
+    req, _ := http.NewRequest("POST",
+        "https://api-sandbox.y.uno/v1/payments",
+        bytes.NewBuffer(body),
+    )
+
+    req.Header.Set("public-api-key", "your-public-api-key")
+    req.Header.Set("private-secret-key", "your-private-secret-key")
+    req.Header.Set("account-code", "your-account-code")
+    req.Header.Set("Content-Type", "application/json")
+
+    resp, err := http.DefaultClient.Do(req)
+    ```
+
+    ```java Java
+    String body = """
+        {
+          "checkout_session": "your-checkout-session-id",
+          "payment_method": { "type": "CARD" },
+          "amount": { "currency": "BRL", "value": 100.00 },
+          "country": "BR",
+          "customer": {
+            "document": {
+              "document_type": "CPF",
+              "document_number": "12345678901"
+            },
+            "email": "customer@example.com"
+          }
+        }
+        """;
+
+    HttpRequest request = HttpRequest.newBuilder()
+        .uri(URI.create("https://api-sandbox.y.uno/v1/payments"))
+        .header("public-api-key", "your-public-api-key")
+        .header("private-secret-key", "your-private-secret-key")
+        .header("account-code", "your-account-code")
+        .header("Content-Type", "application/json")
+        .POST(HttpRequest.BodyPublishers.ofString(body))
+        .build();
+
+    HttpResponse<String> response = client.send(request,
+        HttpResponse.BodyHandlers.ofString());
     ```
     </CodeGroup>
   </Step>

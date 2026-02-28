@@ -72,16 +72,142 @@ response = requests.post(
 )
 payment = response.json()
 ```
+
+```go Go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "net/http"
+    "os"
+)
+
+func createCardPayment() (*http.Response, error) {
+    payload := map[string]interface{}{
+        "checkout_session": "session-id",
+        "payment_method": map[string]interface{}{
+            "type":  "CARD",
+            "token": "one-time-token-from-tokenization",
+        },
+        "amount":  map[string]interface{}{"currency": "USD", "value": 50.00},
+        "country": "CO",
+        "customer": map[string]interface{}{
+            "email":      "customer@example.com",
+            "first_name": "John",
+            "last_name":  "Doe",
+        },
+        "description": "Order #123",
+    }
+
+    body, _ := json.Marshal(payload)
+    req, _ := http.NewRequest("POST",
+        "https://api-sandbox.y.uno/v1/payments",
+        bytes.NewBuffer(body),
+    )
+
+    req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
+    req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
+    req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
+    req.Header.Set("Content-Type", "application/json")
+
+    return http.DefaultClient.Do(req)
+}
+```
+
+```java Java
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+HttpClient client = HttpClient.newHttpClient();
+
+String body = """
+    {
+      "checkout_session": "session-id",
+      "payment_method": {
+        "type": "CARD",
+        "token": "one-time-token-from-tokenization"
+      },
+      "amount": { "currency": "USD", "value": 50.00 },
+      "country": "CO",
+      "customer": {
+        "email": "customer@example.com",
+        "first_name": "John",
+        "last_name": "Doe"
+      },
+      "description": "Order #123"
+    }
+    """;
+
+HttpRequest request = HttpRequest.newBuilder()
+    .uri(URI.create("https://api-sandbox.y.uno/v1/payments"))
+    .header("public-api-key", System.getenv("YUNO_PUBLIC_KEY"))
+    .header("private-secret-key", System.getenv("YUNO_PRIVATE_KEY"))
+    .header("account-code", System.getenv("YUNO_ACCOUNT_CODE"))
+    .header("Content-Type", "application/json")
+    .POST(HttpRequest.BodyPublishers.ofString(body))
+    .build();
+
+HttpResponse<String> response = client.send(request,
+    HttpResponse.BodyHandlers.ofString());
+```
+
+```php PHP
+<?php
+$url = 'https://api-sandbox.y.uno/v1/payments';
+
+$payload = json_encode([
+    'checkout_session' => 'session-id',
+    'payment_method' => [
+        'type' => 'CARD',
+        'token' => 'one-time-token-from-tokenization',
+    ],
+    'amount' => ['currency' => 'USD', 'value' => 50.00],
+    'country' => 'CO',
+    'customer' => [
+        'email' => 'customer@example.com',
+        'first_name' => 'John',
+        'last_name' => 'Doe',
+    ],
+    'description' => 'Order #123',
+]);
+
+$ch = curl_init($url);
+curl_setopt_array($ch, [
+    CURLOPT_RETURNTRANSFER => true,
+    CURLOPT_POST => true,
+    CURLOPT_POSTFIELDS => $payload,
+    CURLOPT_HTTPHEADER => [
+        'public-api-key: ' . getenv('YUNO_PUBLIC_KEY'),
+        'private-secret-key: ' . getenv('YUNO_PRIVATE_KEY'),
+        'account-code: ' . getenv('YUNO_ACCOUNT_CODE'),
+        'Content-Type: application/json',
+    ],
+]);
+
+$response = curl_exec($ch);
+curl_close($ch);
+
+$payment = json_decode($response, true);
+```
 </CodeGroup>
 
 ## PIX Payment (Brazil)
 
 PIX requires customer document information (CPF or CNPJ):
 
-```javascript
+<CodeGroup>
+```javascript Node.js
 const pixPayment = await fetch('https://api-sandbox.y.uno/v1/payments', {
   method: 'POST',
-  headers: { /* auth headers */ },
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'account-code': process.env.YUNO_ACCOUNT_CODE,
+    'Content-Type': 'application/json',
+  },
   body: JSON.stringify({
     checkout_session: 'session-id',
     payment_method: { type: 'PIX' },
@@ -98,16 +224,79 @@ const pixPayment = await fetch('https://api-sandbox.y.uno/v1/payments', {
 });
 ```
 
+```python Python
+import requests
+
+pix_payment = requests.post(
+    'https://api-sandbox.y.uno/v1/payments',
+    headers={
+        'public-api-key': YUNO_PUBLIC_KEY,
+        'private-secret-key': YUNO_PRIVATE_KEY,
+        'account-code': YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+    },
+    json={
+        'checkout_session': 'session-id',
+        'payment_method': {'type': 'PIX'},
+        'amount': {'currency': 'BRL', 'value': 100.00},
+        'country': 'BR',
+        'customer': {
+            'email': 'cliente@example.com',
+            'document': {
+                'document_type': 'CPF',
+                'document_number': '12345678901',
+            },
+        },
+    },
+)
+```
+
+```go Go
+payload := map[string]interface{}{
+    "checkout_session": "session-id",
+    "payment_method":   map[string]interface{}{"type": "PIX"},
+    "amount":           map[string]interface{}{"currency": "BRL", "value": 100.00},
+    "country":          "BR",
+    "customer": map[string]interface{}{
+        "email": "cliente@example.com",
+        "document": map[string]interface{}{
+            "document_type":   "CPF",
+            "document_number": "12345678901",
+        },
+    },
+}
+
+body, _ := json.Marshal(payload)
+req, _ := http.NewRequest("POST",
+    "https://api-sandbox.y.uno/v1/payments",
+    bytes.NewBuffer(body),
+)
+
+req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
+req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
+req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
+req.Header.Set("Content-Type", "application/json")
+
+resp, err := http.DefaultClient.Do(req)
+```
+</CodeGroup>
+
 <Note>
 PIX payments return a `payment_method.pix` object containing `qr_code` (base64 image) and `qr_code_url` (copy-paste code). Display either to the customer.
 </Note>
 
 ## Bank Transfer
 
-```javascript
+<CodeGroup>
+```javascript Node.js
 const bankTransfer = await fetch('https://api-sandbox.y.uno/v1/payments', {
   method: 'POST',
-  headers: { /* auth headers */ },
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'account-code': process.env.YUNO_ACCOUNT_CODE,
+    'Content-Type': 'application/json',
+  },
   body: JSON.stringify({
     checkout_session: 'session-id',
     payment_method: { type: 'BANK_TRANSFER' },
@@ -123,6 +312,34 @@ const bankTransfer = await fetch('https://api-sandbox.y.uno/v1/payments', {
   }),
 });
 ```
+
+```python Python
+import requests
+
+bank_transfer = requests.post(
+    'https://api-sandbox.y.uno/v1/payments',
+    headers={
+        'public-api-key': YUNO_PUBLIC_KEY,
+        'private-secret-key': YUNO_PRIVATE_KEY,
+        'account-code': YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+    },
+    json={
+        'checkout_session': 'session-id',
+        'payment_method': {'type': 'BANK_TRANSFER'},
+        'amount': {'currency': 'COP', 'value': 50000},
+        'country': 'CO',
+        'customer': {
+            'email': 'cliente@example.com',
+            'document': {
+                'document_type': 'CC',
+                'document_number': '1234567890',
+            },
+        },
+    },
+)
+```
+</CodeGroup>
 
 ## Required Fields by Payment Method
 

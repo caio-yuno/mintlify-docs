@@ -33,12 +33,26 @@
         "summary": "Create checkout session",
         "description": "Creates a new checkout session to initialize a payment flow. Returns HTTP 200 (not 201).",
         "tags": ["Checkout Sessions"],
+        "x-ratelimit": {
+          "limit": 100,
+          "window": "60s"
+        },
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CheckoutSessionRequest"
+              },
+              "example": {
+                "amount": {
+                  "currency": "BRL",
+                  "value": 150.00
+                },
+                "country": "BR",
+                "merchant_order_id": "order-20260301-001",
+                "payment_description": "Premium subscription - March 2026",
+                "workflow": "SDK_CHECKOUT"
               }
             }
           }
@@ -50,6 +64,22 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/CheckoutSession"
+                },
+                "example": {
+                  "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                  "amount": {
+                    "currency": "BRL",
+                    "value": 150.00
+                  },
+                  "country": "BR",
+                  "merchant_order_id": "order-20260301-001",
+                  "status": "ACTIVE",
+                  "created_at": "2026-03-01T14:30:00.000Z",
+                  "payment_methods": [
+                    { "type": "CARD" },
+                    { "type": "PIX" },
+                    { "type": "BOLETO" }
+                  ]
                 }
               }
             }
@@ -60,6 +90,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_REQUEST",
+                    "message": "amount.currency is required and must be a valid ISO 4217 code"
+                  }
                 }
               }
             }
@@ -70,6 +106,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "UNAUTHORIZED",
+                    "message": "Invalid or missing API key"
+                  }
                 }
               }
             }
@@ -125,12 +167,40 @@
         "summary": "Create payment",
         "description": "Creates a new payment using a checkout session.",
         "tags": ["Payments"],
+        "x-ratelimit": {
+          "limit": 100,
+          "window": "60s"
+        },
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PaymentRequest"
+              },
+              "example": {
+                "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "payment_method": {
+                  "type": "CARD",
+                  "token": "tok_4a8b9c2d-1e3f-5678-90ab-cdef12345678"
+                },
+                "amount": {
+                  "currency": "BRL",
+                  "value": 150.00
+                },
+                "country": "BR",
+                "customer": {
+                  "document": {
+                    "document_type": "CPF",
+                    "document_number": "12345678901"
+                  },
+                  "email": "maria.silva@example.com",
+                  "first_name": "Maria",
+                  "last_name": "Silva",
+                  "phone": "+5511999990000"
+                },
+                "description": "Premium subscription - March 2026",
+                "installments": 1
               }
             }
           }
@@ -142,6 +212,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Payment"
+                },
+                "example": {
+                  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                  "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                  "status": "SUCCEEDED",
+                  "amount": {
+                    "currency": "BRL",
+                    "value": 150.00
+                  },
+                  "country": "BR",
+                  "payment_method": {
+                    "type": "CARD"
+                  },
+                  "provider": {
+                    "name": "stripe_connect",
+                    "transaction_id": "pi_3abc123def456"
+                  },
+                  "merchant_order_id": "order-20260301-001",
+                  "created_at": "2026-03-01T14:31:00.000Z",
+                  "updated_at": "2026-03-01T14:31:02.000Z"
                 }
               }
             }
@@ -152,6 +242,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_FIELD",
+                    "message": "customer.document is required for PIX"
+                  }
                 }
               }
             }
@@ -163,6 +259,10 @@
         "summary": "List payments",
         "description": "Returns a list of payments. Supports pagination.",
         "tags": ["Payments"],
+        "x-ratelimit": {
+          "limit": 100,
+          "window": "60s"
+        },
         "parameters": [
           {
             "name": "limit",
@@ -232,6 +332,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Payment"
+                },
+                "example": {
+                  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                  "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                  "status": "SUCCEEDED",
+                  "amount": {
+                    "currency": "BRL",
+                    "value": 150.00
+                  },
+                  "country": "BR",
+                  "payment_method": {
+                    "type": "CARD"
+                  },
+                  "provider": {
+                    "name": "stripe_connect",
+                    "transaction_id": "pi_3abc123def456"
+                  },
+                  "merchant_order_id": "order-20260301-001",
+                  "created_at": "2026-03-01T14:31:00.000Z",
+                  "updated_at": "2026-03-01T14:31:02.000Z"
                 }
               }
             }
@@ -277,6 +397,12 @@
                     "$ref": "#/components/schemas/Amount"
                   }
                 }
+              },
+              "example": {
+                "amount": {
+                  "currency": "BRL",
+                  "value": 150.00
+                }
               }
             }
           }
@@ -288,6 +414,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Payment"
+                },
+                "example": {
+                  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                  "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                  "status": "SUCCEEDED",
+                  "amount": {
+                    "currency": "BRL",
+                    "value": 150.00
+                  },
+                  "country": "BR",
+                  "payment_method": {
+                    "type": "CARD"
+                  },
+                  "provider": {
+                    "name": "stripe_connect",
+                    "transaction_id": "pi_3abc123def456"
+                  },
+                  "merchant_order_id": "order-20260301-001",
+                  "created_at": "2026-03-01T14:31:00.000Z",
+                  "updated_at": "2026-03-01T14:35:00.000Z"
                 }
               }
             }
@@ -298,6 +444,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_STATE",
+                    "message": "Payment must be in AUTHORIZED status to capture"
+                  }
                 }
               }
             }
@@ -380,6 +532,13 @@
                     "description": "Reason for the refund"
                   }
                 }
+              },
+              "example": {
+                "amount": {
+                  "currency": "BRL",
+                  "value": 50.00
+                },
+                "reason": "Customer requested partial refund"
               }
             }
           }
@@ -391,6 +550,26 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Payment"
+                },
+                "example": {
+                  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                  "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                  "status": "PARTIALLY_REFUNDED",
+                  "amount": {
+                    "currency": "BRL",
+                    "value": 150.00
+                  },
+                  "country": "BR",
+                  "payment_method": {
+                    "type": "CARD"
+                  },
+                  "provider": {
+                    "name": "stripe_connect",
+                    "transaction_id": "pi_3abc123def456"
+                  },
+                  "merchant_order_id": "order-20260301-001",
+                  "created_at": "2026-03-01T14:31:00.000Z",
+                  "updated_at": "2026-03-01T15:10:00.000Z"
                 }
               }
             }
@@ -401,6 +580,12 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_STATE",
+                    "message": "Refund amount exceeds remaining balance"
+                  }
                 }
               }
             }
@@ -672,6 +857,17 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/CustomerRequest"
+              },
+              "example": {
+                "email": "maria.silva@example.com",
+                "first_name": "Maria",
+                "last_name": "Silva",
+                "phone": "+5511999990000",
+                "document": {
+                  "document_type": "CPF",
+                  "document_number": "12345678901"
+                },
+                "merchant_customer_id": "cust-internal-001"
               }
             }
           }
@@ -683,6 +879,19 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Customer"
+                },
+                "example": {
+                  "id": "c9d0e1f2-3a4b-5c6d-7e8f-9a0b1c2d3e4f",
+                  "email": "maria.silva@example.com",
+                  "first_name": "Maria",
+                  "last_name": "Silva",
+                  "phone": "+5511999990000",
+                  "document": {
+                    "document_type": "CPF",
+                    "document_number": "12345678901"
+                  },
+                  "merchant_customer_id": "cust-internal-001",
+                  "created_at": "2026-03-01T10:00:00.000Z"
                 }
               }
             }
@@ -794,6 +1003,17 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PayoutRequest"
+              },
+              "example": {
+                "amount": {
+                  "currency": "BRL",
+                  "value": 500.00
+                },
+                "country": "BR",
+                "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
+                "description": "Seller payout - Order #1234",
+                "merchant_reference": "payout-ref-001",
+                "purpose": "SELLER_PAYMENT"
               }
             }
           }
@@ -805,6 +1025,18 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Payout"
+                },
+                "example": {
+                  "id": "e2f3a4b5-c6d7-8e9f-0a1b-2c3d4e5f6a7b",
+                  "status": "PENDING",
+                  "amount": {
+                    "currency": "BRL",
+                    "value": 500.00
+                  },
+                  "country": "BR",
+                  "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
+                  "merchant_reference": "payout-ref-001",
+                  "created_at": "2026-03-01T16:00:00.000Z"
                 }
               }
             }
@@ -876,6 +1108,13 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/ReportRequest"
+              },
+              "example": {
+                "date_range": {
+                  "from": "2026-02-01T00:00:00.000Z",
+                  "to": "2026-02-28T23:59:59.999Z"
+                },
+                "type": "TRANSACTIONS"
               }
             }
           }
@@ -887,6 +1126,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Report"
+                },
+                "example": {
+                  "id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+                  "status": "PROCESSING",
+                  "date_range": {
+                    "from": "2026-02-01T00:00:00.000Z",
+                    "to": "2026-02-28T23:59:59.999Z"
+                  },
+                  "download_url": null,
+                  "created_at": "2026-03-01T12:00:00.000Z"
                 }
               }
             }
@@ -958,6 +1207,21 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RecipientRequest"
+              },
+              "example": {
+                "merchant_recipient_id": "seller-001",
+                "country": "BR",
+                "name": "Carlos Oliveira",
+                "email": "carlos@example.com",
+                "document": {
+                  "document_type": "CPF",
+                  "document_number": "98765432100"
+                },
+                "bank_account": {
+                  "bank_code": "001",
+                  "account_number": "12345-6",
+                  "account_type": "CHECKING"
+                }
               }
             }
           }
@@ -969,6 +1233,23 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Recipient"
+                },
+                "example": {
+                  "id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
+                  "merchant_recipient_id": "seller-001",
+                  "country": "BR",
+                  "name": "Carlos Oliveira",
+                  "email": "carlos@example.com",
+                  "document": {
+                    "document_type": "CPF",
+                    "document_number": "98765432100"
+                  },
+                  "bank_account": {
+                    "bank_code": "001",
+                    "account_number": "12345-6",
+                    "account_type": "CHECKING"
+                  },
+                  "created_at": "2026-03-01T09:00:00.000Z"
                 }
               }
             }
@@ -1122,6 +1403,10 @@
             "description": "Payment amount",
             "example": 100.00
           }
+        },
+        "example": {
+          "currency": "BRL",
+          "value": 100.00
         }
       },
       "CustomerDocument": {
@@ -1138,6 +1423,10 @@
             "description": "Document number (digits only). CPF: 11 digits, CNPJ: 14 digits.",
             "example": "12345678901"
           }
+        },
+        "example": {
+          "document_type": "CPF",
+          "document_number": "12345678901"
         }
       },
       "CheckoutSessionRequest": {
@@ -1160,18 +1449,31 @@
           },
           "payment_description": {
             "type": "string",
-            "description": "Description of the payment"
+            "description": "Description of the payment",
+            "example": "Premium subscription - March 2026"
           },
           "customer_id": {
             "type": "string",
             "format": "uuid",
-            "description": "Optional existing customer ID"
+            "description": "Optional existing customer ID",
+            "example": "c9d0e1f2-3a4b-5c6d-7e8f-9a0b1c2d3e4f"
           },
           "workflow": {
             "type": "string",
             "enum": ["SDK_CHECKOUT", "SDK_LITE", "DIRECT"],
-            "description": "Integration workflow type"
+            "description": "Integration workflow type",
+            "example": "SDK_CHECKOUT"
           }
+        },
+        "example": {
+          "amount": {
+            "currency": "BRL",
+            "value": 150.00
+          },
+          "country": "BR",
+          "merchant_order_id": "order-20260301-001",
+          "payment_description": "Premium subscription - March 2026",
+          "workflow": "SDK_CHECKOUT"
         }
       },
       "CheckoutSession": {
@@ -1180,27 +1482,32 @@
           "checkout_session": {
             "type": "string",
             "format": "uuid",
-            "description": "The checkout session identifier"
+            "description": "The checkout session identifier",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
           },
           "amount": {
             "$ref": "#/components/schemas/Amount"
           },
           "country": {
             "type": "string",
-            "description": "ISO 3166-1 alpha-2 country code"
+            "description": "ISO 3166-1 alpha-2 country code",
+            "example": "BR"
           },
           "merchant_order_id": {
             "type": "string",
-            "description": "Your unique order identifier"
+            "description": "Your unique order identifier",
+            "example": "order-20260301-001"
           },
           "status": {
             "type": "string",
-            "description": "Session status"
+            "description": "Session status",
+            "example": "ACTIVE"
           },
           "created_at": {
             "type": "string",
             "format": "date-time",
-            "description": "Session creation timestamp"
+            "description": "Session creation timestamp",
+            "example": "2026-03-01T14:30:00.000Z"
           },
           "payment_methods": {
             "type": "array",
@@ -1215,6 +1522,22 @@
             },
             "description": "Available payment methods for this session"
           }
+        },
+        "example": {
+          "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "amount": {
+            "currency": "BRL",
+            "value": 150.00
+          },
+          "country": "BR",
+          "merchant_order_id": "order-20260301-001",
+          "status": "ACTIVE",
+          "created_at": "2026-03-01T14:30:00.000Z",
+          "payment_methods": [
+            { "type": "CARD" },
+            { "type": "PIX" },
+            { "type": "BOLETO" }
+          ]
         }
       },
       "PaymentRequest": {
@@ -1224,7 +1547,8 @@
           "checkout_session": {
             "type": "string",
             "format": "uuid",
-            "description": "The checkout session ID from the create session response"
+            "description": "The checkout session ID from the create session response",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
           },
           "payment_method": {
             "type": "object",
@@ -1233,11 +1557,13 @@
               "type": {
                 "type": "string",
                 "enum": ["CARD", "PIX", "BOLETO", "PSE", "SPEI", "OXXO", "BNPL", "GOOGLE_PAY", "APPLE_PAY"],
-                "description": "Payment method type"
+                "description": "Payment method type",
+                "example": "CARD"
               },
               "token": {
                 "type": "string",
-                "description": "Payment method token (for tokenized card payments)"
+                "description": "Payment method token (for tokenized card payments)",
+                "example": "tok_4a8b9c2d-1e3f-5678-90ab-cdef12345678"
               },
               "vaulted_token": {
                 "type": "string",
@@ -1251,7 +1577,8 @@
           "country": {
             "type": "string",
             "description": "ISO 3166-1 alpha-2 country code",
-            "pattern": "^[A-Z]{2}$"
+            "pattern": "^[A-Z]{2}$",
+            "example": "BR"
           },
           "customer": {
             "type": "object",
@@ -1262,28 +1589,57 @@
               "email": {
                 "type": "string",
                 "format": "email",
-                "description": "Customer email address"
+                "description": "Customer email address",
+                "example": "maria.silva@example.com"
               },
               "first_name": {
-                "type": "string"
+                "type": "string",
+                "example": "Maria"
               },
               "last_name": {
-                "type": "string"
+                "type": "string",
+                "example": "Silva"
               },
               "phone": {
-                "type": "string"
+                "type": "string",
+                "example": "+5511999990000"
               }
             }
           },
           "description": {
             "type": "string",
-            "description": "Payment description"
+            "description": "Payment description",
+            "example": "Premium subscription - March 2026"
           },
           "installments": {
             "type": "integer",
             "description": "Number of installments (for card payments)",
-            "minimum": 1
+            "minimum": 1,
+            "example": 1
           }
+        },
+        "example": {
+          "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "payment_method": {
+            "type": "CARD",
+            "token": "tok_4a8b9c2d-1e3f-5678-90ab-cdef12345678"
+          },
+          "amount": {
+            "currency": "BRL",
+            "value": 150.00
+          },
+          "country": "BR",
+          "customer": {
+            "document": {
+              "document_type": "CPF",
+              "document_number": "12345678901"
+            },
+            "email": "maria.silva@example.com",
+            "first_name": "Maria",
+            "last_name": "Silva"
+          },
+          "description": "Premium subscription - March 2026",
+          "installments": 1
         }
       },
       "Payment": {
@@ -1292,28 +1648,33 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "description": "Unique payment identifier"
+            "description": "Unique payment identifier",
+            "example": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
           },
           "checkout_session": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
           },
           "status": {
             "type": "string",
             "enum": ["SUCCEEDED", "PENDING", "DECLINED", "REJECTED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED", "AUTHORIZED"],
-            "description": "Current payment status"
+            "description": "Current payment status",
+            "example": "SUCCEEDED"
           },
           "amount": {
             "$ref": "#/components/schemas/Amount"
           },
           "country": {
-            "type": "string"
+            "type": "string",
+            "example": "BR"
           },
           "payment_method": {
             "type": "object",
             "properties": {
               "type": {
-                "type": "string"
+                "type": "string",
+                "example": "CARD"
               }
             }
           },
@@ -1322,25 +1683,50 @@
             "properties": {
               "name": {
                 "type": "string",
-                "description": "Payment provider name"
+                "description": "Payment provider name",
+                "example": "stripe_connect"
               },
               "transaction_id": {
                 "type": "string",
-                "description": "Provider transaction reference"
+                "description": "Provider transaction reference",
+                "example": "pi_3abc123def456"
               }
             }
           },
           "merchant_order_id": {
-            "type": "string"
+            "type": "string",
+            "example": "order-20260301-001"
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2026-03-01T14:31:00.000Z"
           },
           "updated_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2026-03-01T14:31:02.000Z"
           }
+        },
+        "example": {
+          "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+          "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "status": "SUCCEEDED",
+          "amount": {
+            "currency": "BRL",
+            "value": 150.00
+          },
+          "country": "BR",
+          "payment_method": {
+            "type": "CARD"
+          },
+          "provider": {
+            "name": "stripe_connect",
+            "transaction_id": "pi_3abc123def456"
+          },
+          "merchant_order_id": "order-20260301-001",
+          "created_at": "2026-03-01T14:31:00.000Z",
+          "updated_at": "2026-03-01T14:31:02.000Z"
         }
       },
       "InstallmentsPlanRequest": {
@@ -1353,7 +1739,8 @@
               "type": "string",
               "format": "uuid"
             },
-            "description": "Account IDs this plan applies to"
+            "description": "Account IDs this plan applies to",
+            "example": ["1a3a576a-01d0-40ff-a68e-494f82145773"]
           },
           "name": {
             "type": "string",
@@ -1422,6 +1809,21 @@
             "nullable": true,
             "description": "IIN/BIN filter (optional)"
           }
+        },
+        "example": {
+          "account_id": ["1a3a576a-01d0-40ff-a68e-494f82145773"],
+          "name": "Standard Plan",
+          "merchant_reference": "001 08 Agosto 2023",
+          "installments_plan": [
+            {"installment": 1, "rate": 1},
+            {"installment": 2, "rate": 1.294},
+            {"installment": 6, "rate": 1.42},
+            {"installment": 12, "rate": 1.525}
+          ],
+          "country_code": "BR",
+          "amount": {"Currency": "BRL", "min_value": 0, "max_value": 10000000000},
+          "brand": null,
+          "iin": null
         }
       },
       "InstallmentsPlan": {
@@ -1430,20 +1832,24 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "description": "Unique installment plan identifier"
+            "description": "Unique installment plan identifier",
+            "example": "3e599453-e147-4d1c-8643-73e4d980c2ae"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "example": "Standard Plan"
           },
           "account_id": {
             "type": "array",
             "items": {
               "type": "string",
               "format": "uuid"
-            }
+            },
+            "example": ["1a3a576a-01d0-40ff-a68e-494f82145773"]
           },
           "merchant_reference": {
-            "type": "string"
+            "type": "string",
+            "example": "001 08 Agosto 2023"
           },
           "installments_plan": {
             "type": "array",
@@ -1468,11 +1874,13 @@
             "nullable": true
           },
           "country_code": {
-            "type": "string"
+            "type": "string",
+            "example": "BR"
           },
           "first_installment_deferral": {
             "type": "integer",
-            "description": "Number of periods before first installment"
+            "description": "Number of periods before first installment",
+            "example": 1
           },
           "amount": {
             "type": "object",
@@ -1488,6 +1896,22 @@
               }
             }
           }
+        },
+        "example": {
+          "id": "3e599453-e147-4d1c-8643-73e4d980c2ae",
+          "name": "Standard Plan",
+          "account_id": ["1a3a576a-01d0-40ff-a68e-494f82145773"],
+          "merchant_reference": "001 08 Agosto 2023",
+          "installments_plan": [
+            {"installment": 1, "rate": 1},
+            {"installment": 2, "rate": 1.294},
+            {"installment": 12, "rate": 1.525}
+          ],
+          "brand": null,
+          "iin": null,
+          "country_code": "BR",
+          "first_installment_deferral": 1,
+          "amount": {"Currency": "BRL", "min_value": 0, "max_value": 10000000000}
         }
       },
       "Issuer": {
@@ -1495,12 +1919,18 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "Issuer identifier"
+            "description": "Issuer identifier",
+            "example": "1"
           },
           "name": {
             "type": "string",
-            "description": "Issuer name (bank name)"
+            "description": "Issuer name (bank name)",
+            "example": "BANCO QUE APRUEBA"
           }
+        },
+        "example": {
+          "id": "1",
+          "name": "BANCO QUE APRUEBA"
         }
       },
       "CustomerRequest": {
@@ -1510,27 +1940,43 @@
           "email": {
             "type": "string",
             "format": "email",
-            "description": "Customer email address"
+            "description": "Customer email address",
+            "example": "maria.silva@example.com"
           },
           "first_name": {
             "type": "string",
-            "description": "Customer first name"
+            "description": "Customer first name",
+            "example": "Maria"
           },
           "last_name": {
             "type": "string",
-            "description": "Customer last name"
+            "description": "Customer last name",
+            "example": "Silva"
           },
           "phone": {
             "type": "string",
-            "description": "Customer phone number"
+            "description": "Customer phone number",
+            "example": "+5511999990000"
           },
           "document": {
             "$ref": "#/components/schemas/CustomerDocument"
           },
           "merchant_customer_id": {
             "type": "string",
-            "description": "Your internal customer identifier"
+            "description": "Your internal customer identifier",
+            "example": "cust-internal-001"
           }
+        },
+        "example": {
+          "email": "maria.silva@example.com",
+          "first_name": "Maria",
+          "last_name": "Silva",
+          "phone": "+5511999990000",
+          "document": {
+            "document_type": "CPF",
+            "document_number": "12345678901"
+          },
+          "merchant_customer_id": "cust-internal-001"
         }
       },
       "Customer": {
@@ -1539,31 +1985,51 @@
           "id": {
             "type": "string",
             "format": "uuid",
-            "description": "Yuno customer identifier"
+            "description": "Yuno customer identifier",
+            "example": "c9d0e1f2-3a4b-5c6d-7e8f-9a0b1c2d3e4f"
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "example": "maria.silva@example.com"
           },
           "first_name": {
-            "type": "string"
+            "type": "string",
+            "example": "Maria"
           },
           "last_name": {
-            "type": "string"
+            "type": "string",
+            "example": "Silva"
           },
           "phone": {
-            "type": "string"
+            "type": "string",
+            "example": "+5511999990000"
           },
           "document": {
             "$ref": "#/components/schemas/CustomerDocument"
           },
           "merchant_customer_id": {
-            "type": "string"
+            "type": "string",
+            "example": "cust-internal-001"
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2026-03-01T10:00:00.000Z"
           }
+        },
+        "example": {
+          "id": "c9d0e1f2-3a4b-5c6d-7e8f-9a0b1c2d3e4f",
+          "email": "maria.silva@example.com",
+          "first_name": "Maria",
+          "last_name": "Silva",
+          "phone": "+5511999990000",
+          "document": {
+            "document_type": "CPF",
+            "document_number": "12345678901"
+          },
+          "merchant_customer_id": "cust-internal-001",
+          "created_at": "2026-03-01T10:00:00.000Z"
         }
       },
       "PayoutRequest": {
@@ -1576,25 +2042,41 @@
           "country": {
             "type": "string",
             "description": "ISO 3166-1 alpha-2 country code",
-            "pattern": "^[A-Z]{2}$"
+            "pattern": "^[A-Z]{2}$",
+            "example": "BR"
           },
           "recipient_id": {
             "type": "string",
             "format": "uuid",
-            "description": "The recipient to send funds to"
+            "description": "The recipient to send funds to",
+            "example": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a"
           },
           "description": {
             "type": "string",
-            "description": "Payout description"
+            "description": "Payout description",
+            "example": "Seller payout - Order #1234"
           },
           "merchant_reference": {
             "type": "string",
-            "description": "Your internal payout reference"
+            "description": "Your internal payout reference",
+            "example": "payout-ref-001"
           },
           "purpose": {
             "type": "string",
-            "description": "Purpose of the payout (see Purposes reference list)"
+            "description": "Purpose of the payout (see Purposes reference list)",
+            "example": "SELLER_PAYMENT"
           }
+        },
+        "example": {
+          "amount": {
+            "currency": "BRL",
+            "value": 500.00
+          },
+          "country": "BR",
+          "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
+          "description": "Seller payout - Order #1234",
+          "merchant_reference": "payout-ref-001",
+          "purpose": "SELLER_PAYMENT"
         }
       },
       "Payout": {
@@ -1602,30 +2084,48 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "example": "e2f3a4b5-c6d7-8e9f-0a1b-2c3d4e5f6a7b"
           },
           "status": {
             "type": "string",
             "enum": ["SUCCEEDED", "PENDING", "FAILED", "CANCELLED"],
-            "description": "Current payout status"
+            "description": "Current payout status",
+            "example": "PENDING"
           },
           "amount": {
             "$ref": "#/components/schemas/Amount"
           },
           "country": {
-            "type": "string"
+            "type": "string",
+            "example": "BR"
           },
           "recipient_id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "example": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a"
           },
           "merchant_reference": {
-            "type": "string"
+            "type": "string",
+            "example": "payout-ref-001"
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2026-03-01T16:00:00.000Z"
           }
+        },
+        "example": {
+          "id": "e2f3a4b5-c6d7-8e9f-0a1b-2c3d4e5f6a7b",
+          "status": "PENDING",
+          "amount": {
+            "currency": "BRL",
+            "value": 500.00
+          },
+          "country": "BR",
+          "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
+          "merchant_reference": "payout-ref-001",
+          "created_at": "2026-03-01T16:00:00.000Z"
         }
       },
       "ReportRequest": {
@@ -1653,8 +2153,16 @@
           },
           "type": {
             "type": "string",
-            "description": "Type of report to generate"
+            "description": "Type of report to generate",
+            "example": "TRANSACTIONS"
           }
+        },
+        "example": {
+          "date_range": {
+            "from": "2026-02-01T00:00:00.000Z",
+            "to": "2026-02-28T23:59:59.999Z"
+          },
+          "type": "TRANSACTIONS"
         }
       },
       "Report": {
@@ -1662,35 +2170,51 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "example": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
           },
           "status": {
             "type": "string",
             "enum": ["PROCESSING", "COMPLETED", "FAILED"],
-            "description": "Report generation status"
+            "description": "Report generation status",
+            "example": "PROCESSING"
           },
           "date_range": {
             "type": "object",
             "properties": {
               "from": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "example": "2026-02-01T00:00:00.000Z"
               },
               "to": {
                 "type": "string",
-                "format": "date-time"
+                "format": "date-time",
+                "example": "2026-02-28T23:59:59.999Z"
               }
             }
           },
           "download_url": {
             "type": "string",
             "format": "uri",
-            "description": "URL to download the completed report"
+            "description": "URL to download the completed report",
+            "example": "https://reports.y.uno/download/a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2026-03-01T12:00:00.000Z"
           }
+        },
+        "example": {
+          "id": "a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+          "status": "COMPLETED",
+          "date_range": {
+            "from": "2026-02-01T00:00:00.000Z",
+            "to": "2026-02-28T23:59:59.999Z"
+          },
+          "download_url": "https://reports.y.uno/download/a1b2c3d4-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+          "created_at": "2026-03-01T12:00:00.000Z"
         }
       },
       "RecipientRequest": {
@@ -1699,20 +2223,24 @@
         "properties": {
           "merchant_recipient_id": {
             "type": "string",
-            "description": "Your internal recipient identifier"
+            "description": "Your internal recipient identifier",
+            "example": "seller-001"
           },
           "country": {
             "type": "string",
             "description": "ISO 3166-1 alpha-2 country code",
-            "pattern": "^[A-Z]{2}$"
+            "pattern": "^[A-Z]{2}$",
+            "example": "BR"
           },
           "name": {
             "type": "string",
-            "description": "Recipient name"
+            "description": "Recipient name",
+            "example": "Carlos Oliveira"
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "example": "carlos@example.com"
           },
           "document": {
             "$ref": "#/components/schemas/CustomerDocument"
@@ -1721,16 +2249,34 @@
             "type": "object",
             "properties": {
               "bank_code": {
-                "type": "string"
+                "type": "string",
+                "example": "001"
               },
               "account_number": {
-                "type": "string"
+                "type": "string",
+                "example": "12345-6"
               },
               "account_type": {
                 "type": "string",
-                "enum": ["CHECKING", "SAVINGS"]
+                "enum": ["CHECKING", "SAVINGS"],
+                "example": "CHECKING"
               }
             }
+          }
+        },
+        "example": {
+          "merchant_recipient_id": "seller-001",
+          "country": "BR",
+          "name": "Carlos Oliveira",
+          "email": "carlos@example.com",
+          "document": {
+            "document_type": "CPF",
+            "document_number": "98765432100"
+          },
+          "bank_account": {
+            "bank_code": "001",
+            "account_number": "12345-6",
+            "account_type": "CHECKING"
           }
         }
       },
@@ -1739,20 +2285,25 @@
         "properties": {
           "id": {
             "type": "string",
-            "format": "uuid"
+            "format": "uuid",
+            "example": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a"
           },
           "merchant_recipient_id": {
-            "type": "string"
+            "type": "string",
+            "example": "seller-001"
           },
           "country": {
-            "type": "string"
+            "type": "string",
+            "example": "BR"
           },
           "name": {
-            "type": "string"
+            "type": "string",
+            "example": "Carlos Oliveira"
           },
           "email": {
             "type": "string",
-            "format": "email"
+            "format": "email",
+            "example": "carlos@example.com"
           },
           "document": {
             "$ref": "#/components/schemas/CustomerDocument"
@@ -1761,20 +2312,41 @@
             "type": "object",
             "properties": {
               "bank_code": {
-                "type": "string"
+                "type": "string",
+                "example": "001"
               },
               "account_number": {
-                "type": "string"
+                "type": "string",
+                "example": "12345-6"
               },
               "account_type": {
-                "type": "string"
+                "type": "string",
+                "example": "CHECKING"
               }
             }
           },
           "created_at": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "example": "2026-03-01T09:00:00.000Z"
           }
+        },
+        "example": {
+          "id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
+          "merchant_recipient_id": "seller-001",
+          "country": "BR",
+          "name": "Carlos Oliveira",
+          "email": "carlos@example.com",
+          "document": {
+            "document_type": "CPF",
+            "document_number": "98765432100"
+          },
+          "bank_account": {
+            "bank_code": "001",
+            "account_number": "12345-6",
+            "account_type": "CHECKING"
+          },
+          "created_at": "2026-03-01T09:00:00.000Z"
         }
       },
       "Error": {
@@ -1785,14 +2357,156 @@
             "properties": {
               "code": {
                 "type": "string",
-                "description": "Machine-readable error code"
+                "description": "Machine-readable error code",
+                "example": "INVALID_REQUEST"
               },
               "message": {
                 "type": "string",
-                "description": "Human-readable error description"
+                "description": "Human-readable error description",
+                "example": "The request body contains invalid or missing fields"
               }
             }
           }
+        },
+        "example": {
+          "error": {
+            "code": "INVALID_REQUEST",
+            "message": "The request body contains invalid or missing fields"
+          }
+        }
+      },
+      "WebhookEvent": {
+        "type": "object",
+        "required": ["type", "data", "timestamp", "webhook_id"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "payment.succeeded",
+              "payment.failed",
+              "payment.pending",
+              "refund.succeeded",
+              "refund.failed"
+            ],
+            "description": "The type of webhook event",
+            "example": "payment.succeeded"
+          },
+          "data": {
+            "oneOf": [
+              { "$ref": "#/components/schemas/PaymentWebhookData" }
+            ],
+            "description": "Event-specific data payload"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when the event occurred",
+            "example": "2026-03-01T14:31:05.000Z"
+          },
+          "webhook_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for this webhook delivery (use for deduplication)",
+            "example": "wh_7a8b9c0d-1e2f-3456-7890-abcdef123456"
+          }
+        },
+        "example": {
+          "type": "payment.succeeded",
+          "data": {
+            "payment_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+            "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+            "status": "SUCCEEDED",
+            "amount": {
+              "currency": "BRL",
+              "value": 150.00
+            },
+            "country": "BR",
+            "payment_method_type": "CARD",
+            "provider_name": "stripe_connect",
+            "provider_transaction_id": "pi_3abc123def456",
+            "merchant_order_id": "order-20260301-001"
+          },
+          "timestamp": "2026-03-01T14:31:05.000Z",
+          "webhook_id": "wh_7a8b9c0d-1e2f-3456-7890-abcdef123456"
+        }
+      },
+      "PaymentWebhookData": {
+        "type": "object",
+        "properties": {
+          "payment_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The payment identifier",
+            "example": "f47ac10b-58cc-4372-a567-0e02b2c3d479"
+          },
+          "checkout_session": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The checkout session identifier",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["SUCCEEDED", "PENDING", "DECLINED", "REJECTED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"],
+            "description": "The payment status that triggered this event",
+            "example": "SUCCEEDED"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code",
+            "example": "BR"
+          },
+          "payment_method_type": {
+            "type": "string",
+            "description": "The payment method used",
+            "example": "CARD"
+          },
+          "provider_name": {
+            "type": "string",
+            "description": "The provider that processed the payment",
+            "example": "stripe_connect"
+          },
+          "provider_transaction_id": {
+            "type": "string",
+            "description": "The provider's transaction reference",
+            "example": "pi_3abc123def456"
+          },
+          "merchant_order_id": {
+            "type": "string",
+            "description": "Your unique order identifier",
+            "example": "order-20260301-001"
+          },
+          "refund_amount": {
+            "$ref": "#/components/schemas/Amount",
+            "description": "Refund amount (only present for refund events)"
+          },
+          "refund_reason": {
+            "type": "string",
+            "description": "Reason for refund (only present for refund events)",
+            "example": "Customer requested partial refund"
+          },
+          "decline_reason": {
+            "type": "string",
+            "description": "Reason for decline (only present for payment.failed events)",
+            "example": "insufficient_funds"
+          }
+        },
+        "example": {
+          "payment_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+          "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "status": "SUCCEEDED",
+          "amount": {
+            "currency": "BRL",
+            "value": 150.00
+          },
+          "country": "BR",
+          "payment_method_type": "CARD",
+          "provider_name": "stripe_connect",
+          "provider_transaction_id": "pi_3abc123def456",
+          "merchant_order_id": "order-20260301-001"
         }
       }
     }

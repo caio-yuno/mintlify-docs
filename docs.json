@@ -13,6 +13,9 @@
     "dark": "/logo/dark.svg"
   },
   "openapi": ["api-reference/openapi.json"],
+  "playground": {
+    "mode": "simple"
+  },
   "navigation": {
     "tabs": [
       {
@@ -72,7 +75,9 @@
                 "pages": [
                   "guides/testing/sandbox-guide",
                   "guides/testing/test-cards",
-                  "guides/testing/yuno-testing-gateway"
+                  "guides/testing/yuno-testing-gateway",
+                  "guides/testing/test-scenarios",
+                  "guides/testing/sdk-testing"
                 ]
               },
               {
@@ -80,7 +85,19 @@
                 "pages": [
                   "guides/webhooks/setup",
                   "guides/webhooks/events",
-                  "guides/webhooks/verify-signatures"
+                  "guides/webhooks/verify-signatures",
+                  "guides/webhooks/testing-locally"
+                ]
+              },
+              {
+                "group": "Orchestration & Optimization",
+                "pages": [
+                  "guides/bin-routing-strategy",
+                  "guides/multi-provider-orchestration",
+                  "guides/currency-optimization",
+                  "guides/orchestration-templates",
+                  "guides/advanced-risk-decisioning",
+                  "guides/network-token-optimization"
                 ]
               }
             ]
@@ -134,13 +151,17 @@
             "group": "Security",
             "pages": [
               "security/3d-secure",
+              "security/3ds-optimization",
               "security/pci-compliance",
+              "security/pci-saq-guide",
               "security/card-verification",
               "security/card-fingerprint",
               "security/co-badged-cards",
               "security/sca-exemptions",
               "security/data-privacy",
-              "security/data-migration"
+              "security/data-migration",
+              "security/incident-response",
+              "security/chargeback-prevention"
             ]
           },
           {
@@ -171,8 +192,12 @@
             "pages": [
               "ai/aida-agent",
               "ai/aida-dashboard",
+              "ai/aida-implementation-guide",
               "ai/llm-mcp-integration",
-              "ai/remote-mcp-server"
+              "ai/remote-mcp-server",
+              "ai/agent-orchestration",
+              "ai/mcp-tool-reference",
+              "ai/agent-error-recovery"
             ]
           },
           {
@@ -371,6 +396,22 @@
               "guides/sdk/overview",
               "guides/sdk/full-checkout",
               "guides/sdk/seamless-checkout"
+            ]
+          },
+          {
+            "group": "Mobile",
+            "pages": [
+              "guides/sdk/mobile-overview",
+              "guides/sdk/ios-checkout",
+              "guides/sdk/android-checkout",
+              "guides/sdk/flutter-checkout"
+            ]
+          },
+          {
+            "group": "Framework Components",
+            "pages": [
+              "guides/sdk/react-components",
+              "guides/sdk/vue-components"
             ]
           },
           {

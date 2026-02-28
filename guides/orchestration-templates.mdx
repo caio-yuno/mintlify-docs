@@ -1,0 +1,511 @@
+---
+title: "Payment Orchestration Templates"
+description: "Pre-built workflow patterns for common payment scenarios"
+---
+
+
+## Overview
+
+Orchestration templates are pre-built workflow patterns for common payment scenarios. Each template includes an architecture diagram, code examples, configuration steps, and monitoring recommendations. Use these as starting points and customize for your specific requirements.
+
+<Note>
+These templates use Yuno's payment orchestration engine. Ensure your account has orchestration enabled in **Dashboard > Settings > Features**.
+</Note>
+
+---
+
+## Template 1: Marketplace Checkout
+
+### Use Case
+
+A marketplace where buyers purchase from multiple sellers through a single checkout. The platform collects payment, takes a commission, and distributes funds to sellers.
+
+### Architecture
+
+```mermaid
+sequenceDiagram
+    participant Buyer
+    participant Platform
+    participant Yuno
+    participant Seller1 as Seller A
+    participant Seller2 as Seller B
+
+    Buyer->>Platform: Place order ($100)
+    Platform->>Yuno: Create payment with split rules
+    Yuno->>Yuno: Process payment ($100)
+    Yuno-->>Platform: Payment approved
+    Yuno->>Seller1: Payout $45 (after 10% commission)
+    Yuno->>Seller2: Payout $45 (after 10% commission)
+    Yuno->>Platform: Commission $10
+    Platform-->>Buyer: Order confirmation
+```
+
+### Code Example
+
+```json
+POST /v1/payments
+{
+  "amount": { "currency": "USD", "value": 100.00 },
+  "country": "CO",
+  "payment_method": {
+    "type": "CARD",
+    "token": "tok_card_abc123"
+  },
+  "merchant_order_id": "marketplace-order-789",
+  "split_rules": [
+    {
+      "recipient_id": "seller_a_001",
+      "amount": { "currency": "USD", "value": 45.00 },
+      "type": "FIXED",
+      "description": "Seller A payout"
+    },
+    {
+      "recipient_id": "seller_b_002",
+      "amount": { "currency": "USD", "value": 45.00 },
+      "type": "FIXED",
+      "description": "Seller B payout"
+    },
+    {
+      "recipient_id": "platform_001",
+      "amount": { "currency": "USD", "value": 10.00 },
+      "type": "FIXED",
+      "description": "Platform commission"
+    }
+  ]
+}
+```
+
+### Configuration Steps
+
+<Steps>
+  <Step title="Register recipients">
+    Create seller accounts in **Dashboard > Payouts > Recipients** with bank account details and KYC verification.
+  </Step>
+  <Step title="Configure split rules">
+    Define default commission rates in **Dashboard > Orchestration > Split Rules** or pass them per transaction via the API.
+  </Step>
+  <Step title="Set payout schedules">
+    Configure payout frequency per recipient (daily, weekly, on-demand) in **Dashboard > Payouts > Schedules**.
+  </Step>
+  <Step title="Enable escrow (optional)">
+    For marketplaces with delivery confirmation, enable escrow to hold funds until the buyer confirms receipt.
+  </Step>
+</Steps>
+
+### Escrow and Release Patterns
+
+For marketplaces that require delivery confirmation before releasing funds:
+
+```json
+POST /v1/payments/{payment_id}/escrow/release
+{
+  "recipient_id": "seller_a_001",
+  "amount": { "currency": "USD", "value": 45.00 },
+  "reason": "Delivery confirmed by buyer"
+}
+```
+
+| Escrow Event | Trigger | Action |
+|-------------|---------|--------|
+| Hold | Payment approved | Funds held in escrow |
+| Partial release | Partial delivery confirmed | Release portion to seller |
+| Full release | Full delivery confirmed | Release remaining funds |
+| Refund | Dispute or cancellation | Return funds to buyer |
+
+### Monitoring
+
+- **Dashboard > Payments**: Track split payment status and individual recipient payouts
+- **Dashboard > Payouts**: Monitor payout execution and settlement times
+- **Webhook**: Listen for `payout.completed` and `payout.failed` events
+
+---
+
+## Template 2: Subscription with Dunning
+
+### Use Case
+
+A SaaS platform that charges customers on a recurring basis. When a payment fails, a smart retry cascade attempts to recover the payment before cancelling the subscription.
+
+### Architecture
+
+```mermaid
+flowchart TD
+    A[Initial Charge] --> B{Payment Result}
+    B -->|Approved| C[Subscription Active]
+    B -->|Declined| D[Retry 1: 24 hours]
+    D --> E{Retry Result}
+    E -->|Approved| C
+    E -->|Declined| F[Retry 2: 48 hours]
+    F --> G{Retry Result}
+    G -->|Approved| C
+    G -->|Declined| H[Retry 3: 72 hours]
+    H --> I{Retry Result}
+    I -->|Approved| C
+    I -->|Declined| J[Send Dunning Email]
+    J --> K[Grace Period: 7 days]
+    K --> L{Customer Updates Payment?}
+    L -->|Yes| M[Retry with New Method]
+    M --> C
+    L -->|No| N[Cancel Subscription]
+```
+
+### Smart Retry Configuration
+
+Configure retry logic in **Dashboard > Orchestration > Retry Rules**:
+
+```json
+POST /v1/orchestration/retry-rules
+{
+  "name": "subscription_dunning",
+  "payment_type": "RECURRING",
+  "retry_schedule": [
+    {
+      "attempt": 1,
+      "delay_hours": 24,
+      "provider_strategy": "SAME_PROVIDER"
+    },
+    {
+      "attempt": 2,
+      "delay_hours": 48,
+      "provider_strategy": "FAILOVER",
+      "fallback_provider": "provider_b"
+    },
+    {
+      "attempt": 3,
+      "delay_hours": 72,
+      "provider_strategy": "SMART_ROUTING"
+    }
+  ],
+  "max_retries": 3,
+  "decline_codes_to_retry": [
+    "INSUFFICIENT_FUNDS",
+    "TEMPORARY_ERROR",
+    "ISSUER_UNAVAILABLE"
+  ],
+  "decline_codes_to_stop": [
+    "STOLEN_CARD",
+    "CLOSED_ACCOUNT",
+    "FRAUD"
+  ]
+}
+```
+
+### Customer Notification Touchpoints
+
+| Event | Timing | Channel | Content |
+|-------|--------|---------|---------|
+| Payment failed | Immediately | Email | "Payment failed, we'll retry automatically" |
+| Retry 1 failed | +24h | Email | "Second attempt failed, updating card may help" |
+| Retry 2 failed | +72h | Email + SMS | "Action required: update payment method" |
+| All retries failed | +144h | Email | "Last chance: update payment within 7 days" |
+| Grace period ending | +312h | Email + SMS | "Subscription will cancel in 24 hours" |
+| Subscription cancelled | +336h | Email | "Subscription cancelled, reactivate anytime" |
+
+<Warning>
+Only retry on soft decline codes (insufficient funds, temporary errors). Retrying hard declines (stolen card, fraud) can result in network penalties and increased decline rates on your merchant account.
+</Warning>
+
+### Code Example: Creating a Recurring Payment
+
+```json
+POST /v1/payments
+{
+  "amount": { "currency": "USD", "value": 29.99 },
+  "country": "CO",
+  "payment_method": {
+    "vaulted_token": "tok_card_abc123"
+  },
+  "payment_type": "RECURRING",
+  "merchant_order_id": "sub-renewal-456",
+  "metadata": {
+    "subscription_id": "sub_123",
+    "billing_period": "2026-03"
+  },
+  "retry_rule": "subscription_dunning"
+}
+```
+
+### Monitoring
+
+- **Dashboard > Payments > Recurring**: Track retry attempts and outcomes
+- **Webhook**: Listen for `payment.retry.scheduled`, `payment.retry.succeeded`, `payment.retry.exhausted`
+- **Metrics to track**: Recovery rate (successful retries / total retries), involuntary churn rate
+
+---
+
+## Template 3: Split Payment with Escrow
+
+### Use Case
+
+A services platform where payments are held in escrow and released to service providers based on milestone completion. Supports partial releases as milestones are achieved.
+
+### Architecture
+
+```mermaid
+sequenceDiagram
+    participant Customer
+    participant Platform
+    participant Yuno
+    participant Provider as Service Provider
+
+    Customer->>Platform: Book service ($1000)
+    Platform->>Yuno: Create payment with escrow
+    Yuno-->>Platform: Payment approved, funds in escrow
+
+    Note over Platform,Yuno: Milestone 1 complete (40%)
+    Platform->>Yuno: Release $400 to provider
+    Yuno->>Provider: Payout $400
+    Yuno-->>Platform: Escrow balance: $600
+
+    Note over Platform,Yuno: Milestone 2 complete (40%)
+    Platform->>Yuno: Release $400 to provider
+    Yuno->>Provider: Payout $400
+    Yuno-->>Platform: Escrow balance: $200
+
+    Note over Platform,Yuno: Project complete (20%)
+    Platform->>Yuno: Release $200 to provider
+    Yuno->>Provider: Payout $200
+    Yuno-->>Platform: Escrow balance: $0
+```
+
+### Escrow Configuration
+
+```json
+POST /v1/payments
+{
+  "amount": { "currency": "USD", "value": 1000.00 },
+  "country": "CO",
+  "payment_method": {
+    "type": "CARD",
+    "token": "tok_card_abc123"
+  },
+  "merchant_order_id": "project-789",
+  "escrow": {
+    "enabled": true,
+    "recipient_id": "provider_001",
+    "release_policy": "MANUAL",
+    "max_hold_days": 90,
+    "milestones": [
+      {
+        "id": "milestone_1",
+        "description": "Design phase complete",
+        "percentage": 40
+      },
+      {
+        "id": "milestone_2",
+        "description": "Development complete",
+        "percentage": 40
+      },
+      {
+        "id": "milestone_3",
+        "description": "Final delivery",
+        "percentage": 20
+      }
+    ]
+  }
+}
+```
+
+### Releasing Escrow Funds
+
+```json
+POST /v1/payments/{payment_id}/escrow/release
+{
+  "milestone_id": "milestone_1",
+  "amount": { "currency": "USD", "value": 400.00 },
+  "reason": "Design phase approved by customer"
+}
+```
+
+### Escrow Timing and Rules
+
+| Rule | Description |
+|------|-------------|
+| Maximum hold period | Funds auto-release to provider after `max_hold_days` if no action taken |
+| Dispute window | Customer can open a dispute within 14 days of a milestone release |
+| Auto-release | Configure automatic release based on time or customer confirmation |
+| Partial refund | Unreleased escrow funds can be refunded to the customer |
+
+<Warning>
+Escrow hold periods are subject to regulatory limits by country. Check local regulations for maximum hold durations.
+</Warning>
+
+### Monitoring
+
+- **Dashboard > Payments > Escrow**: View active escrows, balances, and release history
+- **Webhook**: Listen for `escrow.funded`, `escrow.released`, `escrow.expired`, `escrow.disputed`
+- **Alerts**: Configure alerts for escrows approaching their maximum hold period
+
+---
+
+## Template 4: Cross-Border with FX Optimization
+
+### Use Case
+
+An international merchant that accepts payments in local currencies and settles in their preferred currency. The orchestration engine routes transactions to providers offering the best foreign exchange rates.
+
+### Architecture
+
+```mermaid
+flowchart TD
+    A[Customer Payment] --> B{Detect Currency}
+    B -->|Local Currency| C[Check Local Provider Availability]
+    B -->|Settlement Currency| D[Process Directly]
+    C -->|Available| E[Compare FX Rates]
+    C -->|Not Available| F[Use Default Provider]
+    E --> G{Select Best Rate}
+    G -->|Provider A: 1.5% markup| H[Route to Provider A]
+    G -->|Provider B: 2.1% markup| I[Skip Provider B]
+    G -->|Provider C: 1.8% markup| J[Skip Provider C]
+    H --> K[Process Payment in Local Currency]
+    K --> L[Settle in Merchant's Currency]
+    D --> L
+    F --> L
+```
+
+### Multi-Currency Settlement Configuration
+
+Configure currency routing in **Dashboard > Orchestration > Currency Rules**:
+
+```json
+POST /v1/orchestration/currency-rules
+{
+  "name": "latam_fx_optimization",
+  "settlement_currency": "USD",
+  "rules": [
+    {
+      "payment_currency": "BRL",
+      "country": "BR",
+      "provider_priority": [
+        {
+          "provider": "provider_a",
+          "reason": "Best BRL/USD rate"
+        },
+        {
+          "provider": "provider_b",
+          "reason": "Fallback"
+        }
+      ],
+      "fx_markup_threshold": 2.5
+    },
+    {
+      "payment_currency": "COP",
+      "country": "CO",
+      "provider_priority": [
+        {
+          "provider": "provider_c",
+          "reason": "Local acquirer, best COP/USD rate"
+        }
+      ],
+      "fx_markup_threshold": 3.0
+    },
+    {
+      "payment_currency": "MXN",
+      "country": "MX",
+      "provider_priority": [
+        {
+          "provider": "provider_a",
+          "reason": "Competitive MXN/USD rate"
+        }
+      ],
+      "fx_markup_threshold": 2.0
+    }
+  ]
+}
+```
+
+### Code Example: Cross-Border Payment
+
+```json
+POST /v1/payments
+{
+  "amount": { "currency": "BRL", "value": 250.00 },
+  "country": "BR",
+  "payment_method": {
+    "type": "CARD",
+    "token": "tok_card_abc123"
+  },
+  "merchant_order_id": "intl-order-456",
+  "settlement": {
+    "currency": "USD",
+    "routing_rule": "latam_fx_optimization"
+  },
+  "customer": {
+    "country": "BR",
+    "document": {
+      "document_type": "CPF",
+      "document_number": "12345678901"
+    }
+  }
+}
+```
+
+### FX Rate Comparison Response
+
+When orchestration selects a provider, the response includes FX details:
+
+```json
+{
+  "payment_id": "pay_xyz789",
+  "status": "APPROVED",
+  "amount": { "currency": "BRL", "value": 250.00 },
+  "settlement": {
+    "currency": "USD",
+    "value": 48.54,
+    "exchange_rate": 5.1504,
+    "fx_markup": 1.5,
+    "provider": "provider_a"
+  }
+}
+```
+
+### Configuration Steps
+
+<Steps>
+  <Step title="Enable multi-currency settlement">
+    Navigate to **Dashboard > Settings > Settlement** and add your preferred settlement currencies.
+  </Step>
+  <Step title="Configure provider priority per currency">
+    In **Dashboard > Orchestration > Currency Rules**, set provider rankings based on FX rates and reliability.
+  </Step>
+  <Step title="Set FX markup thresholds">
+    Define maximum acceptable markup percentages. Transactions exceeding the threshold route to alternative providers.
+  </Step>
+  <Step title="Enable FX rate monitoring">
+    Turn on **Dashboard > Analytics > FX Rates** to track provider rates over time and identify optimization opportunities.
+  </Step>
+</Steps>
+
+<Info>
+Yuno's smart routing engine caches FX rates from providers and updates them periodically. The routing decision uses the most recent cached rate. Actual settlement rates may vary slightly due to rate fluctuations between authorization and settlement.
+</Info>
+
+### Monitoring
+
+- **Dashboard > Analytics > FX Rates**: Compare provider rates by currency pair
+- **Dashboard > Payments**: Filter by settlement currency to track cross-border transactions
+- **Webhook**: Listen for `payment.settled` events with FX details
+- **Metrics to track**: Average FX markup by provider, settlement timing, provider failover frequency
+
+---
+
+## Choosing a Template
+
+<CardGroup cols={2}>
+  <Card title="Marketplace Checkout" icon="store">
+    Multi-seller payments with commission splits and optional escrow.
+  </Card>
+  <Card title="Subscription with Dunning" icon="arrows-rotate">
+    Recurring payments with smart retry logic and customer recovery flows.
+  </Card>
+  <Card title="Split Payment with Escrow" icon="vault">
+    Milestone-based fund release for services and project-based platforms.
+  </Card>
+  <Card title="Cross-Border with FX" icon="globe">
+    Multi-currency acceptance with optimized foreign exchange routing.
+  </Card>
+</CardGroup>
+
+<Note>
+Templates can be combined. For example, a marketplace with international sellers can use both the Marketplace Checkout and Cross-Border FX templates together.
+</Note>

@@ -13,7 +13,8 @@ Refunds can only be issued for payments with status `SUCCEEDED`. For authorized 
 
 ## Create a Full Refund
 
-```javascript
+<CodeGroup>
+```javascript Node.js
 const refund = await fetch(
   `https://api-sandbox.y.uno/v1/payments/${paymentId}/refunds`,
   {
@@ -31,6 +32,44 @@ const refund = await fetch(
 );
 const refundResult = await refund.json();
 ```
+
+```python Python
+import requests
+
+refund = requests.post(
+    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/refunds',
+    headers={
+        'public-api-key': YUNO_PUBLIC_KEY,
+        'private-secret-key': YUNO_PRIVATE_KEY,
+        'account-code': YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+    },
+    json={
+        'reason': 'Customer requested refund',
+    },
+)
+refund_result = refund.json()
+```
+
+```go Go
+payload := map[string]interface{}{
+    "reason": "Customer requested refund",
+}
+
+body, _ := json.Marshal(payload)
+req, _ := http.NewRequest("POST",
+    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/refunds", paymentID),
+    bytes.NewBuffer(body),
+)
+
+req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
+req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
+req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
+req.Header.Set("Content-Type", "application/json")
+
+resp, err := http.DefaultClient.Do(req)
+```
+</CodeGroup>
 
 ## Create a Partial Refund
 
@@ -72,6 +111,26 @@ partial_refund = requests.post(
         'reason': 'Partial refund - item returned',
     },
 )
+```
+
+```go Go
+payload := map[string]interface{}{
+    "amount": map[string]interface{}{"currency": "USD", "value": 25.00},
+    "reason": "Partial refund - item returned",
+}
+
+body, _ := json.Marshal(payload)
+req, _ := http.NewRequest("POST",
+    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/refunds", paymentID),
+    bytes.NewBuffer(body),
+)
+
+req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
+req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
+req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
+req.Header.Set("Content-Type", "application/json")
+
+resp, err := http.DefaultClient.Do(req)
 ```
 </CodeGroup>
 
