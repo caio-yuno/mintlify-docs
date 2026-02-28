@@ -3,21 +3,57 @@ title: "SDK Overview"
 description: "Choose the right Yuno SDK integration for your checkout experience"
 ---
 
-## Integration Options
+## Which SDK should I use?
 
-Yuno offers three SDK integration modes, each providing different levels of customization.
+For most integrations, **Full Checkout** is the recommended starting point. It gets you live with all payment methods in minutes, with zero PCI scope.
 
-| Mode | Description | Customization | Effort |
-|------|-------------|--------------|--------|
-| **Full Checkout** | Pre-built, hosted checkout UI | Low | Low |
-| **SDK Lite** | Embeddable payment form in your page | Medium | Medium |
-| **Headless** | API-only, build your own UI | Full | High |
+```mermaid
+graph TD
+    A[Starting a new integration?] --> B{Need full UI control?}
+    B -- No --> C[✅ Full Checkout — Recommended]
+    B -- Yes --> D{Need individual field styling?}
+    D -- No --> E[Lite Checkout]
+    D -- Yes --> F[Secure Fields]
+```
 
-## SDK Lite (Recommended)
+## Comparison
 
-SDK Lite is the most popular integration mode. It embeds a lightweight payment form directly in your checkout page while Yuno handles PCI compliance and payment processing.
+| | Full Checkout | Lite Checkout | Secure Fields |
+|---|---|---|---|
+| **Best for** | Most integrations | Custom checkout pages | Full UI ownership |
+| **Integration effort** | ~10 lines of code | Medium | High |
+| **UI customization** | Theme & branding | Layout + styling | Complete control |
+| **PCI scope** | SAQ-A (lowest) | SAQ-A | SAQ-A |
+| **Payment methods** | All, automatically | All, select which to show | Cards only |
+| **Recommendation** | **Recommended** | When you need more control | When you need individual fields |
 
-See the [SDK Lite guide](/guides/sdk/sdk-lite) for complete integration instructions.
+## Full Checkout (Recommended)
+
+Full Checkout is the fastest path to accepting payments. Mount it with a single call and Yuno renders the entire checkout UI — payment method selection, card forms, alternative methods, and 3DS handling — all included.
+
+**Why start here:**
+- **Fastest time-to-value** — one mount call, ~10 lines of code
+- **All payment methods** render automatically based on your configuration
+- **SAQ-A compliance** — zero card data touches your servers
+- **Production-ready** — responsive, accessible, localized out of the box
+
+Get started with the [Full Checkout integration guide](/guides/sdk/full-checkout).
+
+## Alternative SDKs
+
+If Full Checkout doesn't meet your requirements, Yuno offers two additional options:
+
+### Lite Checkout
+
+Embed a payment form directly in your page with more layout control. Use this when you need the checkout to feel like a native part of your site but still want Yuno to handle payment method rendering.
+
+See the [Lite Checkout guide](/guides/sdk/lite-checkout).
+
+### Secure Fields
+
+Individual, tokenized input fields (card number, expiry, CVV) that you place and style independently. Use this when you need complete control over every element of your payment form.
+
+See the [Secure Fields guide](/guides/sdk/secure-fields).
 
 ## Installation
 
@@ -44,16 +80,16 @@ If you are upgrading from a previous SDK version, review the [migration notes](h
 ## Next Steps
 
 <CardGroup cols={2}>
-  <Card title="SDK Lite" icon="window" href="/guides/sdk/sdk-lite">
-    Complete SDK Lite integration guide.
+  <Card title="Full Checkout" icon="credit-card" href="/guides/sdk/full-checkout">
+    Recommended — get live in minutes.
   </Card>
-  <Card title="Server-Side Setup" icon="server" href="/guides/sdk/server-side">
-    Server-side session and payment creation.
+  <Card title="Customization" icon="palette" href="/guides/sdk/customization">
+    Theme, branding, and styling options.
   </Card>
-  <Card title="Continue Payment" icon="rotate" href="/guides/sdk/continue-payment">
-    Handle 3DS and async payment flows.
+  <Card title="Lite Checkout" icon="window" href="/guides/sdk/lite-checkout">
+    Embed a payment form in your page.
   </Card>
-  <Card title="Testing" icon="flask" href="/guides/sdk/testing">
-    Test your integration with sandbox credentials.
+  <Card title="Secure Fields" icon="lock" href="/guides/sdk/secure-fields">
+    Individual tokenized input fields.
   </Card>
 </CardGroup>

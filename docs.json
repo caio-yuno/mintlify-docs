@@ -3,9 +3,9 @@
   "theme": "mint",
   "name": "Yuno API Documentation",
   "colors": {
-    "primary": "#6C5CE7",
-    "light": "#A29BFE",
-    "dark": "#5A4BD1"
+    "primary": "#3E4FE0",
+    "light": "#6B7BF7",
+    "dark": "#2D3BB8"
   },
   "favicon": "/favicon.svg",
   "logo": {
@@ -328,17 +328,10 @@
         "tab": "SDKs",
         "groups": [
           {
-            "group": "Overview",
+            "group": "Getting Started",
             "pages": [
-              "guides/sdk/overview"
-            ]
-          },
-          {
-            "group": "Web",
-            "pages": [
-              "guides/sdk/full-checkout",
-              "guides/sdk/lite-checkout",
-              "guides/sdk/secure-fields"
+              "guides/sdk/overview",
+              "guides/sdk/full-checkout"
             ]
           },
           {
@@ -346,6 +339,13 @@
             "pages": [
               "guides/sdk/customization",
               "guides/sdk/enrollment"
+            ]
+          },
+          {
+            "group": "Advanced Options",
+            "pages": [
+              "guides/sdk/lite-checkout",
+              "guides/sdk/secure-fields"
             ]
           }
         ]
