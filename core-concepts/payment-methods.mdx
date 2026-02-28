@@ -1,0 +1,118 @@
+---
+title: "Payment Methods"
+description: "Supported payment methods, enrollment, and payment-method-specific requirements"
+---
+
+## Overview
+
+Yuno supports a wide range of payment methods across regions. The available methods for a given transaction depend on the country, currency, and your merchant configuration in the Dashboard.
+
+## Supported Payment Method Types
+
+| Type | Description | Examples | Regions |
+|------|-------------|----------|---------|
+| `CARD` | Credit and debit cards | Visa, Mastercard, Amex, Elo | Global |
+| `PIX` | Instant bank transfer (Brazil) | PIX via QR code or copy-paste | BR |
+| `BOLETO` | Bank slip payment | Boleto Bancario | BR |
+| `PSE` | Online bank transfer (Colombia) | PSE interbank | CO |
+| `OXXO` | Cash voucher (Mexico) | OXXO convenience stores | MX |
+| `SPEI` | Bank transfer (Mexico) | SPEI interbank | MX |
+| `BANK_TRANSFER` | Generic bank transfer | Varies by country | Multiple |
+| `WALLET` | Digital wallets | Various regional wallets | Multiple |
+| `BNPL` | Buy now, pay later | Installment providers | Multiple |
+
+## Payment-Method-Specific Requirements
+
+Different payment methods require different fields in the payment request.
+
+### Cards
+
+```json
+{
+  "payment_method": {
+    "type": "CARD",
+    "card": {
+      "number": "4111111111111111",
+      "expiration_month": "12",
+      "expiration_year": "2028",
+      "security_code": "123",
+      "holder_name": "MARIA SILVA"
+    }
+  }
+}
+```
+
+<Warning>
+  Sending raw card data via the API requires PCI DSS compliance. Use the Yuno SDK with tokenization to avoid PCI scope.
+</Warning>
+
+### PIX (Brazil)
+
+```json
+{
+  "payment_method": { "type": "PIX" },
+  "country": "BR",
+  "amount": { "currency": "BRL", "value": 100.00 },
+  "customer": {
+    "document": {
+      "document_type": "CPF",
+      "document_number": "12345678901"
+    }
+  }
+}
+```
+
+<Note>
+  PIX requires `customer.document` with a valid CPF (individuals) or CNPJ (businesses). The response includes a QR code and a copy-paste code for the customer.
+</Note>
+
+### Boleto (Brazil)
+
+```json
+{
+  "payment_method": { "type": "BOLETO" },
+  "country": "BR",
+  "amount": { "currency": "BRL", "value": 200.00 },
+  "customer": {
+    "document": {
+      "document_type": "CPF",
+      "document_number": "12345678901"
+    },
+    "email": "customer@example.com"
+  }
+}
+```
+
+Boleto payments are asynchronous -- the customer receives a bank slip and pays at a bank branch or online banking. Use [webhooks](/core-concepts/webhooks) to receive the payment confirmation.
+
+## Enrolling (Vaulting) Payment Methods
+
+To save a payment method for future use, include `"vaulted_token": true` in the payment request along with a `customer_id`. See [Tokens](/core-concepts/tokens) for details.
+
+## Listing Enrolled Methods
+
+Retrieve all saved payment methods for a customer:
+
+```bash
+curl -X GET https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code"
+```
+
+The response includes masked details (last 4 digits for cards, masked keys for PIX) and the vaulted token ID for use in one-click payments.
+
+## Checking Available Methods
+
+The checkout session response includes `available_payment_methods`, which lists methods available for the given country, currency, and merchant configuration:
+
+```json
+{
+  "checkout_session": "cs_abc123",
+  "available_payment_methods": ["CARD", "PIX", "BOLETO"]
+}
+```
+
+<Note>
+  If a payment method you expect is missing from this list, verify it is enabled in **Dashboard > Settings > Payment Methods** for the target country.
+</Note>

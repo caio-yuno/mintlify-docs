@@ -1,0 +1,102 @@
+---
+title: "Coverage Matrix"
+description: "Countries, currencies, and payment methods supported by Yuno"
+---
+
+## Overview
+
+Yuno supports payment processing across Latin America and other regions through multiple providers. This matrix shows the available countries, currencies, and payment methods.
+
+<Note>
+Coverage depends on your configured providers. Enable providers in [Dashboard > Connections](/platform/dashboard/connections) to activate payment methods for specific countries.
+</Note>
+
+## Countries and Currencies
+
+| Country | Code | Currency | Currency Code |
+|---------|------|----------|---------------|
+| Argentina | AR | Argentine Peso | ARS |
+| Bolivia | BO | Boliviano | BOB |
+| Brazil | BR | Brazilian Real | BRL |
+| Chile | CL | Chilean Peso | CLP |
+| Colombia | CO | Colombian Peso | COP |
+| Costa Rica | CR | Costa Rican Colon | CRC |
+| Dominican Republic | DO | Dominican Peso | DOP |
+| Ecuador | EC | US Dollar | USD |
+| El Salvador | SV | US Dollar | USD |
+| Guatemala | GT | Guatemalan Quetzal | GTQ |
+| Honduras | HN | Honduran Lempira | HNL |
+| Mexico | MX | Mexican Peso | MXN |
+| Nicaragua | NI | Nicaraguan Cordoba | NIO |
+| Panama | PA | US Dollar / Balboa | USD / PAB |
+| Paraguay | PY | Paraguayan Guarani | PYG |
+| Peru | PE | Peruvian Sol | PEN |
+| Uruguay | UY | Uruguayan Peso | UYU |
+| United States | US | US Dollar | USD |
+
+## Payment Methods by Country
+
+### Cards
+
+| Country | Visa | Mastercard | Amex | Local Cards |
+|---------|------|------------|------|-------------|
+| Argentina | Yes | Yes | Yes | Naranja, Cabal |
+| Brazil | Yes | Yes | Yes | Elo, Hipercard |
+| Chile | Yes | Yes | Yes | Redcompra |
+| Colombia | Yes | Yes | Yes | Codensa |
+| Mexico | Yes | Yes | Yes | Carnet |
+| Peru | Yes | Yes | Yes | -- |
+| United States | Yes | Yes | Yes | Discover |
+
+### Alternative Payment Methods
+
+| Payment Method | Type | Countries | Currency |
+|---------------|------|-----------|----------|
+| PIX | Instant transfer | BR | BRL |
+| Boleto | Cash voucher | BR | BRL |
+| PSE | Bank transfer | CO | COP |
+| OXXO | Cash voucher | MX | MXN |
+| SPEI | Bank transfer | MX | MXN |
+| Efecty | Cash payment | CO | COP |
+| PagoEfectivo | Cash/bank | PE | PEN |
+| Khipu | Bank transfer | CL | CLP |
+| Webpay | Card/bank | CL | CLP |
+| Rapipago | Cash payment | AR | ARS |
+| Pago Facil | Cash payment | AR | ARS |
+| Transferencia 3.0 | Bank transfer | AR | ARS |
+
+## Features by Payment Method
+
+| Feature | Cards | PIX | Bank Transfer | Cash Voucher |
+|---------|-------|-----|---------------|--------------|
+| Instant approval | Yes | Yes | No | No |
+| Refunds | Full + Partial | Full + Partial | Varies | No |
+| Recurring | Yes | No | No | No |
+| 3DS | Yes | N/A | N/A | N/A |
+| Pre-authorization | Yes | No | No | No |
+| Vaulting | Yes | No | No | No |
+
+## Provider Coverage
+
+Available providers vary by country. Common providers include:
+
+| Provider | Card | PIX | Bank Transfer | Countries |
+|----------|------|-----|--------------|-----------|
+| Stripe | Yes | No | No | Multiple |
+| Adyen | Yes | Yes | Yes | Multiple |
+| Mercado Pago | Yes | Yes | No | AR, BR, MX, CO, CL |
+| dLocal | Yes | Yes | Yes | Multiple LATAM |
+| Payu | Yes | No | Yes | CO, MX, AR, BR |
+| Kushki | Yes | No | Yes | CO, MX, CL, PE, EC |
+
+<Warning>
+This matrix is a general reference. Actual availability depends on your merchant agreement, provider configuration, and account enablements. Contact Yuno support for a coverage assessment tailored to your business.
+</Warning>
+
+## Requesting New Coverage
+
+To request a new country, payment method, or provider:
+
+1. Contact your Yuno account manager or support
+2. Specify the country, payment method, and expected volume
+3. Yuno will assess provider availability and onboarding requirements

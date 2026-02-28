@@ -1,0 +1,107 @@
+---
+title: "Payment Flow"
+description: "Understand the Yuno payment lifecycle from checkout session to settlement"
+---
+
+## Payment Lifecycle
+
+A Yuno payment moves through a defined set of statuses from creation to final resolution. Understanding these statuses is essential for building correct payment handling logic.
+
+## Payment Statuses
+
+| Status | Description | Terminal? |
+|--------|-------------|-----------|
+| `PENDING` | Payment created, awaiting customer action or provider confirmation | No |
+| `AUTHORIZED` | Funds reserved on the customer's instrument (auth-only capture mode) | No |
+| `SUCCEEDED` | Payment completed and funds captured | Yes |
+| `DECLINED` | Provider or issuer declined the transaction | Yes |
+| `REJECTED` | Yuno rejected the request due to validation or fraud rules | Yes |
+| `CANCELLED` | Payment cancelled by merchant or customer before completion | Yes |
+| `REFUNDED` | Captured funds returned to the customer | Yes |
+
+## Status State Machine
+
+```
+                    +----------+
+                    |  PENDING |
+                    +----+-----+
+                         |
+            +------------+------------+
+            |            |            |
+            v            v            v
+      +-----------+ +----------+ +----------+
+      | AUTHORIZED| | SUCCEEDED| | DECLINED |
+      +-----+-----+ +----+-----+ +----------+
+            |             |
+            v             v          +----------+
+      +-----------+  +----------+   | REJECTED |
+      | SUCCEEDED |  | REFUNDED |   +----------+
+      +-----+-----+  +----------+
+            |                        +----------+
+            v                        | CANCELLED|
+      +-----------+                  +----------+
+      | REFUNDED  |
+      +-----------+
+```
+
+## Capture Modes
+
+Yuno supports two capture strategies that determine when funds are actually transferred.
+
+### Auto-Capture (Default)
+
+Authorization and capture happen in a single step. The payment moves directly from `PENDING` to `SUCCEEDED` (or `DECLINED`).
+
+```json
+{
+  "capture": true
+}
+```
+
+Use auto-capture for standard e-commerce purchases where you fulfill immediately.
+
+### Auth-Only (Manual Capture)
+
+Authorization reserves the funds, but you must explicitly capture later. This is useful for hotel bookings, car rentals, or any scenario where the final amount may differ.
+
+```json
+{
+  "capture": false
+}
+```
+
+<Warning>
+  Authorized payments that are not captured within the provider's hold period (typically 5-7 days for cards) will be automatically voided.
+</Warning>
+
+To capture an authorized payment:
+
+```bash
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code"
+```
+
+## Integration Patterns
+
+| Pattern | Description | Use Case |
+|---------|-------------|----------|
+| **Full Checkout SDK** | Yuno renders the entire checkout UI | Fastest integration, least customization |
+| **Lite SDK** | Yuno handles payment input, you control the page layout | Balanced control and speed |
+| **Direct API** | You build the UI and call Yuno APIs directly | Maximum control, PCI scope implications |
+
+<Note>
+  Direct API integration for card payments requires PCI DSS compliance since your servers handle raw card data. Use the SDK with tokenization to avoid PCI scope.
+</Note>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Checkout Sessions" icon="cart-shopping" href="/core-concepts/checkout-sessions">
+    Learn how checkout sessions initialize payment intents.
+  </Card>
+  <Card title="Transactions" icon="arrow-right-arrow-left" href="/core-concepts/transactions">
+    Understand the relationship between payments and transactions.
+  </Card>
+</CardGroup>

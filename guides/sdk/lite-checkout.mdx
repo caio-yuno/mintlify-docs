@@ -1,0 +1,152 @@
+---
+title: "Lite Checkout"
+description: "Embed a lightweight payment form in your checkout page"
+---
+
+## Overview
+
+SDK Lite renders a payment form directly in your checkout page. The integration flow:
+
+1. **Server:** Create a checkout session
+2. **Client:** Initialize the SDK and mount the payment form
+3. **Server:** Create the payment when the customer submits
+4. **Client:** Call `continuePayment()` for 3DS or async flows
+
+## Prerequisites
+
+- Yuno API keys ([Authentication](/authentication))
+- `@yuno-payments/sdk-web` installed ([SDK Overview](/guides/sdk/overview))
+- A server endpoint to create checkout sessions and payments
+
+## Integration Flow
+
+<Steps>
+  <Step title="Create a checkout session (server-side)">
+    Create a checkout session with `workflow: "SDK_LITE"`:
+
+    ```javascript
+    // Server-side
+    const sessionResponse = await fetch('https://api-sandbox.y.uno/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'public-api-key': process.env.YUNO_PUBLIC_KEY,
+        'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+        'account-code': process.env.YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: { currency: 'BRL', value: 100.00 },
+        country: 'BR',
+        merchant_order_id: 'order-001',
+        workflow: 'SDK_LITE',
+      }),
+    });
+    const session = await sessionResponse.json();
+    // Return session.checkout_session to the client
+    ```
+  </Step>
+
+  <Step title="Initialize the SDK (client-side)">
+    There are two initialization patterns depending on your SDK version. Verify which pattern your SDK version uses.
+
+    **New API (object argument):**
+    ```javascript
+    const yuno = await Yuno.initialize({
+      publicApiKey: 'your-public-api-key',
+      checkoutSession: 'checkout-session-id',
+      country: 'BR',
+    });
+    ```
+
+    **Legacy API (string argument):**
+    ```javascript
+    const yuno = Yuno.initialize('your-public-api-key');
+    ```
+
+    <Warning>
+    The initialization API differs between SDK versions. Check the `@yuno-payments/sdk-web` npm package or [GitHub repository](https://github.com/yuno-payments) to confirm which pattern applies to your version.
+    </Warning>
+  </Step>
+
+  <Step title="Mount the payment form">
+    Mount the Lite checkout form into a container element on your page.
+
+    **New API:**
+    ```javascript
+    yuno.mountLiteCheckout({
+      elementSelector: '#yuno-payment-form',
+      onPaymentSuccess: (data) => {
+        console.log('Payment succeeded:', data);
+      },
+      onPaymentError: (error) => {
+        console.error('Payment failed:', error);
+      },
+    });
+    ```
+
+    **Legacy API:**
+    ```javascript
+    yuno.startCheckout({
+      checkoutSession: 'checkout-session-id',
+      elementSelector: '#yuno-payment-form',
+      country: 'BR',
+      yunoCreatePayment: async (oneTimeToken) => {
+        // Create payment on your server
+        const response = await fetch('/api/create-payment', {
+          method: 'POST',
+          body: JSON.stringify({ token: oneTimeToken }),
+        });
+        return response.json();
+      },
+    });
+    yuno.mountCheckout();
+    ```
+
+    Add the container element to your HTML:
+    ```html
+    <div id="yuno-payment-form"></div>
+    ```
+  </Step>
+
+  <Step title="Create the payment (server-side)">
+    When the customer submits the form, create the payment on your server:
+
+    ```javascript
+    // Server-side: POST /api/create-payment
+    const paymentResponse = await fetch('https://api-sandbox.y.uno/v1/payments', {
+      method: 'POST',
+      headers: {
+        'public-api-key': process.env.YUNO_PUBLIC_KEY,
+        'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+        'account-code': process.env.YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        checkout_session: checkoutSessionId,
+        payment_method: { type: 'CARD', token: oneTimeToken },
+        amount: { currency: 'BRL', value: 100.00 },
+        country: 'BR',
+        customer: {
+          document: { document_type: 'CPF', document_number: '12345678901' },
+          email: 'customer@example.com',
+        },
+      }),
+    });
+    ```
+  </Step>
+
+  <Step title="Handle 3DS and async flows">
+    After creating the payment, call `continuePayment()` to handle 3DS authentication or async payment status:
+
+    ```javascript
+    // Client-side: after server returns payment result
+    yuno.continuePayment();
+    ```
+
+    See the [Continue Payment](/guides/sdk/continue-payment) guide for details on handling 3DS challenges and async payment methods.
+  </Step>
+</Steps>
+
+## Complete Example
+
+See the [server-side setup guide](/guides/sdk/server-side) for the full backend implementation and the [error handling guide](/guides/sdk/error-handling) for handling edge cases.

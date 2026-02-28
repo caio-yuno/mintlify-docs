@@ -1,0 +1,147 @@
+---
+title: "Data Migration"
+description: "Migrate payment data, card tokens, and transaction history from other processors to Yuno."
+---
+
+import { Card, CardGroup, Info, Note, Warning, Steps, Step } from "mintlify/components";
+
+## Overview
+
+When switching from another payment processor to Yuno, you need to migrate existing payment data to ensure continuity for your customers. This includes vaulted card tokens, customer records, and subscription data. Yuno provides migration tools and processes to transfer this data securely without requiring customers to re-enter their payment information.
+
+## What Can Be Migrated
+
+| Data Type | Migratable | Process |
+|-----------|-----------|---------|
+| **Vaulted card tokens** | Yes | Token-to-token migration via secure transfer |
+| **Customer records** | Yes | API batch import |
+| **Subscription data** | Yes | Manual or API-assisted recreation |
+| **Transaction history** | Partial | Reference data only (not re-processable) |
+| **Dispute records** | No | Historical records remain with previous processor |
+
+<Info>
+  Card token migration is the most critical component. It allows existing customers to continue using their saved cards without re-entering card details or going through a new enrollment flow.
+</Info>
+
+## Migration Process
+
+<Steps>
+  <Step title="Assessment">
+    Yuno's migration team reviews your current processor setup, data volume, and card token formats. This determines the migration approach and timeline.
+  </Step>
+  <Step title="Secure Transfer Setup">
+    A secure, encrypted channel is established between your current processor and Yuno for token transfer. This follows PCI DSS requirements for cardholder data transmission.
+  </Step>
+  <Step title="Token Migration">
+    Card tokens are transferred from the source processor to Yuno's PCI-compliant vault. Each source token is mapped to a new Yuno vault token.
+  </Step>
+  <Step title="Customer Data Import">
+    Customer records are imported via the Customers API, linking each customer to their migrated payment methods.
+  </Step>
+  <Step title="Subscription Recreation">
+    Active subscriptions are recreated in Yuno using the migrated tokens, preserving billing schedules and amounts.
+  </Step>
+  <Step title="Validation">
+    Test transactions are processed using migrated tokens to confirm successful migration. A reconciliation report is generated.
+  </Step>
+  <Step title="Cutover">
+    Production traffic is switched to Yuno. A parallel-run period may be used for critical integrations.
+  </Step>
+</Steps>
+
+## Token Migration
+
+### How Token Migration Works
+
+```
+Source Processor Vault          Yuno Vault
+┌──────────────────┐           ┌──────────────────┐
+│ tok_source_001 ──┼──────────>│ tok_yuno_abc123   │
+│ tok_source_002 ──┼──────────>│ tok_yuno_def456   │
+│ tok_source_003 ──┼──────────>│ tok_yuno_ghi789   │
+└──────────────────┘           └──────────────────┘
+        PCI-encrypted transfer
+```
+
+### Token Mapping File
+
+After migration, Yuno provides a mapping file linking source tokens to Yuno tokens:
+
+```json
+{
+  "migrations": [
+    {
+      "source_token": "tok_source_001",
+      "yuno_token": "tok_yuno_abc123",
+      "status": "MIGRATED",
+      "card_last_four": "4242",
+      "card_brand": "VISA"
+    },
+    {
+      "source_token": "tok_source_002",
+      "yuno_token": "tok_yuno_def456",
+      "status": "MIGRATED",
+      "card_last_four": "1234",
+      "card_brand": "MASTERCARD"
+    }
+  ]
+}
+```
+
+<Warning>
+  Update your database to replace source processor tokens with Yuno tokens using the mapping file. Transactions submitted with old source tokens will fail.
+</Warning>
+
+## Customer Data Import
+
+Import customer records in bulk using the Customers API:
+
+```json
+POST /v1/customers/batch
+{
+  "customers": [
+    {
+      "external_id": "your_customer_id_001",
+      "email": "customer1@example.com",
+      "name": "Maria Silva",
+      "document": {
+        "document_type": "CPF",
+        "document_number": "12345678901"
+      },
+      "country": "BR"
+    }
+  ]
+}
+```
+
+## Subscription Migration
+
+Active subscriptions must be recreated in Yuno with the migrated payment method tokens:
+
+1. Export active subscriptions from your current processor.
+2. Map each subscription's payment token to the corresponding Yuno token.
+3. Create subscriptions in Yuno with matching billing schedules.
+4. Coordinate the cutover date to avoid duplicate charges.
+
+<Note>
+  Schedule subscription migration to occur just after a billing cycle completes at your current processor. This minimizes the risk of duplicate charges and provides a clean transition point.
+</Note>
+
+## Migration Timeline
+
+| Phase | Duration | Activities |
+|-------|----------|------------|
+| Assessment | 1-2 weeks | Data review, scope definition |
+| Setup | 1 week | Secure channels, API configuration |
+| Token transfer | 1-3 days | Depends on volume |
+| Validation | 1 week | Test transactions, reconciliation |
+| Cutover | 1 day | Traffic switch |
+| **Total** | **3-5 weeks** | End-to-end |
+
+## Best Practices
+
+- **Start early**: Begin the migration assessment well before your planned go-live date.
+- **Run in parallel**: Process a percentage of transactions through Yuno while maintaining the old processor as a fallback.
+- **Validate thoroughly**: Test migrated tokens with real transactions before full cutover.
+- **Communicate with customers**: Inform customers that their payment experience will not change during the migration.
+- **Keep the mapping file**: Retain the token mapping file for reference during the transition period.

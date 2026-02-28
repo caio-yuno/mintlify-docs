@@ -1,0 +1,119 @@
+---
+title: "Payments"
+description: "Process and manage payments through the Yuno API"
+---
+
+## Overview
+
+A payment represents a charge against a customer's selected payment method. Payments are always created within the context of a [checkout session](/core-concepts/checkout-sessions) and are processed through the provider determined by your [routing configuration](/core-concepts/providers).
+
+## Creating a Payment
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "checkout_session": "cs_abc123def456",
+    "payment_method": {
+      "type": "PIX"
+    },
+    "amount": {
+      "currency": "BRL",
+      "value": 100.00
+    },
+    "country": "BR",
+    "customer": {
+      "document": {
+        "document_type": "CPF",
+        "document_number": "12345678901"
+      },
+      "email": "customer@example.com"
+    }
+  }'
+```
+</CodeGroup>
+
+## Payment Statuses
+
+| Status | Meaning | Next Actions |
+|--------|---------|--------------|
+| `PENDING` | Awaiting customer action or provider confirmation | Wait for webhook update |
+| `AUTHORIZED` | Funds reserved (auth-only mode) | Capture or cancel |
+| `SUCCEEDED` | Funds captured successfully | Refund if needed |
+| `DECLINED` | Provider/issuer declined the charge | Retry with different method or provider |
+| `REJECTED` | Yuno validation or fraud rules blocked the payment | Fix request and retry |
+| `CANCELLED` | Cancelled before completion | Create new payment |
+| `REFUNDED` | Captured funds returned to customer | No further action |
+
+## Auto-Capture vs Manual Capture
+
+By default, payments are auto-captured. Set `"capture": false` to use manual capture (auth-only).
+
+```json
+{
+  "checkout_session": "cs_abc123def456",
+  "capture": false,
+  "payment_method": { "type": "CARD" },
+  "amount": { "currency": "BRL", "value": 200.00 },
+  "country": "BR"
+}
+```
+
+### Capturing an Authorized Payment
+
+```bash
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code"
+```
+
+<Warning>
+  Capture authorized payments within the provider's hold period (typically 5-7 days for cards). Uncaptured authorizations are voided automatically.
+</Warning>
+
+## Refunds
+
+Refund a succeeded payment partially or fully:
+
+```bash
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/refunds \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 50.00,
+    "reason": "Customer requested partial refund"
+  }'
+```
+
+<Note>
+  Refund availability depends on the payment method and provider. Some methods (e.g., Boleto, OXXO) may not support refunds through the API.
+</Note>
+
+## Cancellations
+
+Cancel a payment that has not yet been captured:
+
+```bash
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/cancel \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code"
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Transactions" icon="arrow-right-arrow-left" href="/core-concepts/transactions">
+    Understand how payments relate to individual processing attempts.
+  </Card>
+  <Card title="Create Payment API" icon="code" href="/api-reference/payments/create-payment">
+    See the full API specification for payment creation.
+  </Card>
+</CardGroup>

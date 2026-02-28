@@ -1,0 +1,151 @@
+---
+title: "Create a Payment"
+description: "Submit payments via Direct API with code examples for cards, PIX, and bank transfers"
+---
+
+## Overview
+
+The Create Payment endpoint (`POST /v1/payments`) processes a transaction using the payment method and amount specified. This guide covers method-specific requirements and provides ready-to-use code examples.
+
+## Endpoint
+
+```
+POST https://api-sandbox.y.uno/v1/payments
+```
+
+## Card Payment
+
+<CodeGroup>
+```javascript Node.js
+const response = await fetch('https://api-sandbox.y.uno/v1/payments', {
+  method: 'POST',
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'account-code': process.env.YUNO_ACCOUNT_CODE,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    checkout_session: 'session-id',
+    payment_method: {
+      type: 'CARD',
+      token: 'one-time-token-from-tokenization',
+    },
+    amount: { currency: 'USD', value: 50.00 },
+    country: 'CO',
+    customer: {
+      email: 'customer@example.com',
+      first_name: 'John',
+      last_name: 'Doe',
+    },
+    description: 'Order #123',
+  }),
+});
+const payment = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/payments',
+    headers={
+        'public-api-key': YUNO_PUBLIC_KEY,
+        'private-secret-key': YUNO_PRIVATE_KEY,
+        'account-code': YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+    },
+    json={
+        'checkout_session': 'session-id',
+        'payment_method': {
+            'type': 'CARD',
+            'token': 'one-time-token-from-tokenization',
+        },
+        'amount': {'currency': 'USD', 'value': 50.00},
+        'country': 'CO',
+        'customer': {
+            'email': 'customer@example.com',
+            'first_name': 'John',
+            'last_name': 'Doe',
+        },
+    },
+)
+payment = response.json()
+```
+</CodeGroup>
+
+## PIX Payment (Brazil)
+
+PIX requires customer document information (CPF or CNPJ):
+
+```javascript
+const pixPayment = await fetch('https://api-sandbox.y.uno/v1/payments', {
+  method: 'POST',
+  headers: { /* auth headers */ },
+  body: JSON.stringify({
+    checkout_session: 'session-id',
+    payment_method: { type: 'PIX' },
+    amount: { currency: 'BRL', value: 100.00 },
+    country: 'BR',
+    customer: {
+      email: 'cliente@example.com',
+      document: {
+        document_type: 'CPF',
+        document_number: '12345678901',
+      },
+    },
+  }),
+});
+```
+
+<Note>
+PIX payments return a `payment_method.pix` object containing `qr_code` (base64 image) and `qr_code_url` (copy-paste code). Display either to the customer.
+</Note>
+
+## Bank Transfer
+
+```javascript
+const bankTransfer = await fetch('https://api-sandbox.y.uno/v1/payments', {
+  method: 'POST',
+  headers: { /* auth headers */ },
+  body: JSON.stringify({
+    checkout_session: 'session-id',
+    payment_method: { type: 'BANK_TRANSFER' },
+    amount: { currency: 'COP', value: 50000 },
+    country: 'CO',
+    customer: {
+      email: 'cliente@example.com',
+      document: {
+        document_type: 'CC',
+        document_number: '1234567890',
+      },
+    },
+  }),
+});
+```
+
+## Required Fields by Payment Method
+
+| Payment Method | Required Customer Fields | Country | Currency |
+|---------------|------------------------|---------|----------|
+| CARD | `email` | Multiple | Multiple |
+| PIX | `email`, `document` (CPF/CNPJ) | BR | BRL |
+| BANK_TRANSFER | `email`, `document` | Varies | Varies |
+| OXXO | `email` | MX | MXN |
+
+## Response Structure
+
+```json
+{
+  "id": "pay_abc123",
+  "status": "SUCCEEDED",
+  "amount": { "currency": "USD", "value": 50.00 },
+  "payment_method": { "type": "CARD", "brand": "VISA", "last_four": "1111" },
+  "provider": { "id": "provider-id", "name": "ProviderName" },
+  "created_at": "2026-02-28T10:00:00Z"
+}
+```
+
+<Warning>
+Always verify payment status server-side. Do not rely solely on the synchronous response for fulfillment decisions. Use [webhooks](/guides/webhooks/setup) for definitive payment status updates.
+</Warning>

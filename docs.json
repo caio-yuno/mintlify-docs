@@ -12,50 +12,179 @@
     "light": "/logo/light.svg",
     "dark": "/logo/dark.svg"
   },
-  "openapi": ["/api-reference/openapi.json"],
+  "openapi": ["api-reference/openapi.json"],
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Documentation",
         "groups": [
           {
             "group": "Getting Started",
             "pages": [
-              "index",
-              "quickstart",
-              "authentication",
-              "environments"
+              "getting-started/introduction",
+              "getting-started/how-payments-work",
+              "getting-started/quickstart",
+              "getting-started/authentication",
+              "getting-started/environments"
             ]
           },
           {
-            "group": "Payment Flows",
+            "group": "Core Concepts",
             "pages": [
-              "guides/payment-flows/card",
-              "guides/payment-flows/pix",
-              "guides/payment-flows/bank-transfer",
-              "guides/payment-flows/boleto",
-              "guides/payment-flows/oxxo",
-              "guides/payment-flows/bnpl",
-              "guides/payment-flows/wallet",
-              "guides/payment-flows/payment-links"
+              "core-concepts/payment-flow",
+              "core-concepts/customers",
+              "core-concepts/checkout-sessions",
+              "core-concepts/payments",
+              "core-concepts/transactions",
+              "core-concepts/tokens",
+              "core-concepts/payment-methods",
+              "core-concepts/providers",
+              "core-concepts/webhooks",
+              "core-concepts/idempotency",
+              "core-concepts/error-handling"
             ]
           },
           {
-            "group": "SDK Integration",
+            "group": "Guides",
             "pages": [
-              "guides/sdk/overview",
-              "guides/sdk/sdk-lite",
-              "guides/sdk/server-side",
-              "guides/sdk/continue-payment",
-              "guides/sdk/error-handling",
-              "guides/sdk/testing"
+              "guides/integration-overview",
+              {
+                "group": "SDK",
+                "pages": [
+                  "guides/sdk/overview",
+                  "guides/sdk/full-checkout",
+                  "guides/sdk/lite-checkout",
+                  "guides/sdk/secure-fields",
+                  "guides/sdk/customization",
+                  "guides/sdk/enrollment"
+                ]
+              },
+              {
+                "group": "Direct API",
+                "pages": [
+                  "guides/direct-api/overview",
+                  "guides/direct-api/create-payment",
+                  "guides/direct-api/capture-and-cancel",
+                  "guides/direct-api/refunds"
+                ]
+              },
+              {
+                "group": "Testing",
+                "pages": [
+                  "guides/testing/sandbox-guide",
+                  "guides/testing/test-cards",
+                  "guides/testing/yuno-testing-gateway"
+                ]
+              },
+              {
+                "group": "Webhooks",
+                "pages": [
+                  "guides/webhooks/setup",
+                  "guides/webhooks/events",
+                  "guides/webhooks/verify-signatures"
+                ]
+              }
             ]
           },
           {
-            "group": "Webhooks",
+            "group": "Features",
             "pages": [
-              "guides/webhooks/overview",
-              "guides/webhooks/events"
+              {
+                "group": "Installments",
+                "pages": [
+                  "features/installments/overview",
+                  "features/installments/merchant-installments",
+                  "features/installments/provider-installments"
+                ]
+              },
+              {
+                "group": "Digital Wallets",
+                "pages": [
+                  "features/digital-wallets/overview",
+                  "features/digital-wallets/apple-pay",
+                  "features/digital-wallets/google-pay",
+                  "features/digital-wallets/click-to-pay",
+                  "features/digital-wallets/nupay"
+                ]
+              },
+              {
+                "group": "Subscriptions",
+                "pages": [
+                  "features/subscriptions/overview",
+                  "features/subscriptions/create-subscription",
+                  "features/subscriptions/smart-retries"
+                ]
+              },
+              "features/payment-links",
+              "features/payouts",
+              "features/reports",
+              "features/split-marketplace",
+              "features/disputes",
+              "features/network-tokens",
+              "features/currency-conversion",
+              "features/ai-optimization"
+            ]
+          },
+          {
+            "group": "Security",
+            "pages": [
+              "security/3d-secure",
+              "security/pci-compliance",
+              "security/card-verification",
+              "security/card-fingerprint",
+              "security/co-badged-cards",
+              "security/sca-exemptions",
+              "security/data-privacy",
+              "security/data-migration"
+            ]
+          },
+          {
+            "group": "Platform",
+            "pages": [
+              {
+                "group": "Dashboard",
+                "pages": [
+                  "platform/dashboard/overview",
+                  "platform/dashboard/connections",
+                  "platform/dashboard/routing",
+                  "platform/dashboard/risk-conditions",
+                  "platform/dashboard/checkout-builder",
+                  "platform/dashboard/reconciliations",
+                  "platform/dashboard/settings"
+                ]
+              },
+              {
+                "group": "Plugins",
+                "pages": [
+                  "platform/plugins/vtex"
+                ]
+              }
+            ]
+          },
+          {
+            "group": "AI",
+            "pages": [
+              "ai/aida-agent",
+              "ai/aida-dashboard",
+              "ai/llm-mcp-integration",
+              "ai/remote-mcp-server"
+            ]
+          },
+          {
+            "group": "Troubleshooting",
+            "pages": [
+              "troubleshooting/error-codes",
+              "troubleshooting/http-status-codes",
+              "troubleshooting/provider-errors",
+              "troubleshooting/sdk-errors",
+              "troubleshooting/faq"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/coverage",
+              "reference/glossary"
             ]
           }
         ]
@@ -73,7 +202,11 @@
             "group": "Checkout Sessions",
             "pages": [
               "api-reference/checkout-sessions/create",
-              "api-reference/checkout-sessions/get"
+              "api-reference/checkout-sessions/get",
+              "api-reference/checkout-sessions/update",
+              "api-reference/checkout-sessions/create-one-time-token",
+              "api-reference/checkout-sessions/create-sdk-token",
+              "api-reference/checkout-sessions/get-payment-methods"
             ]
           },
           {
@@ -81,10 +214,57 @@
             "pages": [
               "api-reference/payments/create",
               "api-reference/payments/get",
+              "api-reference/payments/get-by-merchant-order",
               "api-reference/payments/list",
               "api-reference/payments/capture",
               "api-reference/payments/cancel",
-              "api-reference/payments/refund"
+              "api-reference/payments/refund",
+              "api-reference/payments/create-dispute"
+            ]
+          },
+          {
+            "group": "Customers",
+            "pages": [
+              "api-reference/customers/create",
+              "api-reference/customers/get",
+              "api-reference/customers/get-by-external-id",
+              "api-reference/customers/list",
+              "api-reference/customers/update",
+              "api-reference/customers/delete"
+            ]
+          },
+          {
+            "group": "Customer Sessions",
+            "pages": [
+              "api-reference/customer-sessions/create"
+            ]
+          },
+          {
+            "group": "Payment Methods",
+            "pages": [
+              "api-reference/payment-methods/enroll",
+              "api-reference/payment-methods/list",
+              "api-reference/payment-methods/get",
+              "api-reference/payment-methods/unenroll"
+            ]
+          },
+          {
+            "group": "Payment Links",
+            "pages": [
+              "api-reference/payment-links/create",
+              "api-reference/payment-links/get",
+              "api-reference/payment-links/cancel"
+            ]
+          },
+          {
+            "group": "Subscriptions",
+            "pages": [
+              "api-reference/subscriptions/create",
+              "api-reference/subscriptions/get",
+              "api-reference/subscriptions/update",
+              "api-reference/subscriptions/pause",
+              "api-reference/subscriptions/resume",
+              "api-reference/subscriptions/cancel"
             ]
           },
           {
@@ -104,25 +284,11 @@
             ]
           },
           {
-            "group": "Customers",
-            "pages": [
-              "api-reference/customers/create",
-              "api-reference/customers/get",
-              "api-reference/customers/list"
-            ]
-          },
-          {
             "group": "Payouts",
             "pages": [
               "api-reference/payouts/create",
-              "api-reference/payouts/get"
-            ]
-          },
-          {
-            "group": "Reports",
-            "pages": [
-              "api-reference/reports/create",
-              "api-reference/reports/get"
+              "api-reference/payouts/get",
+              "api-reference/payouts/get-by-merchant-ref"
             ]
           },
           {
@@ -130,27 +296,72 @@
             "pages": [
               "api-reference/recipients/create",
               "api-reference/recipients/get",
-              "api-reference/recipients/list"
+              "api-reference/recipients/list",
+              "api-reference/recipients/update",
+              "api-reference/recipients/delete"
+            ]
+          },
+          {
+            "group": "Reports",
+            "pages": [
+              "api-reference/reports/create",
+              "api-reference/reports/get",
+              "api-reference/reports/list",
+              "api-reference/reports/download"
+            ]
+          },
+          {
+            "group": "Webhooks",
+            "pages": [
+              "api-reference/webhooks/register"
+            ]
+          },
+          {
+            "group": "Currency Conversion",
+            "pages": [
+              "api-reference/currency-conversion/get-rates"
             ]
           }
         ]
       },
       {
-        "tab": "Reference Lists",
+        "tab": "SDKs",
         "groups": [
           {
-            "group": "Reference Data",
+            "group": "Overview",
             "pages": [
-              "reference-lists/countries",
-              "reference-lists/payment-types",
-              "reference-lists/eci-indicators",
-              "reference-lists/industry-categories",
-              "reference-lists/item-categories",
-              "reference-lists/purposes",
-              "reference-lists/transaction-categories",
-              "reference-lists/shipping-reference",
-              "reference-lists/airline-information",
-              "reference-lists/merchant-advice-codes"
+              "guides/sdk/overview"
+            ]
+          },
+          {
+            "group": "Web",
+            "pages": [
+              "guides/sdk/full-checkout",
+              "guides/sdk/lite-checkout",
+              "guides/sdk/secure-fields"
+            ]
+          },
+          {
+            "group": "Customization",
+            "pages": [
+              "guides/sdk/customization",
+              "guides/sdk/enrollment"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Changelog",
+        "groups": [
+          {
+            "group": "Changelog",
+            "pages": [
+              "changelog/overview",
+              "changelog/api",
+              "changelog/web-sdk",
+              "changelog/android-sdk",
+              "changelog/ios-sdk",
+              "changelog/flutter-sdk"
             ]
           }
         ]

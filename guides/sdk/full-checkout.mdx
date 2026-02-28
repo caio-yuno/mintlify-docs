@@ -1,0 +1,110 @@
+---
+title: "Full Checkout"
+description: "Render a complete pre-built payment form with all available payment methods"
+---
+
+## Overview
+
+Full Checkout provides a complete, pre-built payment UI that displays all payment methods enabled for your merchant account. Yuno handles the entire checkout experience, including payment method selection, form rendering, and 3DS authentication.
+
+<Note>
+Full Checkout is the fastest integration path. Yuno manages the UI, PCI compliance, and payment method rendering automatically.
+</Note>
+
+## Prerequisites
+
+- Yuno API keys ([Authentication](/authentication))
+- `@yuno-payments/sdk-web` installed ([SDK Overview](/guides/sdk/overview))
+- At least one payment method enabled in your [Dashboard](/platform/dashboard/connections)
+
+## Integration Flow
+
+<Steps>
+  <Step title="Create a checkout session (server-side)">
+    Create a session with `workflow: "SDK_CHECKOUT"`:
+
+    ```javascript
+    const sessionResponse = await fetch('https://api-sandbox.y.uno/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'public-api-key': process.env.YUNO_PUBLIC_KEY,
+        'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+        'account-code': process.env.YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: { currency: 'USD', value: 50.00 },
+        country: 'CO',
+        merchant_order_id: 'order-123',
+        workflow: 'SDK_CHECKOUT',
+      }),
+    });
+    const session = await sessionResponse.json();
+    ```
+  </Step>
+
+  <Step title="Initialize the SDK (client-side)">
+    ```javascript
+    const yuno = await Yuno.initialize({
+      publicApiKey: 'your-public-api-key',
+      checkoutSession: session.checkout_session,
+      country: 'CO',
+    });
+    ```
+  </Step>
+
+  <Step title="Mount Full Checkout">
+    Mount the full checkout UI into a container element:
+
+    ```javascript
+    yuno.mountFullCheckout({
+      elementSelector: '#yuno-checkout',
+      onPaymentSuccess: (data) => {
+        window.location.href = `/order-confirmation?id=${data.payment_id}`;
+      },
+      onPaymentError: (error) => {
+        console.error('Payment failed:', error);
+      },
+      onPaymentProcessing: () => {
+        console.log('Payment is being processed...');
+      },
+    });
+    ```
+
+    ```html
+    <div id="yuno-checkout"></div>
+    ```
+  </Step>
+
+  <Step title="Handle payment callbacks">
+    Full Checkout manages payment creation internally. Use callbacks to respond to outcomes:
+
+    | Callback | Trigger |
+    |----------|---------|
+    | `onPaymentSuccess` | Payment approved or pending confirmation |
+    | `onPaymentError` | Payment declined or failed |
+    | `onPaymentProcessing` | Payment requires async processing |
+
+    <Warning>
+    Always verify the final payment status server-side via webhooks or the GET payment API. Client-side callbacks should not be the sole source of truth.
+    </Warning>
+  </Step>
+</Steps>
+
+## Customization
+
+Full Checkout appearance can be customized via the [Checkout Builder](/platform/dashboard/checkout-builder) in the Dashboard or through SDK theming options. See [Customization](/guides/sdk/customization) for details.
+
+## When to Use Full Checkout
+
+<CardGroup cols={2}>
+  <Card title="Best for" icon="check">
+    - Rapid integration
+    - Displaying all payment methods
+    - Minimal frontend effort
+  </Card>
+  <Card title="Consider alternatives if" icon="xmark">
+    - You need full UI control (use [Secure Fields](/guides/sdk/secure-fields))
+    - You want to display specific methods only (use [Lite Checkout](/guides/sdk/lite-checkout))
+  </Card>
+</CardGroup>
