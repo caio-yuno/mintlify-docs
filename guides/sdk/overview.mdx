@@ -3,29 +3,35 @@ title: "SDK Overview"
 description: "Choose the right Yuno SDK integration for your checkout experience"
 ---
 
-## Which SDK should I use?
+## Which integration should I use?
 
-For most integrations, **Full Checkout** is the recommended starting point. It gets you live with all payment methods in minutes, with zero PCI scope.
+Yuno offers multiple SDK integration types. For most merchants, **Full Checkout** or **Seamless Checkout** is the right choice.
 
 ```mermaid
 graph TD
-    A[Starting a new integration?] --> B{Need full UI control?}
+    A[Starting a new integration?] --> B{Need to control payment method selection?}
     B -- No --> C[✅ Full Checkout — Recommended]
-    B -- Yes --> D{Need individual field styling?}
-    D -- No --> E[Lite Checkout]
-    D -- Yes --> F[Secure Fields]
+    B -- Yes --> D{Want Yuno to handle the payment form?}
+    D -- Yes --> E[Seamless Checkout]
+    D -- No --> F{Need complete UI ownership?}
+    F -- No --> G[Lite Checkout]
+    F -- Yes --> H{Need individual card fields?}
+    H -- No --> I[Headless]
+    H -- Yes --> J[Secure Fields]
 ```
 
 ## Comparison
 
-| | Full Checkout | Lite Checkout | Secure Fields |
-|---|---|---|---|
-| **Best for** | Most integrations | Custom checkout pages | Full UI ownership |
-| **Integration effort** | ~10 lines of code | Medium | High |
-| **UI customization** | Theme & branding | Layout + styling | Complete control |
-| **PCI scope** | SAQ-A (lowest) | SAQ-A | SAQ-A |
-| **Payment methods** | All, automatically | All, select which to show | Cards only |
-| **Recommendation** | **Recommended** | When you need more control | When you need individual fields |
+| | Full | Seamless | Lite | Secure Fields | Headless |
+|---|---|---|---|---|---|
+| **Best for** | Most integrations | Custom method selection | Custom checkout pages | Individual field styling | Full UI control |
+| **Effort** | ~10 lines | Low | Medium | Medium-High | High |
+| **UI control** | Theme & branding | Payment method list | Layout + styling | Per-field styling | Complete |
+| **PCI scope** | SAQ-A | SAQ-A | SAQ-A | SAQ-A | SAQ-A |
+| **Payment methods** | All, automatic | All, you select | All, you select | Cards only | Cards only |
+| **Auto payment methods** | Yes | Yes | No | No | No |
+| **Dashboard conditions** | Yes | Yes | Yes | Yes | No |
+| **Recommendation** | **Recommended** | **Recommended** | Advanced | Advanced | Advanced |
 
 ## Full Checkout (Recommended)
 
@@ -39,21 +45,39 @@ Full Checkout is the fastest path to accepting payments. Mount it with a single 
 
 Get started with the [Full Checkout integration guide](/guides/sdk/full-checkout).
 
-## Alternative SDKs
+## Seamless Checkout
 
-If Full Checkout doesn't meet your requirements, Yuno offers two additional options:
+Seamless Checkout combines SDK convenience with control over payment method selection. Yuno handles the payment form and creates payments in a single flow — you control which methods to show and when.
+
+**Why use Seamless:**
+- **Single-flow payment creation** — the only integration that handles token-to-payment seamlessly
+- **Payment method control** — you decide which methods to display
+- **External buttons** — mount Apple Pay and Google Pay buttons anywhere in your UI
+- **Low development effort** — similar to Full Checkout with more flexibility
+
+Get started with the [Seamless Checkout integration guide](/guides/sdk/seamless-checkout).
+
+## Advanced integrations
+
+For merchants who need more control over the checkout experience:
 
 ### Lite Checkout
 
-Embed a payment form directly in your page with more layout control. Use this when you need the checkout to feel like a native part of your site but still want Yuno to handle payment method rendering.
+Embed a payment form directly in your page with full layout control. Yuno supplies available payment methods; you decide which to display and manage the UI.
 
 See the [Lite Checkout guide](/guides/sdk/lite-checkout).
 
 ### Secure Fields
 
-Individual, tokenized input fields (card number, expiry, CVV) that you place and style independently. Use this when you need complete control over every element of your payment form.
+Individual, tokenized input fields (card number, expiry, CVV) that you place and style independently. Web only.
 
 See the [Secure Fields guide](/guides/sdk/secure-fields).
+
+### Headless
+
+Build your own checkout UI from scratch. You collect card data, Yuno handles tokenization and 3DS. Maximum flexibility, highest integration effort.
+
+See the [Headless guide](/guides/sdk/headless).
 
 ## Installation
 
@@ -83,13 +107,13 @@ If you are upgrading from a previous SDK version, review the [migration notes](h
   <Card title="Full Checkout" icon="credit-card" href="/guides/sdk/full-checkout">
     Recommended — get live in minutes.
   </Card>
+  <Card title="Seamless Checkout" icon="bolt" href="/guides/sdk/seamless-checkout">
+    SDK convenience with payment method control.
+  </Card>
   <Card title="Customization" icon="palette" href="/guides/sdk/customization">
     Theme, branding, and styling options.
   </Card>
-  <Card title="Lite Checkout" icon="window" href="/guides/sdk/lite-checkout">
-    Embed a payment form in your page.
-  </Card>
-  <Card title="Secure Fields" icon="lock" href="/guides/sdk/secure-fields">
-    Individual tokenized input fields.
+  <Card title="Headless" icon="code" href="/guides/sdk/headless">
+    Build your own checkout UI.
   </Card>
 </CardGroup>

@@ -53,8 +53,7 @@
                 "pages": [
                   "guides/sdk/overview",
                   "guides/sdk/full-checkout",
-                  "guides/sdk/lite-checkout",
-                  "guides/sdk/secure-fields",
+                  "guides/sdk/seamless-checkout",
                   "guides/sdk/customization",
                   "guides/sdk/enrollment"
                 ]
@@ -113,6 +112,12 @@
                   "features/subscriptions/overview",
                   "features/subscriptions/create-subscription",
                   "features/subscriptions/smart-retries"
+                ]
+              },
+              {
+                "group": "Banking as a Service",
+                "pages": [
+                  "features/baas/overview"
                 ]
               },
               "features/payment-links",
@@ -321,6 +326,39 @@
             "pages": [
               "api-reference/currency-conversion/get-rates"
             ]
+          },
+          {
+            "group": "BaaS — Entities",
+            "pages": [
+              "api-reference/baas/create-entity",
+              "api-reference/baas/get-entity",
+              "api-reference/baas/update-entity"
+            ]
+          },
+          {
+            "group": "BaaS — Onboarding",
+            "pages": [
+              "api-reference/baas/create-onboarding",
+              "api-reference/baas/get-onboarding",
+              "api-reference/baas/update-onboarding",
+              "api-reference/baas/cancel-onboarding"
+            ]
+          },
+          {
+            "group": "BaaS — Accounts",
+            "pages": [
+              "api-reference/baas/create-account",
+              "api-reference/baas/get-account",
+              "api-reference/baas/close-account"
+            ]
+          },
+          {
+            "group": "BaaS — Transfers",
+            "pages": [
+              "api-reference/baas/create-transfer",
+              "api-reference/baas/get-transfer",
+              "api-reference/baas/cancel-transfer"
+            ]
           }
         ]
       },
@@ -331,7 +369,8 @@
             "group": "Getting Started",
             "pages": [
               "guides/sdk/overview",
-              "guides/sdk/full-checkout"
+              "guides/sdk/full-checkout",
+              "guides/sdk/seamless-checkout"
             ]
           },
           {
@@ -339,13 +378,6 @@
             "pages": [
               "guides/sdk/customization",
               "guides/sdk/enrollment"
-            ]
-          },
-          {
-            "group": "Advanced Options",
-            "pages": [
-              "guides/sdk/lite-checkout",
-              "guides/sdk/secure-fields"
             ]
           }
         ]
