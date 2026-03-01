@@ -10,7 +10,7 @@ Yuno supports a wide range of payment methods across regions. The available meth
 ## Supported Payment Method Types
 
 | Type | Description | Examples | Regions |
-|------|-------------|----------|---------|
+|------|-------------|----------|--------|
 | `CARD` | Credit and debit cards | Visa, Mastercard, Amex, Elo | Global |
 | `PIX` | Instant bank transfer (Brazil) | PIX via QR code or copy-paste | BR |
 | `BOLETO` | Bank slip payment | Boleto Bancario | BR |
@@ -20,6 +20,8 @@ Yuno supports a wide range of payment methods across regions. The available meth
 | `BANK_TRANSFER` | Generic bank transfer | Varies by country | Multiple |
 | `WALLET` | Digital wallets | Various regional wallets | Multiple |
 | `BNPL` | Buy now, pay later | Installment providers | Multiple |
+| `GOOGLE_PAY` | Google Pay | Mobile and web payments | Multiple |
+| `APPLE_PAY` | Apple Pay | Mobile and web payments | Multiple |
 
 ## Payment-Method-Specific Requirements
 
@@ -27,23 +29,30 @@ Different payment methods require different fields in the payment request.
 
 ### Cards
 
+For Direct API integration (PCI-certified merchants), enroll the card first to get a `vaulted_token`:
+
 ```json
 {
   "payment_method": {
     "type": "CARD",
-    "card": {
-      "number": "4111111111111111",
-      "expiration_month": "12",
-      "expiration_year": "2028",
-      "security_code": "123",
-      "holder_name": "MARIA SILVA"
-    }
+    "vaulted_token": "cbdcc878-ceb4-4dd8-b0f0-49d444855de0"
+  }
+}
+```
+
+For SDK-based integrations, pass the one-time token from the SDK:
+
+```json
+{
+  "payment_method": {
+    "type": "CARD",
+    "token": "tok_4a8b9c2d-1e3f-5678-90ab-cdef12345678"
   }
 }
 ```
 
 <Warning>
-  Sending raw card data via the API requires PCI DSS compliance. Use the Yuno SDK with tokenization to avoid PCI scope.
+Handling raw card data via the Direct API requires **PCI DSS compliance**. Use the Yuno SDK with tokenization to avoid PCI scope.
 </Warning>
 
 ### PIX (Brazil)
@@ -63,7 +72,7 @@ Different payment methods require different fields in the payment request.
 ```
 
 <Note>
-  PIX requires `customer.document` with a valid CPF (individuals) or CNPJ (businesses). The response includes a QR code and a copy-paste code for the customer.
+PIX requires `customer.document` with a valid CPF (individuals, 11 digits) or CNPJ (businesses, 14 digits). The response includes a QR code and a copy-paste code for the customer.
 </Note>
 
 ### Boleto (Brazil)
@@ -85,34 +94,133 @@ Different payment methods require different fields in the payment request.
 
 Boleto payments are asynchronous -- the customer receives a bank slip and pays at a bank branch or online banking. Use [webhooks](/core-concepts/webhooks) to receive the payment confirmation.
 
+### PSE (Colombia)
+
+```json
+{
+  "payment_method": { "type": "PSE" },
+  "country": "CO",
+  "amount": { "currency": "COP", "value": 50000 },
+  "customer": {
+    "document": {
+      "document_type": "CC",
+      "document_number": "1234567890"
+    },
+    "email": "customer@example.com"
+  }
+}
+```
+
 ## Enrolling (Vaulting) Payment Methods
 
-To save a payment method for future use, include `"vaulted_token": true` in the payment request along with a `customer_id`. See [Tokens](/core-concepts/tokens) for details.
+To save a payment method for future use, use the Enroll Payment Method endpoint. This requires a [customer profile](/core-concepts/customers).
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: enroll-card-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": "your-account-id",
+    "country": "US",
+    "type": "CARD",
+    "workflow": "DIRECT",
+    "card_data": {
+      "holder_name": "John Doe",
+      "number": "4111111111111111",
+      "expiration_month": 12,
+      "expiration_year": 2028,
+      "security_code": "123"
+    }
+  }'
+```
+
+```javascript Node.js
+const enrollment = await fetch(
+  `https://api-sandbox.y.uno/v1/customers/${customerId}/payment-methods`,
+  {
+    method: 'POST',
+    headers: {
+      'public-api-key': process.env.YUNO_PUBLIC_KEY,
+      'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+      'X-Idempotency-Key': 'enroll-card-001',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      account_id: 'your-account-id',
+      country: 'US',
+      type: 'CARD',
+      workflow: 'DIRECT',
+      card_data: {
+        holder_name: 'John Doe',
+        number: '4111111111111111',
+        expiration_month: 12,
+        expiration_year: 2028,
+        security_code: '123',
+      },
+    }),
+  }
+);
+
+const result = await enrollment.json();
+// result.vaulted_token => use this in future payments
+```
+</CodeGroup>
+
+The enrollment response includes a `vaulted_token` that you can use in future payment requests.
+
+<Note>
+If a customer enrolls the same card multiple times, Yuno creates a new enrollment each time with a distinct `vaulted_token`. Use the card `fingerprint` in the response to detect duplicates on your side.
+</Note>
 
 ## Listing Enrolled Methods
 
 Retrieve all saved payment methods for a customer:
 
 ```bash
-curl -X GET https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
+curl -X GET https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods/{payment_method_id} \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY"
 ```
 
-The response includes masked details (last 4 digits for cards, masked keys for PIX) and the vaulted token ID for use in one-click payments.
-
-## Checking Available Methods
-
-The checkout session response includes `available_payment_methods`, which lists methods available for the given country, currency, and merchant configuration:
+The response includes masked details (last 4 digits for cards), the vaulted token ID, and card metadata:
 
 ```json
 {
-  "checkout_session": "cs_abc123",
-  "available_payment_methods": ["CARD", "PIX", "BOLETO"]
+  "id": "2fd6bf11-2129-4061-9c2a-34e196f89753",
+  "name": "VISA ****1111",
+  "type": "CARD",
+  "category": "CARD",
+  "country": "US",
+  "status": "ENROLLED",
+  "vaulted_token": "7ced7717-f860-4705-a376-58a714953de9",
+  "card_data": {
+    "iin": "41111111",
+    "lfd": "1111",
+    "brand": "VISA",
+    "category": "CREDIT",
+    "fingerprint": "55a7fe38-cdc3-45dc-8c5f-820751799c76"
+  }
 }
 ```
 
+## Checking Available Methods
+
+When you create a checkout session, Yuno determines available payment methods based on the country, currency, and your merchant configuration. The SDK uses this to display payment options to the customer.
+
 <Note>
-  If a payment method you expect is missing from this list, verify it is enabled in **Dashboard > Settings > Payment Methods** for the target country.
+If a payment method you expect is missing, verify it is enabled in **Dashboard > Settings > Payment Methods** for the target country. Also confirm you have a provider configured for that method in your routing rules.
 </Note>
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Customers" icon="user" href="/core-concepts/customers">
+    Create customer profiles for vaulted payment methods.
+  </Card>
+  <Card title="Tokens" icon="key" href="/core-concepts/tokens">
+    Understand one-time, vaulted, and SDK tokens.
+  </Card>
+</CardGroup>
