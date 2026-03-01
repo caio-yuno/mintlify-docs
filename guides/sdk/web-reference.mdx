@@ -44,7 +44,7 @@ const yuno = await Yuno.initialize({
 });
 ```
 
-### Initialization Parameters
+### Initialization parameters
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
@@ -57,7 +57,7 @@ const yuno = await Yuno.initialize({
 Never include your private secret key in client-side code. Use only the public API key.
 </Warning>
 
-## Seamless Checkout Configuration
+## Seamless Checkout configuration
 
 Start Seamless Checkout by passing a configuration object with all options.
 
@@ -93,7 +93,7 @@ yuno.startSeamlessCheckout({
 });
 ```
 
-### Checkout Configuration Properties
+### Checkout configuration properties
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
@@ -104,8 +104,8 @@ yuno.startSeamlessCheckout({
 | `showLoading` | `boolean` | No | Show loading indicator during SDK operations. Default: `true` |
 | `issuersFormEnable` | `boolean` | No | Display bank/issuer selection dropdown for methods that require it. Default: `false` |
 | `showPaymentStatus` | `boolean` | No | Show payment status screen after completion. Default: `true` |
-| `renderMode` | `object` | No | Controls how the checkout form renders. See [Render Modes](#render-modes) |
-| `card` | `object` | No | Card form configuration. See [Card Form Options](#card-form-options) |
+| `renderMode` | `object` | No | Controls how the checkout form renders. See [Render modes](#render-modes) |
+| `card` | `object` | No | Card form configuration. See [Card form options](#card-form-options) |
 
 ## Callbacks
 
@@ -115,8 +115,6 @@ Called when the customer submits payment and Yuno generates a one-time token. Us
 
 ```javascript
 async yunoCreatePayment(oneTimeToken, tokenWithInformation) {
-  // oneTimeToken: string — single-use token for payment creation
-  // tokenWithInformation: object — token plus payment method metadata
   const response = await fetch('/api/payments', {
     method: 'POST',
     body: JSON.stringify({ token: oneTimeToken, session: checkoutSession }),
@@ -190,7 +188,7 @@ onLoading(isLoading) {
 }
 ```
 
-## Render Modes
+## Render modes
 
 Control how the checkout form appears in the page.
 
@@ -204,7 +202,7 @@ renderMode: {
 }
 ```
 
-### Element (Inline)
+### Element (inline)
 
 The checkout form renders inline within a specified container.
 
@@ -220,7 +218,7 @@ renderMode: {
 | `type` | `"modal"` \| `"element"` | Yes | Render mode |
 | `elementSelector` | `string` | Only for `"element"` | CSS selector for the inline container |
 
-## Card Form Options
+## Card form options
 
 Configure the card payment form behavior and appearance.
 
@@ -256,22 +254,22 @@ card: {
 }
 ```
 
-### Card Properties
+### Card properties
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
 | `type` | `"extends"` \| `"card"` \| `"cardNumber"` \| `"cardExpiry"` \| `"cardCvv"` | `"extends"` | Card form type. `"extends"` renders the full card form. Individual types render standalone fields |
 | `cardSaveEnable` | `boolean` | `false` | Show a "Save card for future payments" checkbox |
-| `styles` | `object` | — | CSS customization object for card fields. Supports `base`, `focus`, `error`, `valid` states |
-| `texts` | `object` | — | Custom label overrides for card form fields |
+| `styles` | `object` | -- | CSS customization object for card fields. Supports `base`, `focus`, `error`, `valid` states |
+| `texts` | `object` | -- | Custom label overrides for card form fields |
 | `cardNumberPlaceholder` | `string` | `"Card number"` | Placeholder text for the card number field |
 | `expiryPlaceholder` | `string` | `"MM/YY"` | Placeholder text for the expiry field |
 | `cvvPlaceholder` | `string` | `"CVV"` | Placeholder text for the CVV field |
 | `hideCardholderName` | `boolean` | `false` | Hide the cardholder name field |
 | `isCreditCardProcessingOnly` | `boolean` | `false` | Show only credit cards, hiding debit card options |
-| `onChange(event)` | `function` | — | Callback fired when any card field value changes |
+| `onChange(event)` | `function` | -- | Callback fired when any card field value changes |
 
-### Card Field Types
+### Card field types
 
 Use individual field types to render standalone, embeddable card inputs:
 
@@ -283,7 +281,7 @@ Use individual field types to render standalone, embeddable card inputs:
 | `"cardCvv"` | CVV/CVC field only |
 | `"extends"` | Extended card form integrated into checkout |
 
-## Seamless Flow Methods
+## Seamless flow methods
 
 ### mountSeamlessCheckout
 
@@ -323,7 +321,7 @@ yuno.continuePayment({
 |-----------|------|----------|-------------|
 | `showPaymentStatus` | `boolean` | No | Show the payment status screen after completion |
 
-## External Buttons
+## External buttons
 
 Mount Apple Pay and Google Pay buttons outside the main checkout form.
 
@@ -351,10 +349,6 @@ Remove a specific external payment button.
 yuno.unmountExternalButton("APPLE_PAY");
 ```
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `type` | `string` | Yes | Payment method type to remove (`"APPLE_PAY"`, `"GOOGLE_PAY"`) |
-
 ### unmountAllExternalButtons
 
 Remove all mounted external payment buttons.
@@ -367,7 +361,7 @@ yuno.unmountAllExternalButtons();
 
 Use the SDK to enroll (vault) payment methods for returning customers.
 
-### Enrollment Statuses
+### Enrollment statuses
 
 | Status | Description |
 |--------|-------------|
@@ -382,7 +376,7 @@ Use the SDK to enroll (vault) payment methods for returning customers.
 
 See [Card Enrollment](/guides/sdk/enrollment) for the complete enrollment integration guide.
 
-## TypeScript Support
+## TypeScript support
 
 The Yuno Web SDK includes TypeScript type definitions. Import types directly:
 
@@ -424,7 +418,7 @@ When loading the SDK via script tag, use SRI to ensure the script has not been t
 
 Obtain the current SRI hash from the [Yuno GitHub repository](https://github.com/yuno-payments). Update the hash whenever you upgrade the SDK version.
 
-## Complete Initialization Example
+## Complete initialization example
 
 A full example with all configuration options:
 
@@ -520,7 +514,7 @@ yuno.mountSeamlessCheckout({
 yuno.startPayment();
 ```
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
   <Card title="Full Checkout" icon="credit-card" href="/guides/sdk/full-checkout">

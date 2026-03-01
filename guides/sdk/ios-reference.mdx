@@ -5,115 +5,102 @@ description: "Complete parameter reference for the Yuno iOS SDK"
 
 ## YunoConfig
 
-Configuration object passed to `Yuno.initialize()` during app startup.
+Configuration class passed to `Yuno.initialize()` during app startup.
 
 ```swift
-Yuno.initialize(config: YunoConfig(
-    publicApiKey: "your-public-api-key",
-    environment: .sandbox,
-    language: .english,
-    cardFlow: .oneStep,
-    enableLogging: false,
-    appearance: appearance
-))
+import YunoSDK
+
+Yuno.initialize(
+    apiKey: "your-public-api-key",
+    config: YunoConfig(
+        cardFormType: .oneStep,
+        appearance: appearance,
+        saveCardEnabled: false,
+        keepLoader: false
+    ),
+    callback: { (success: Bool) in }
+)
 ```
 
 ### Parameters
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `publicApiKey` | `String` | Yes | — | Your Yuno public API key |
-| `environment` | `YunoEnvironment` | Yes | — | `.sandbox` or `.production` |
-| `language` | `YunoLanguage` | No | Device locale | UI language (`.english`, `.spanish`, `.portuguese`, `.indonesian`, `.malay`, `.thai`) |
-| `cardFlow` | `CardFlow` | No | `.oneStep` | `.oneStep` (single form) or `.multiStep` (step-by-step card entry) |
-| `enableLogging` | `Bool` | No | `false` | Enable verbose SDK logging to Xcode console |
-| `appearance` | `YunoAppearance` | No | Default theme | Visual customization. See [YunoTheme](#yunotheme-customization) |
+| `apiKey` | `String` | Yes | -- | Your Yuno public API key |
+| `config` | `YunoConfig` | Yes | -- | Configuration object |
+| `callback` | `(Bool) -> Void` | Yes | -- | Called when initialization completes |
+
+### YunoConfig properties
+
+```swift
+final class YunoConfig {
+    let cardFormType: CardFormType
+    let appearance: Yuno.Appearance
+    let saveCardEnabled: Bool
+    let keepLoader: Bool
+}
+```
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `cardFormType` | `CardFormType` | `.oneStep` | Card entry flow: `.oneStep` (single form) or `.multiStep` (step-by-step) |
+| `appearance` | `Yuno.Appearance` | Yuno defaults | Visual customization. See [YunoAppearance](#yunotheme-customization) |
+| `saveCardEnabled` | `Bool` | `false` | Show a "Save card for future payments" checkbox |
+| `keepLoader` | `Bool` | `false` | Keep SDK loader visible while merchant creates payment |
 
 <Warning>
 Never include your private secret key in the iOS app. Use only the public API key for client-side initialization.
 </Warning>
 
-## YunoCheckout Configuration
+<Note>
+If your app uses a `UISceneDelegate`, place `Yuno.initialize()` in your `SceneDelegate`, not `AppDelegate`.
+</Note>
 
-### Full Checkout
-
-```swift
-Yuno.startFullCheckout(
-    from: self,
-    checkoutSession: "session-uuid",
-    countryCode: "CO",
-    applePay: YunoApplePayConfig(
-        merchantId: "merchant.com.yourapp.pay",
-        countryCode: "CO"
-    ),
-    delegate: self
-)
-```
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `from` | `UIViewController` | Yes | Presenting view controller |
-| `checkoutSession` | `String` | Yes | Checkout session ID from your server |
-| `countryCode` | `String` | Yes | ISO 3166-1 alpha-2 country code |
-| `applePay` | `YunoApplePayConfig` | No | Apple Pay configuration |
-| `delegate` | `YunoPaymentDelegate` | Yes | Delegate to receive payment results |
-
-### Seamless Checkout
-
-```swift
-Yuno.startSeamlessCheckout(
-    from: self,
-    checkoutSession: "session-uuid",
-    paymentMethodType: "CARD",
-    countryCode: "CO",
-    vaultedToken: nil,
-    delegate: self
-)
-```
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `from` | `UIViewController` | Yes | Presenting view controller |
-| `checkoutSession` | `String` | Yes | Checkout session ID |
-| `paymentMethodType` | `String` | Yes | Payment method type (e.g., `"CARD"`, `"PIX"`) |
-| `countryCode` | `String` | Yes | ISO 3166-1 alpha-2 country code |
-| `vaultedToken` | `String?` | No | Vaulted token for saved payment methods |
-| `delegate` | `YunoSeamlessDelegate` | Yes | Delegate to receive payment lifecycle events |
-
-## Delegate Methods
+## Delegate protocols
 
 ### YunoPaymentDelegate
 
-Implement this protocol to receive payment results from Full Checkout.
+Base protocol for receiving payment lifecycle events. Implement this in your view controller.
 
 ```swift
-extension CheckoutViewController: YunoPaymentDelegate {
+protocol YunoPaymentDelegate: AnyObject {
+    var checkoutSession: String { get }
+    var countryCode: String { get }
+    var language: String? { get }
+    var viewController: UIViewController? { get }
+    func yunoCreatePayment(with token: String)
+    func yunoCreatePayment(with token: String, information: [String: Any])
+    func yunoPaymentResult(_ result: Yuno.Result)
+}
+```
 
-    func yunoPaymentResult(_ result: YunoPaymentResult) {
-        switch result.status {
-        case .succeeded:
-            navigateToConfirmation(paymentId: result.paymentId)
-        case .failed:
-            showError(message: result.errorMessage ?? "Payment failed")
-        case .processing:
-            showProcessingState()
-        case .cancelled:
-            showCancelledState()
-        @unknown default:
-            break
-        }
-    }
+| Property / Method | Type | Description |
+|-------------------|------|-------------|
+| `checkoutSession` | `String` | Current checkout session ID |
+| `countryCode` | `String` | ISO 3166-1 alpha-2 country code |
+| `language` | `String?` | Language code: `"en"`, `"es"`, `"pt"`, `"id"`, `"ms"`, `"th"` |
+| `viewController` | `UIViewController?` | The presenting view controller |
+| `yunoCreatePayment(with:)` | Method | Called with the one-time token (OTT) for server-side payment creation |
+| `yunoCreatePayment(with:information:)` | Method | Called with OTT and additional payment method metadata |
+| `yunoPaymentResult(_:)` | Method | Called with the final payment result |
 
-    func yunoDidCancel() {
-        dismiss(animated: true)
-    }
+### YunoPaymentFullDelegate
+
+Extends `YunoPaymentDelegate` for Full Checkout. Implement this to receive payment method selection events.
+
+```swift
+protocol YunoPaymentFullDelegate: YunoPaymentDelegate {
+    func yunoDidSelect(paymentMethod: YunoSDK.PaymentMethodSelected)
+    func yunoDidUnenrollSuccessfully(_ success: Bool)
+    func yunoUpdatePaymentMethodsViewHeight(_ height: CGFloat)
 }
 ```
 
 | Method | Parameters | Description |
 |--------|------------|-------------|
-| `yunoPaymentResult(_:)` | `YunoPaymentResult` | Called with the final payment outcome |
-| `yunoDidCancel()` | — | Called when the user dismisses the checkout |
+| `yunoDidSelect(paymentMethod:)` | `PaymentMethodSelected` | Called when the user selects a payment method |
+| `yunoDidUnenrollSuccessfully(_:)` | `Bool` | Called when a stored payment method is successfully removed |
+| `yunoUpdatePaymentMethodsViewHeight(_:)` | `CGFloat` | Called when `getPaymentMethodViewAsync()` is invoked and whenever the view height changes |
 
 ### YunoSeamlessDelegate
 
@@ -126,7 +113,6 @@ extension CheckoutViewController: YunoSeamlessDelegate {
         oneTimeToken: String,
         tokenWithInformation: YunoTokenData
     ) {
-        // Create payment on your server using oneTimeToken
         PaymentAPI.createPayment(token: oneTimeToken) { success in
             if success {
                 Yuno.continuePayment()
@@ -182,14 +168,99 @@ extension EnrollmentViewController: YunoEnrollmentDelegate {
 }
 ```
 
-| Method | Parameters | Description |
-|--------|------------|-------------|
-| `yunoDidCompleteEnrollment(result:)` | `YunoEnrollmentResult` | Called when enrollment completes with a status |
-| `yunoDidFailEnrollment(error:)` | `YunoError` | Called when enrollment encounters an error |
+## SDK methods
 
-## Enrollment Flows
+### getPaymentMethodViewAsync
 
-### Starting Enrollment
+Returns the payment methods view for Full Checkout. Automatically returns `UIView` (UIKit) or `some View` (SwiftUI).
+
+```swift
+let view = await Yuno.getPaymentMethodViewAsync(delegate: self)
+```
+
+### startPayment
+
+Starts the payment process after the user selects a payment method.
+
+```swift
+Yuno.startPayment(showPaymentStatus: true)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `showPaymentStatus` | `Bool` | Show the SDK payment status screen after completion |
+
+### continuePayment
+
+Continue the payment flow after creating the payment server-side. Required when `sdk_action_required` is `true`.
+
+```swift
+Yuno.continuePayment()
+```
+
+### receiveDeeplink
+
+Handle deep links for payment methods that redirect to external apps.
+
+```swift
+func application(_ app: UIApplication,
+                 open url: URL,
+                 options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    guard url.scheme == "yoururlscheme" else { return false }
+    return Yuno.receiveDeeplink(url)
+}
+```
+
+## Checkout configuration
+
+### Full Checkout
+
+```swift
+Yuno.startFullCheckout(
+    from: self,
+    checkoutSession: "session-uuid",
+    countryCode: "CO",
+    applePay: YunoApplePayConfig(
+        merchantId: "merchant.com.yourapp.pay",
+        countryCode: "CO"
+    ),
+    delegate: self
+)
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `from` | `UIViewController` | Yes | Presenting view controller |
+| `checkoutSession` | `String` | Yes | Checkout session ID from your server |
+| `countryCode` | `String` | Yes | ISO 3166-1 alpha-2 country code |
+| `applePay` | `YunoApplePayConfig` | No | Apple Pay configuration |
+| `delegate` | `YunoPaymentDelegate` | Yes | Delegate to receive payment results |
+
+### Seamless Checkout
+
+```swift
+Yuno.startSeamlessCheckout(
+    from: self,
+    checkoutSession: "session-uuid",
+    paymentMethodType: "CARD",
+    countryCode: "CO",
+    vaultedToken: nil,
+    delegate: self
+)
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `from` | `UIViewController` | Yes | Presenting view controller |
+| `checkoutSession` | `String` | Yes | Checkout session ID |
+| `paymentMethodType` | `String` | Yes | Payment method type (e.g., `"CARD"`, `"PIX"`) |
+| `countryCode` | `String` | Yes | ISO 3166-1 alpha-2 country code |
+| `vaultedToken` | `String?` | No | Vaulted token for saved payment methods |
+| `delegate` | `YunoSeamlessDelegate` | Yes | Delegate to receive payment lifecycle events |
+
+## Enrollment flows
+
+### Starting enrollment
 
 ```swift
 Yuno.startEnrollment(
@@ -209,7 +280,7 @@ Yuno.startEnrollment(
 | `customerId` | `String` | Yes | Your customer identifier |
 | `delegate` | `YunoEnrollmentDelegate` | Yes | Delegate to receive enrollment results |
 
-### Enrollment Statuses
+### Enrollment statuses
 
 | Status | Description |
 |--------|-------------|
@@ -222,7 +293,27 @@ Yuno.startEnrollment(
 | `DECLINED` | Enrollment declined |
 | `UNENROLLED` | Previously enrolled method has been removed |
 
-## YunoTheme Customization
+## Payment result states
+
+```swift
+enum Result {
+    case reject, success, fail, processing, internalError, userCancell
+}
+
+func yunoPaymentResult(_ result: Yuno.Result) { ... }
+func yunoEnrollmentResult(_ result: Yuno.Result) { ... }
+```
+
+| State | Description |
+|-------|-------------|
+| `success` | Transaction completed successfully |
+| `fail` | Transaction failed due to an error |
+| `processing` | Transaction is being processed (async methods) |
+| `reject` | Transaction was rejected |
+| `internalError` | Unexpected server-side error |
+| `userCancell` | User cancelled the payment flow |
+
+## YunoTheme customization
 
 Customize the checkout appearance to match your app's design.
 
@@ -238,15 +329,9 @@ let appearance = YunoAppearance(
     fontFamily: "Avenir",
     buttonStyle: .rounded
 )
-
-Yuno.initialize(config: YunoConfig(
-    publicApiKey: "your-public-api-key",
-    environment: .sandbox,
-    appearance: appearance
-))
 ```
 
-### Color Properties
+### Color properties
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -256,7 +341,7 @@ Yuno.initialize(config: YunoConfig(
 | `errorColor` | `UIColor` | Color for error messages and invalid field states |
 | `borderColor` | `UIColor` | Border color for input fields |
 
-### Typography and Layout
+### Typography and layout
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -265,7 +350,7 @@ Yuno.initialize(config: YunoConfig(
 | `borderWidth` | `CGFloat` | Border width for input fields |
 | `buttonStyle` | `ButtonStyle` | `.rounded` or `.rectangular` |
 
-### Dark Mode
+### Dark mode
 
 The SDK supports iOS dark mode automatically using dynamic colors (e.g., `.systemBackground`, `.label`). Provide semantic colors for automatic adaptation:
 
@@ -277,7 +362,7 @@ let appearance = YunoAppearance(
             : UIColor(hex: "#6200EE")
     },
     backgroundColor: .systemBackground,
-    textColor: .label,
+    textColor: .label
 )
 ```
 
@@ -294,25 +379,15 @@ The SDK supports these languages and automatically detects the device locale:
 | Malay | `.malay` |
 | Thai | `.thai` |
 
-Override with `language` during initialization:
+## SwiftUI integration
 
-```swift
-Yuno.initialize(config: YunoConfig(
-    publicApiKey: "your-public-api-key",
-    environment: .sandbox,
-    language: .spanish
-))
-```
-
-## SwiftUI Integration
-
-### Full Checkout View Modifier
+### Full Checkout view modifier
 
 ```swift
 struct CheckoutView: View {
     let checkoutSession: String
     @State private var showCheckout = false
-    @State private var paymentResult: YunoPaymentResult?
+    @State private var paymentResult: Yuno.Result?
 
     var body: some View {
         VStack {
@@ -366,29 +441,7 @@ struct SeamlessCheckoutView: View {
 }
 ```
 
-## UIKit Integration
-
-For UIKit apps, present checkout from any `UIViewController`:
-
-```swift
-class CheckoutViewController: UIViewController {
-
-    func startCheckout() {
-        Yuno.startFullCheckout(
-            from: self,
-            checkoutSession: sessionToken,
-            countryCode: "CO",
-            delegate: self
-        )
-    }
-}
-```
-
-The SDK presents the checkout as a modal sheet. Ensure the view controller is in the view hierarchy before calling `startFullCheckout` or `startSeamlessCheckout`.
-
-## Info.plist Required Entries
-
-Add these entries if using specific payment methods:
+## Info.plist required entries
 
 ### Apple Pay
 
@@ -399,18 +452,14 @@ Add these entries if using specific payment methods:
 </array>
 ```
 
-Also enable the **Apple Pay** capability in your target's **Signing & Capabilities** tab.
-
-### Camera Access (for document scanning)
+### Camera access (for document scanning)
 
 ```xml
 <key>NSCameraUsageDescription</key>
 <string>Camera access is needed to scan payment cards</string>
 ```
 
-## Error Types
-
-### YunoError
+## Error types
 
 | Code | Description | Resolution |
 |------|-------------|------------|
@@ -421,26 +470,7 @@ Also enable the **Apple Pay** capability in your target's **Signing & Capabiliti
 | `.providerError` | Payment provider rejected the transaction | Review error details and payment method |
 | `.cancelled` | User cancelled the operation | No action needed |
 
-### Error Handling Pattern
-
-```swift
-func handleError(_ error: YunoError) {
-    switch error.code {
-    case .networkError:
-        showRetryAlert(message: "Check your internet connection")
-    case .authenticationFailed:
-        showError(message: "Invalid API key. Verify your configuration.")
-    case .sessionExpired:
-        refreshSessionAndRetry()
-    case .cancelled:
-        break // User cancelled, no action needed
-    default:
-        showError(message: error.localizedDescription)
-    }
-}
-```
-
-## Minimum Requirements
+## Minimum requirements
 
 | Requirement | Version |
 |-------------|---------|
@@ -449,7 +479,7 @@ func handleError(_ error: YunoError) {
 | Swift | 5.9+ |
 | CocoaPods | 1.12+ (if used) |
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
   <Card title="iOS Integration Guide" icon="apple" href="/guides/sdk/ios-checkout">

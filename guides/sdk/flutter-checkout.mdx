@@ -82,7 +82,7 @@ The Flutter SDK maintains SAQ-A PCI compliance on both platforms. Card data neve
         repositories {
             google()
             mavenCentral()
-            maven { url = uri("https://yunopayments.jfrog.io/artifactory/snapshots") }
+            maven { url = uri("https://yunopayments.jfrog.io/artifactory/snapshots-libs-release") }
         }
     }
     ```
@@ -99,7 +99,7 @@ The Flutter SDK maintains SAQ-A PCI compliance on both platforms. Card data neve
   </Step>
 </Steps>
 
-## SDK Initialization
+## SDK initialization
 
 Initialize the SDK early in your app, typically in `main.dart`:
 
@@ -123,12 +123,12 @@ void main() async {
 
 ### Configuration options
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `publicApiKey` | `String` | Yes | Your Yuno public API key |
-| `environment` | `YunoEnvironment` | Yes | `sandbox` or `production` |
-| `language` | `YunoLanguage` | No | UI language. Defaults to device locale |
-| `cardFlow` | `CardFlow` | No | `oneStep` (default) or `multiStep` |
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `publicApiKey` | `String` | Yes | -- | Your Yuno public API key |
+| `environment` | `YunoEnvironment` | Yes | -- | `sandbox` or `production` |
+| `language` | `YunoLanguage` | No | Device locale | UI language |
+| `cardFlow` | `CardFlow` | No | `oneStep` | `oneStep` or `multiStep` card entry |
 
 <Warning>
 Never embed your private secret key in the Flutter app. Use only the public API key for client-side initialization.
@@ -273,7 +273,6 @@ Seamless Checkout gives you control over payment method selection while Yuno han
       countryCode: 'CO',
     );
 
-    // Display methods in your custom UI
     setState(() {
       paymentMethods = methods;
     });
@@ -305,7 +304,7 @@ Seamless Checkout gives you control over payment method selection while Yuno han
 
 ### Payment callbacks via streams
 
-For reactive architectures, listen to the payment event stream:
+For reactive architectures (BLoC, Riverpod), listen to the payment event stream:
 
 ```dart
 class CheckoutBloc {
@@ -332,21 +331,21 @@ class CheckoutBloc {
 }
 ```
 
-## 3DS Handling
+## 3DS handling
 
-The SDK handles 3D Secure authentication automatically on both platforms. When a payment requires 3DS, the SDK presents the authentication challenge within the checkout flow.
-
-No additional code is required. The payment result includes the final outcome after 3DS completes.
+The SDK handles 3D Secure authentication automatically on both platforms. No additional code is required. The payment result includes the final outcome after 3DS completes.
 
 <Tip>
 Test 3DS flows in sandbox using Yuno's test card numbers. Check the [Testing guide](/guides/testing) for available test credentials.
 </Tip>
 
-## Platform Channels for Native Features
+## Platform-specific payment methods
 
 ### Apple Pay (iOS only)
 
 ```dart
+import 'dart:io';
+
 if (Platform.isIOS) {
   final result = await YunoSDK.startFullCheckout(
     context: context,
@@ -363,6 +362,8 @@ if (Platform.isIOS) {
 ### Google Pay (Android only)
 
 ```dart
+import 'dart:io';
+
 if (Platform.isAndroid) {
   final result = await YunoSDK.startFullCheckout(
     context: context,
@@ -422,7 +423,7 @@ await YunoSDK.initialize(
 
 Supported languages: English, Spanish, Portuguese, Indonesian, Malay, Thai.
 
-## Error Handling
+## Error handling
 
 ```dart
 Future<void> _startCheckout() async {
@@ -459,7 +460,7 @@ Future<void> _startCheckout() async {
 | `invalidConfiguration` | SDK misconfiguration | Check initialization parameters |
 | `providerError` | Payment provider rejected | Review error details, check payment method |
 
-## Testing in Sandbox
+## Testing in sandbox
 
 <Steps>
   <Step title="Use sandbox environment">

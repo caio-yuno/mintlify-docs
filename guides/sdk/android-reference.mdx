@@ -9,13 +9,12 @@ Configuration object passed to `Yuno.initialize()` in your `Application` class.
 
 ```kotlin
 Yuno.initialize(
-    application = this,
+    this,
+    "your-public-api-key",
     config = YunoConfig(
-        publicApiKey = "your-public-api-key",
-        environment = YunoConfig.Environment.SANDBOX,
+        saveCardEnabled = false,
         language = YunoLanguage.ENGLISH,
-        cardFlow = CardFlow.ONE_STEP,
-        enableLogging = false
+        styles = null
     )
 )
 ```
@@ -24,90 +23,182 @@ Yuno.initialize(
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `publicApiKey` | `String` | Yes | — | Your Yuno public API key |
-| `environment` | `YunoConfig.Environment` | Yes | — | `SANDBOX` or `PRODUCTION` |
-| `language` | `YunoLanguage` | No | Device locale | UI language (`ENGLISH`, `SPANISH`, `PORTUGUESE`, `INDONESIAN`, `MALAY`, `THAI`) |
-| `cardFlow` | `CardFlow` | No | `ONE_STEP` | `ONE_STEP` (single form) or `MULTI_STEP` (step-by-step card entry) |
-| `enableLogging` | `Boolean` | No | `false` | Enable verbose SDK logging to Logcat (tag: `YunoSDK`) |
-| `appearance` | `YunoAppearance` | No | Default theme | Visual customization. See [YunoAppearance](#yunoappearance-customization) |
+| `application` | `Application` | Yes | -- | Your Application instance |
+| `publicApiKey` | `String` | Yes | -- | Your Yuno public API key |
+| `config` | `YunoConfig` | Yes | -- | Configuration data class |
+
+### YunoConfig properties
+
+```kotlin
+data class YunoConfig(
+    val saveCardEnabled: Boolean = false,
+    val language: YunoLanguage? = null,
+    val styles: YunoStyles? = null
+)
+```
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `saveCardEnabled` | `Boolean` | `false` | Show "Save card for future payments" checkbox |
+| `language` | `YunoLanguage?` | Device locale | UI language: `ENGLISH`, `SPANISH`, `PORTUGUESE`, `INDONESIAN`, `MALAY`, `THAI` |
+| `styles` | `YunoStyles?` | Yuno defaults | Visual customization. See [YunoAppearance](#yunoappearance-customization) |
+
+<Note>
+Starting from SDK version 2.11.0, `cardFlow` is no longer part of `YunoConfig`. Card flow configuration is handled exclusively through the CheckoutBuilder.
+</Note>
 
 <Warning>
 Never embed your private secret key in the Android app. Use only the public API key for client-side initialization.
 </Warning>
 
-## YunoCheckout Builder
+## Checkout methods
 
-Configure and launch Full Checkout or Seamless Checkout.
+### startCheckout
 
-### FullCheckoutParams
-
-```kotlin
-val params = FullCheckoutParams(
-    checkoutSession = "session-uuid",
-    countryCode = "CO",
-    googlePay = YunoGooglePayConfig(
-        merchantName = "Your Store",
-        countryCode = "CO"
-    )
-)
-
-checkoutLauncher.launch(params)
-```
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `checkoutSession` | `String` | Yes | Checkout session ID from your server |
-| `countryCode` | `String` | Yes | ISO 3166-1 alpha-2 country code |
-| `googlePay` | `YunoGooglePayConfig` | No | Google Pay configuration |
-
-### SeamlessCheckoutParams
+Initializes the payment flow. Call inside `onCreate()` of the Activity that manages the checkout.
 
 ```kotlin
-val params = SeamlessCheckoutParams(
-    checkoutSession = "session-uuid",
-    paymentMethodType = "CARD",
+startCheckout(
+    checkoutSession = "checkout_session_id",
     countryCode = "CO",
-    vaultedToken = null
+    callbackPaymentState = { paymentState, paymentSubState ->
+        handlePaymentState(paymentState, paymentSubState)
+    },
+    merchantSessionId = null
 )
-
-seamlessLauncher.launch(params)
 ```
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `checkoutSession` | `String` | Yes | Checkout session ID |
-| `paymentMethodType` | `String` | Yes | Payment method type (e.g., `"CARD"`, `"PIX"`, `"PSE"`) |
 | `countryCode` | `String` | Yes | ISO 3166-1 alpha-2 country code |
-| `vaultedToken` | `String` | No | Vaulted token for saved payment methods |
+| `callbackPaymentState` | `(String?, String?) -> Unit` | No | Callback for payment state/sub-state updates |
+| `merchantSessionId` | `String?` | No | Merchant tracking identifier |
 
-## Callback Interfaces
+### startPayment
 
-### OnPaymentListener
-
-Implement this interface to receive payment lifecycle events.
+Starts the payment process after the user selects a method.
 
 ```kotlin
-class CheckoutActivity : AppCompatActivity(), OnPaymentListener {
+startPayment(
+    showStatusYuno = true,
+    callbackOTT = { ott -> createPaymentOnServer(ott) },
+    callBackTokenWithInformation = { tokenModel -> /* detailed token info */ }
+)
+```
 
-    override fun onPaymentStateChange(state: PaymentState) {
-        when (state) {
-            PaymentState.READY -> enablePayButton()
-            PaymentState.PROCESSING -> showLoadingIndicator()
-            PaymentState.COMPLETED -> hideLoadingIndicator()
-        }
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `showStatusYuno` | `Boolean` | Show payment status screen in SDK |
+| `callbackOTT` | `(String?) -> Unit` | Callback with one-time token (OTT) |
+| `callBackTokenWithInformation` | `(OneTimeTokenModel?) -> Unit` | Callback with detailed token info |
+
+### continuePayment
+
+Continue the payment flow after creating the payment server-side. Required when `sdk_action_required` is `true`.
+
+```kotlin
+continuePayment(
+    showPaymentStatus = true,
+    checkoutSession = null,
+    countryCode = null,
+    callbackPaymentState = { paymentState, paymentSubState ->
+        handlePaymentState(paymentState, paymentSubState)
+    }
+)
+```
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `showPaymentStatus` | `Boolean` | `true` | Show the SDK payment status screen |
+| `checkoutSession` | `String?` | `null` | Override checkout session (optional) |
+| `countryCode` | `String?` | `null` | Override country code (optional) |
+| `callbackPaymentState` | `(String?, String?) -> Unit` | `null` | Callback for payment state updates |
+
+## Jetpack Compose components
+
+### PaymentMethodListViewComponent
+
+Displays available payment methods in Full Checkout.
+
+```kotlin
+@Composable
+fun PaymentMethodListViewComponent(
+    activity: Activity,
+    modifier: Modifier? = null,
+    onPaymentSelected: (Boolean) -> Unit,
+    onUnEnrollSuccess: (Boolean) -> Unit = {}
+)
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `activity` | `Activity` | Yes | The hosting Activity |
+| `modifier` | `Modifier?` | No | Layout and appearance customization |
+| `onPaymentSelected` | `(Boolean) -> Unit` | Yes | `true` when a method is selected (enable pay button) |
+| `onUnEnrollSuccess` | `(Boolean) -> Unit` | No | Called when a stored method is successfully removed |
+
+```kotlin
+var paymentMethodIsSelected by remember { mutableStateOf(false) }
+
+Column(
+    modifier = Modifier
+        .weight(1f)
+        .verticalScroll(rememberScrollState())
+) {
+    PaymentMethodListViewComponent(
+        activity = activity,
+        onPaymentSelected = { isSelected ->
+            paymentMethodIsSelected = isSelected
+        },
+        onUnEnrollSuccess = { success ->
+            if (success) {
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Payment method removed")
+                }
+            }
+        },
+    )
+}
+```
+
+<Warning>
+Always wrap `PaymentMethodListViewComponent` in a `Column` with `.verticalScroll(rememberScrollState())`. Without this, the list may not render or scroll properly.
+</Warning>
+
+## Render mode integration
+
+The render mode provides advanced UI flexibility, allowing developers to control how the payment form appears.
+
+### startPaymentRender
+
+```kotlin
+class PaymentActivity : Activity() {
+
+    private lateinit var fragmentContainer: FrameLayout
+
+    fun setupPaymentRender(checkoutSession: String) {
+        Yuno.startPaymentRender(
+            activity = this,
+            checkoutSession = checkoutSession,
+            countryCode = "CO",
+            listener = paymentRenderListener
+        )
     }
 
-    override fun onTokenGenerated(token: String) {
-        // One-time token generated — create payment on your server
-        createPaymentOnServer(token)
+    private val paymentRenderListener = object : YunoPaymentRenderListener {
+        override fun onPaymentMethodView(view: View) {
+            fragmentContainer.addView(view)
+        }
+
+        override fun onPaymentStateChange(state: String, subState: String?) {
+            handlePaymentState(state, subState)
+        }
     }
 }
 ```
 
-| Method | Parameters | Description |
-|--------|------------|-------------|
-| `onPaymentStateChange(state)` | `PaymentState` | Called when the payment lifecycle state changes |
-| `onTokenGenerated(token)` | `String` | Called when a one-time token is generated for payment creation |
+## Callback interfaces
 
 ### YunoSeamlessListener
 
@@ -158,9 +249,9 @@ class EnrollmentActivity : AppCompatActivity(), OnEnrollmentListener {
 }
 ```
 
-## Enrollment Flows
+## Enrollment flows
 
-### Starting Enrollment
+### Starting enrollment
 
 ```kotlin
 private val enrollmentLauncher = registerForActivityResult(
@@ -180,25 +271,7 @@ fun startEnrollment(sessionId: String) {
 }
 ```
 
-### Enrollment Result Handling
-
-```kotlin
-private fun handleEnrollmentResult(result: EnrollmentResult) {
-    when (result.status) {
-        EnrollmentStatus.ENROLLED -> {
-            val vaultedToken = result.vaultedToken
-            // Store vaulted token for future payments
-        }
-        EnrollmentStatus.ENROLL_FAILED -> showError(result.errorMessage)
-        EnrollmentStatus.DECLINED -> showError("Card was declined")
-        EnrollmentStatus.REJECTED -> showError("Enrollment rejected")
-        EnrollmentStatus.EXPIRED -> refreshSessionAndRetry()
-        EnrollmentStatus.CANCELLED -> { /* User cancelled */ }
-    }
-}
-```
-
-### Enrollment Statuses
+### Enrollment statuses
 
 | Status | Description |
 |--------|-------------|
@@ -211,14 +284,13 @@ private fun handleEnrollmentResult(result: EnrollmentResult) {
 | `DECLINED` | Enrollment declined |
 | `UNENROLLED` | Previously enrolled method has been removed |
 
-## Activity Result Handling
+## Activity result handling
 
 Register launchers in your Activity or Fragment before `onCreate()` completes.
 
 ```kotlin
 class CheckoutActivity : AppCompatActivity() {
 
-    // Register launchers at class level or in onCreate
     private val fullCheckoutLauncher = registerForActivityResult(
         FullCheckoutLauncher()
     ) { result -> handlePaymentResult(result) }
@@ -237,9 +309,41 @@ class CheckoutActivity : AppCompatActivity() {
 In Fragments, register launchers in `onCreate()`, not `onViewCreated()`. Registering after the Fragment is `STARTED` causes an `IllegalStateException`.
 </Warning>
 
-## YunoAppearance Customization
+## Payment states
 
-Customize the checkout UI to match your app's design system.
+```kotlin
+const val PAYMENT_STATE_SUCCEEDED = "SUCCEEDED"
+const val PAYMENT_STATE_FAIL = "FAIL"
+const val PAYMENT_STATE_PROCESSING = "PROCESSING"
+const val PAYMENT_STATE_REJECT = "REJECT"
+const val PAYMENT_STATE_INTERNAL_ERROR = "INTERNAL_ERROR"
+const val PAYMENT_STATE_STATE_CANCELED_BY_USER = "CANCELED"
+```
+
+| State | Description |
+|-------|-------------|
+| `SUCCEEDED` | Payment completed successfully |
+| `FAIL` | Payment failed due to an error |
+| `PROCESSING` | Async payment in progress |
+| `REJECT` | Payment rejected |
+| `INTERNAL_ERROR` | Unexpected server-side error |
+| `CANCELED` | User cancelled the payment flow |
+
+### Sync payment methods (Google Pay)
+
+For synchronous payment methods like Google Pay, when a user cancels:
+
+- **SDK Status**: Returns `CANCELED`
+- **Backend status**: Remains `PENDING` until PSP timeout
+
+### Async payment methods (PIX)
+
+For asynchronous methods like PIX, when a user closes the QR window:
+
+- **SDK Status**: Returns `PROCESSING` with sub-status `CLOSED_BY_USER`
+- **Backend status**: Remains `PENDING`, QR code stays valid until expiry
+
+## YunoAppearance customization
 
 ```kotlin
 val appearance = YunoAppearance(
@@ -256,7 +360,7 @@ val appearance = YunoAppearance(
 )
 ```
 
-### Color Properties
+### Color properties
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -266,39 +370,35 @@ val appearance = YunoAppearance(
 | `errorColor` | `Int` (Color) | Color for error messages and invalid field states |
 | `borderColor` | `Int` (Color) | Border color for input fields |
 
-### Typography Properties
+### Typography properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `fontFamily` | `String` | Android font family name (e.g., `"sans-serif"`, `"serif"`, custom font) |
+| `fontFamily` | `String` | Android font family name |
 | `fontSizeSp` | `Int` | Base font size in sp |
 
-### Layout Properties
+### Layout properties
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `cornerRadiusDp` | `Int` | Corner radius in dp for cards, buttons, and input fields |
+| `cornerRadiusDp` | `Int` | Corner radius in dp |
 | `elevation` | `Float` | Elevation in dp for the checkout sheet |
 | `buttonStyle` | `ButtonStyle` | `ROUNDED` or `RECTANGULAR` |
 
-### Dark Mode
+### Dark mode
 
-The SDK respects the system dark mode setting by default. When dark mode is active, colors adapt automatically unless explicit `YunoAppearance` overrides are provided.
-
-To force a specific mode:
+The SDK respects the system dark mode setting by default. To force a specific mode:
 
 ```kotlin
 val appearance = YunoAppearance(
-    forceDarkMode = true, // Always use dark theme
+    forceDarkMode = true,
     primaryColor = Color.parseColor("#BB86FC"),
     backgroundColor = Color.parseColor("#121212"),
-    textColor = Color.WHITE,
+    textColor = Color.WHITE
 )
 ```
 
-## Payment Method Types
-
-Available payment method type constants:
+## Payment method types
 
 | Constant | Description |
 |----------|-------------|
@@ -310,7 +410,7 @@ Available payment method type constants:
 | `"APPLE_PAY"` | Apple Pay |
 | `"GOOGLE_PAY"` | Google Pay |
 
-## Error Codes
+## Error codes
 
 | Code | Description | Resolution |
 |------|-------------|------------|
@@ -318,12 +418,10 @@ Available payment method type constants:
 | `AUTHENTICATION_FAILED` | Invalid public API key | Verify key in Dashboard > API Keys |
 | `SESSION_EXPIRED` | Checkout session has expired | Create a new checkout session |
 | `INVALID_CONFIGURATION` | SDK misconfiguration | Check initialization parameters |
-| `PROVIDER_ERROR` | Payment provider rejected the transaction | Review error details and payment method |
+| `PROVIDER_ERROR` | Payment provider rejected | Review error details and payment method |
 | `UNKNOWN_ERROR` | Unexpected error | Enable logging and check Logcat output |
 
-## ProGuard Rules
-
-If you use R8/ProGuard code shrinking, add these rules to `proguard-rules.pro`:
+## ProGuard rules
 
 ```
 # Yuno SDK
@@ -339,17 +437,20 @@ If you use R8/ProGuard code shrinking, add these rules to `proguard-rules.pro`:
 The SDK ships with consumer ProGuard rules. These additional rules are only needed if you encounter obfuscation issues.
 </Note>
 
-## Minimum Requirements
+## Minimum requirements
 
 | Requirement | Version |
 |-------------|---------|
 | Minimum SDK (API level) | 21 (Android 5.0) |
 | Target SDK | 34+ |
-| Kotlin | 1.9+ |
-| Gradle | 8.0+ |
+| Kotlin | 1.9+ (Kotlin Gradle Plugin 1.4.0+) |
+| Gradle | 8.0+ (Android Gradle Plugin 4.0.0+) |
+| Java | 8+ |
 | Android Studio | Hedgehog (2023.1)+ |
+| AndroidX | Required (not legacy support libraries) |
+| ProGuard | 6.2.2+ (if using code shrinking) |
 
-## Next Steps
+## Next steps
 
 <CardGroup cols={2}>
   <Card title="Android Integration Guide" icon="android" href="/guides/sdk/android-checkout">
