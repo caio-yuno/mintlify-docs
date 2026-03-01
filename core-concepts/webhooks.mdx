@@ -16,7 +16,7 @@ Configure your webhook endpoint in **Dashboard > Settings > Webhooks**:
     Enter the HTTPS URL where Yuno should send event notifications. This must be a publicly accessible endpoint.
   </Step>
   <Step title="Select events">
-    Choose which event types you want to receive (e.g., `payment.succeeded`, `payment.declined`, `refund.succeeded`).
+    Choose which event types you want to receive (e.g., `payment.succeeded`, `payment.failed`, `payment.declined`).
   </Step>
   <Step title="Save and test">
     Use the Dashboard's test feature to send a sample event to your endpoint and verify it responds with HTTP 200.
@@ -29,10 +29,12 @@ Configure your webhook endpoint in **Dashboard > Settings > Webhooks**:
 |-------|-------------|---------------|
 | `payment.created` | A new payment was created | After `POST /v1/payments` |
 | `payment.succeeded` | Payment was captured successfully | After successful capture |
-| `payment.declined` | Payment was declined by provider | After provider decline |
-| `payment.cancelled` | Payment was cancelled | After cancellation request |
-| `refund.succeeded` | Refund was processed | After successful refund |
-| `refund.failed` | Refund attempt failed | After refund failure |
+| `payment.failed` | Payment processing failed (timeout, provider error) | After a processing error |
+| `payment.declined` | Payment was declined by issuer or provider | After provider/issuer decline |
+| `payment.cancelled` | Payment was cancelled or voided | After cancellation request |
+| `payment.expired` | Payment authorization expired without capture | After authorization window closes |
+| `payment.refunded` | Full refund was processed | After successful full refund |
+| `payment.partially_refunded` | Partial refund was processed | After successful partial refund |
 
 ## Payload Structure
 

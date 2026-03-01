@@ -44,9 +44,28 @@ All errors return a JSON object:
 }
 ```
 
-## Rate Limiting
+## Rate Limits
 
-If you receive a `429` response, implement exponential backoff retry logic. Wait progressively longer between retries (e.g., 1s, 2s, 4s, 8s).
+Yuno enforces rate limits per API key to ensure platform stability. Limits vary by endpoint category:
+
+| Endpoint Category | Limit | Window |
+|---|---|---|
+| Checkout Sessions (create/update) | 100 requests | 60 seconds |
+| Payments (create/capture/cancel/refund) | 100 requests | 60 seconds |
+| Customers (CRUD) | 200 requests | 60 seconds |
+| List endpoints (GET) | 200 requests | 60 seconds |
+| Webhooks (register) | 50 requests | 60 seconds |
+
+Rate limit information is included in every API response via the following headers:
+
+| Header | Description |
+|---|---|
+| `X-RateLimit-Limit` | Maximum number of requests allowed in the current window |
+| `X-RateLimit-Remaining` | Number of requests remaining in the current window |
+| `X-RateLimit-Reset` | Unix timestamp (seconds) when the current window resets |
+| `Retry-After` | Seconds to wait before retrying (only present on `429` responses) |
+
+If you receive a `429` response, implement exponential backoff retry logic. Use the `Retry-After` header value as the minimum wait time before retrying.
 
 ## Pagination
 

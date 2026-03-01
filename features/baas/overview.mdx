@@ -5,6 +5,15 @@ description: "Create bank accounts, process transfers, and manage entity onboard
 
 Yuno BaaS provides a unified API for creating bank accounts, processing transfers, and managing entity onboarding across multiple banking providers in the US, UK, Australia, and EU regions.
 
+## How BaaS Relates to Payments
+
+BaaS and Yuno's core payments platform share infrastructure but serve different purposes:
+
+- **Same authentication** — BaaS uses the same API authentication mechanism as payments (API keys and account code via `public-api-key`, `private-secret-key`, and `account-code` headers).
+- **Payout integration** — BaaS entities can receive payouts from payment splits via their recipient IDs. This enables marketplace and platform flows where payment funds are split and disbursed to BaaS-managed accounts.
+- **Regional availability** — BaaS is currently available in Brazil and Mexico, with expansion planned to additional markets.
+- **Separate endpoints** — BaaS endpoints are under `/v1/baas/` and are separate from `/v1/payments/`. They have their own resource models, statuses, and webhook events.
+
 ## Integration flow
 
 ```mermaid

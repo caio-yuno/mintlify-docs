@@ -16,7 +16,7 @@ Refunds can only be issued for payments with status `SUCCEEDED`. For authorized 
 <CodeGroup>
 ```javascript Node.js
 const refund = await fetch(
-  `https://api-sandbox.y.uno/v1/payments/${paymentId}/refunds`,
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/refund`,
   {
     method: 'POST',
     headers: {
@@ -37,7 +37,7 @@ const refundResult = await refund.json();
 import requests
 
 refund = requests.post(
-    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/refunds',
+    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/refund',
     headers={
         'public-api-key': YUNO_PUBLIC_KEY,
         'private-secret-key': YUNO_PRIVATE_KEY,
@@ -58,7 +58,7 @@ payload := map[string]interface{}{
 
 body, _ := json.Marshal(payload)
 req, _ := http.NewRequest("POST",
-    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/refunds", paymentID),
+    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/refund", paymentID),
     bytes.NewBuffer(body),
 )
 
@@ -78,7 +78,7 @@ Specify the amount to refund:
 <CodeGroup>
 ```javascript Node.js
 const partialRefund = await fetch(
-  `https://api-sandbox.y.uno/v1/payments/${paymentId}/refunds`,
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/refund`,
   {
     method: 'POST',
     headers: {
@@ -99,7 +99,7 @@ const partialRefund = await fetch(
 import requests
 
 partial_refund = requests.post(
-    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/refunds',
+    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/refund',
     headers={
         'public-api-key': YUNO_PUBLIC_KEY,
         'private-secret-key': YUNO_PRIVATE_KEY,
@@ -121,7 +121,7 @@ payload := map[string]interface{}{
 
 body, _ := json.Marshal(payload)
 req, _ := http.NewRequest("POST",
-    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/refunds", paymentID),
+    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/refund", paymentID),
     bytes.NewBuffer(body),
 )
 

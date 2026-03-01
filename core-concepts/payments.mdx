@@ -76,12 +76,29 @@ curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
   Capture authorized payments within the provider's hold period (typically 5-7 days for cards). Uncaptured authorizations are voided automatically.
 </Warning>
 
+## Required Fields by Payment Method
+
+Different payment methods require different fields in the request body. Missing a required field results in a `400` error.
+
+| Payment Method | Country | Required Fields |
+|---|---|---|
+| PIX | BR | `customer.document` (CPF or CNPJ), `customer.email` |
+| Boleto | BR | `customer.document` (CPF or CNPJ), `customer.name`, `customer.email` |
+| OXXO | MX | `customer.email` |
+| PSE | CO | `customer.document` (CC or CE), `customer.email` |
+| Cards | All | None beyond card token (3DS may require `customer.email`, `customer.phone`) |
+| Bank Transfer | Varies | `customer.document` (country-specific) |
+
+<Tip>
+Use the Get Payment Methods endpoint on a checkout session to discover which fields are required for each available method.
+</Tip>
+
 ## Refunds
 
 Refund a succeeded payment partially or fully:
 
 ```bash
-curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/refunds \
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/refund \
   -H "public-api-key: your-public-api-key" \
   -H "private-secret-key: your-private-secret-key" \
   -H "account-code: your-account-code" \

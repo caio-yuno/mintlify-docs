@@ -163,6 +163,10 @@ A payment has failed during processing.
 }
 ```
 
+<Note>
+`payment.failed` indicates a processing error (timeout, provider error). `payment.declined` indicates the payment was actively refused by the issuer or provider. These are distinct events: failed means the transaction could not be processed, while declined means it was processed but rejected.
+</Note>
+
 ### payment.declined
 
 A payment has been declined by the provider or card issuer.

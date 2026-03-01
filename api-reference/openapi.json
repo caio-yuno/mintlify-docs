@@ -403,13 +403,14 @@
             "description": "Maximum number of results to return",
             "schema": {
               "type": "integer",
-              "default": 20
+              "default": 20,
+              "maximum": 100
             }
           },
           {
             "name": "starting_after",
             "in": "query",
-            "description": "Cursor for forward pagination",
+            "description": "Cursor for forward pagination. Pass the ID of the last item from the previous page.",
             "schema": {
               "type": "string"
             }
@@ -432,6 +433,103 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/Payment"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/authorize": {
+      "post": {
+        "operationId": "authorizePayment",
+        "summary": "Authorize payment",
+        "description": "Authorizes a payment without capturing funds. Set capture to false to place a hold on the card without completing the charge. Use the Capture endpoint to complete the payment later.",
+        "tags": [
+          "Payments"
+        ],
+        "x-ratelimit": {
+          "limit": 100,
+          "window": "60s"
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PaymentRequest"
+              },
+              "example": {
+                "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "payment_method": {
+                  "type": "CARD",
+                  "token": "tok_4a8b9c2d-1e3f-5678-90ab-cdef12345678"
+                },
+                "amount": {
+                  "currency": "BRL",
+                  "value": 150.0
+                },
+                "country": "BR",
+                "customer": {
+                  "document": {
+                    "document_type": "CPF",
+                    "document_number": "12345678901"
+                  },
+                  "email": "maria.silva@example.com",
+                  "first_name": "Maria",
+                  "last_name": "Silva",
+                  "phone": "+5511999990000"
+                },
+                "description": "Premium subscription - March 2026",
+                "installments": 1,
+                "capture": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment authorized successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                },
+                "example": {
+                  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                  "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                  "status": "AUTHORIZED",
+                  "amount": {
+                    "currency": "BRL",
+                    "value": 150.0
+                  },
+                  "country": "BR",
+                  "payment_method": {
+                    "type": "CARD"
+                  },
+                  "provider": {
+                    "name": "stripe_connect",
+                    "transaction_id": "pi_3abc123def456"
+                  },
+                  "merchant_order_id": "order-20260301-001",
+                  "created_at": "2026-03-01T14:31:00.000Z",
+                  "updated_at": "2026-03-01T14:31:02.000Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "INVALID_FIELD",
+                    "message": "customer.document is required for PIX"
                   }
                 }
               }
@@ -789,7 +887,35 @@
               }
             }
           }
-        }
+        },
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "maximum": 100
+            },
+            "description": "Maximum number of results to return"
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor for forward pagination. Pass the ID of the last item from the previous page."
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor for backward pagination. Pass the ID of the first item from the previous page."
+          }
+        ]
       },
       "post": {
         "operationId": "createInstallmentsPlan",
@@ -967,7 +1093,7 @@
       "get": {
         "operationId": "listIssuers",
         "summary": "List issuers",
-        "description": "Returns a list of issuers (banks) available for a given country. Note: This endpoint returns HTTP 201 (unusual for GET requests, but confirmed behavior).",
+        "description": "Returns a list of issuers (banks) available for a given country.",
         "tags": [
           "Issuers"
         ],
@@ -985,7 +1111,7 @@
           }
         ],
         "responses": {
-          "201": {
+          "200": {
             "description": "List of issuers for the specified country",
             "content": {
               "application/json": {
@@ -1003,15 +1129,15 @@
                 "example": {
                   "issuers": [
                     {
-                      "name": "BANCO QUE APRUEBA",
+                      "name": "Banco de Bogota",
                       "id": "1"
                     },
                     {
-                      "name": "BANCO QUE DECLINA",
+                      "name": "Bancolombia",
                       "id": "2"
                     },
                     {
-                      "name": "BANCO QUE SIMULA UN ERROR",
+                      "name": "Davivienda",
                       "id": "3"
                     }
                   ]
@@ -1098,19 +1224,28 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Maximum number of results",
+            "description": "Maximum number of results to return",
             "schema": {
               "type": "integer",
-              "default": 20
+              "default": 20,
+              "maximum": 100
             }
           },
           {
             "name": "starting_after",
             "in": "query",
-            "description": "Cursor for forward pagination",
+            "description": "Cursor for forward pagination. Pass the ID of the last item from the previous page.",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor for backward pagination. Pass the ID of the first item from the previous page."
           }
         ],
         "responses": {
@@ -1352,7 +1487,7 @@
       "get": {
         "operationId": "getPayout",
         "summary": "Get payout",
-        "description": "Retrieves the details of a payout by ID. Note: The path `/v1/payouts/merchant-ref/{reference}` may require a UUID format for the reference parameter \u2014 verify the correct format for your use case.",
+        "description": "Retrieves the details of a payout by ID. Note: The path `/v1/payouts/merchant-ref/{reference}` may require a UUID format for the reference parameter — verify the correct format for your use case.",
         "tags": [
           "Payouts"
         ],
@@ -1461,16 +1596,17 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Maximum number of results",
+            "description": "Maximum number of results to return",
             "schema": {
               "type": "integer",
-              "default": 20
+              "default": 20,
+              "maximum": 100
             }
           },
           {
             "name": "starting_after",
             "in": "query",
-            "description": "Cursor for forward pagination",
+            "description": "Cursor for forward pagination. Pass the ID of the last item from the previous page.",
             "schema": {
               "type": "string"
             }
@@ -1487,6 +1623,14 @@
                 "FAILED"
               ]
             }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor for backward pagination. Pass the ID of the first item from the previous page."
           }
         ],
         "responses": {
@@ -1643,16 +1787,17 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Maximum number of results",
+            "description": "Maximum number of results to return",
             "schema": {
               "type": "integer",
-              "default": 20
+              "default": 20,
+              "maximum": 100
             }
           },
           {
             "name": "starting_after",
             "in": "query",
-            "description": "Cursor for forward pagination",
+            "description": "Cursor for forward pagination. Pass the ID of the last item from the previous page.",
             "schema": {
               "type": "string"
             }
@@ -2979,19 +3124,28 @@
           {
             "name": "limit",
             "in": "query",
-            "description": "Maximum number of results",
+            "description": "Maximum number of results to return",
             "schema": {
               "type": "integer",
-              "default": 20
+              "default": 20,
+              "maximum": 100
             }
           },
           {
             "name": "starting_after",
             "in": "query",
-            "description": "Cursor for forward pagination",
+            "description": "Cursor for forward pagination. Pass the ID of the last item from the previous page.",
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "ending_before",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Cursor for backward pagination. Pass the ID of the first item from the previous page."
           }
         ],
         "responses": {
@@ -4654,7 +4808,7 @@
           },
           "value": {
             "type": "number",
-            "description": "Payment amount",
+            "description": "Payment amount in major currency units (e.g., 150.00 means 150 BRL, not cents). For zero-decimal currencies like CLP and PYG, use whole numbers (e.g., 15000 means 15,000 CLP).",
             "example": 100.0
           }
         },
@@ -4733,10 +4887,24 @@
             "enum": [
               "SDK_CHECKOUT",
               "SDK_LITE",
+              "SDK_SEAMLESS",
+              "SDK_HEADLESS",
               "DIRECT"
             ],
             "description": "Integration workflow type",
             "example": "SDK_CHECKOUT"
+          },
+          "callback_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to receive server-side payment notifications",
+            "example": "https://merchant.com/webhooks/yuno"
+          },
+          "return_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect the customer after payment completion (required for 3DS, PIX, and redirect-based methods)",
+            "example": "https://merchant.com/checkout/complete"
           }
         },
         "example": {
@@ -4795,6 +4963,18 @@
               }
             },
             "description": "Available payment methods for this session"
+          },
+          "callback_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to receive server-side payment notifications",
+            "example": "https://merchant.com/webhooks/yuno"
+          },
+          "return_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "URL to redirect the customer after payment completion (required for 3DS, PIX, and redirect-based methods)",
+            "example": "https://merchant.com/checkout/complete"
           }
         },
         "example": {
@@ -4913,6 +5093,39 @@
             "description": "Number of installments (for card payments)",
             "minimum": 1,
             "example": 1
+          },
+          "capture": {
+            "type": "boolean",
+            "description": "Whether to automatically capture the payment. Set to false for auth-only flows. Defaults to true.",
+            "default": true,
+            "example": true
+          },
+          "three_ds": {
+            "type": "object",
+            "description": "3DS authentication preferences",
+            "properties": {
+              "required": {
+                "type": "boolean",
+                "description": "Force 3DS authentication",
+                "default": false
+              },
+              "exemption": {
+                "type": "string",
+                "enum": [
+                  "LOW_VALUE",
+                  "TRA",
+                  "TRUSTED_BENEFICIARY",
+                  "RECURRING",
+                  "NONE"
+                ],
+                "description": "SCA exemption to request"
+              }
+            }
+          },
+          "merchant_order_id": {
+            "type": "string",
+            "description": "Your unique order reference. If not provided, inherits from the checkout session.",
+            "example": "order-12345"
           }
         },
         "example": {
@@ -5012,6 +5225,101 @@
             "type": "string",
             "format": "date-time",
             "example": "2026-03-01T14:31:02.000Z"
+          },
+          "transactions": {
+            "type": "array",
+            "description": "Individual processing attempts for this payment",
+            "items": {
+              "$ref": "#/components/schemas/Transaction"
+            }
+          },
+          "refunds": {
+            "type": "array",
+            "description": "Refund records associated with this payment",
+            "items": {
+              "$ref": "#/components/schemas/RefundRecord"
+            }
+          },
+          "three_ds": {
+            "type": "object",
+            "description": "3DS authentication details, present for card payments",
+            "properties": {
+              "required": {
+                "type": "boolean",
+                "description": "Whether 3DS authentication is required"
+              },
+              "version": {
+                "type": "string",
+                "description": "3DS protocol version",
+                "example": "2.2.0"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "AUTHENTICATED",
+                  "CHALLENGED",
+                  "ATTEMPTED",
+                  "FAILED",
+                  "UNAVAILABLE"
+                ]
+              },
+              "eci": {
+                "type": "string",
+                "description": "Electronic Commerce Indicator",
+                "example": "05"
+              },
+              "redirect_url": {
+                "type": "string",
+                "format": "uri",
+                "description": "URL to redirect the customer for 3DS challenge"
+              }
+            }
+          },
+          "metadata": {
+            "type": "object",
+            "description": "Custom key-value pairs set by the merchant",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "failure_reason": {
+            "type": "object",
+            "description": "Decline details when status is DECLINED or REJECTED",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Machine-readable decline code",
+                "example": "insufficient_funds"
+              },
+              "message": {
+                "type": "string",
+                "description": "Human-readable decline reason"
+              },
+              "provider_code": {
+                "type": "string",
+                "description": "Raw decline code from the payment provider"
+              }
+            }
+          },
+          "customer_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the associated customer record"
+          },
+          "installments": {
+            "type": "object",
+            "description": "Installment details if payment was split into installments",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "description": "Number of installments",
+                "example": 3
+              },
+              "plan_id": {
+                "type": "string",
+                "description": "Installment plan ID if using merchant installments"
+              }
+            }
           }
         },
         "example": {
@@ -5282,12 +5590,12 @@
           "name": {
             "type": "string",
             "description": "Issuer name (bank name)",
-            "example": "BANCO QUE APRUEBA"
+            "example": "Banco de Bogota"
           }
         },
         "example": {
           "id": "1",
-          "name": "BANCO QUE APRUEBA"
+          "name": "Banco de Bogota"
         }
       },
       "CustomerRequest": {
@@ -5747,6 +6055,56 @@
                 "type": "string",
                 "description": "Human-readable error description",
                 "example": "The request body contains invalid or missing fields"
+              },
+              "type": {
+                "type": "string",
+                "description": "Error category",
+                "enum": [
+                  "VALIDATION_ERROR",
+                  "AUTHENTICATION_ERROR",
+                  "AUTHORIZATION_ERROR",
+                  "NOT_FOUND",
+                  "CONFLICT",
+                  "RATE_LIMIT_ERROR",
+                  "INTERNAL_ERROR",
+                  "GATEWAY_ERROR"
+                ]
+              },
+              "details": {
+                "type": "array",
+                "description": "Field-level validation errors",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "field": {
+                      "type": "string",
+                      "description": "JSON path of the invalid field",
+                      "example": "customer.document.document_number"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Validation error message",
+                      "example": "Must be 11 digits for CPF"
+                    },
+                    "code": {
+                      "type": "string",
+                      "description": "Machine-readable field error code",
+                      "example": "INVALID_FORMAT"
+                    }
+                  }
+                }
+              },
+              "provider_error": {
+                "type": "object",
+                "description": "Raw error from the payment provider, when available",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
@@ -6935,6 +7293,68 @@
             "refund.succeeded"
           ],
           "secret": "whsec_abc123def456"
+        }
+      },
+      "Transaction": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "DECLINED",
+              "ERROR",
+              "PENDING"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "description": "Provider that processed this attempt"
+          },
+          "provider_transaction_id": {
+            "type": "string"
+          },
+          "response_code": {
+            "type": "string"
+          },
+          "response_message": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RefundRecord": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "SUCCEEDED",
+              "FAILED"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       }
     }
