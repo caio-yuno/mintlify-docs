@@ -13,71 +13,207 @@ Yuno supports idempotency keys to ensure that retrying a request produces the sa
 
 Include the `X-Idempotency-Key` header in your API request. If Yuno receives a second request with the same idempotency key, it returns the stored response from the first request instead of processing a new transaction.
 
-```bash
-curl -X POST https://api-sandbox.y.uno/v1/payments \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code" \
-  -H "X-Idempotency-Key: order-9876-attempt-1" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "checkout_session": "cs_abc123",
-    "payment_method": { "type": "PIX" },
-    "amount": { "currency": "BRL", "value": 100.00 },
-    "country": "BR"
-  }'
-```
-
-## Request Lifecycle with Idempotency
-
 ```
 Request 1 (key: "abc-123")  -->  Yuno processes  -->  Stores result  -->  Returns 200
 Request 2 (key: "abc-123")  -->  Yuno finds key  -->  Returns stored result (no reprocessing)
 Request 3 (key: "def-456")  -->  New key          -->  Processes as new request
 ```
 
+## Using Idempotency Keys
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: order-9876-attempt-1" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "payment_method": { "type": "PIX" },
+    "amount": { "currency": "BRL", "value": 100.00 },
+    "country": "BR"
+  }'
+```
+
+```javascript Node.js
+const { randomUUID } = require('crypto');
+
+const idempotencyKey = `pay-${orderId}-${randomUUID()}`;
+
+const response = await fetch('https://api-sandbox.y.uno/v1/payments', {
+  method: 'POST',
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'X-Idempotency-Key': idempotencyKey,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    checkout_session: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    payment_method: { type: 'PIX' },
+    amount: { currency: 'BRL', value: 100.00 },
+    country: 'BR',
+  }),
+});
+```
+
+```python Python
+import uuid
+
+idempotency_key = f'pay-{order_id}-{uuid.uuid4()}'
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/payments',
+    headers={
+        'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+        'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+        'X-Idempotency-Key': idempotency_key,
+        'Content-Type': 'application/json',
+    },
+    json={
+        'checkout_session': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        'payment_method': {'type': 'PIX'},
+        'amount': {'currency': 'BRL', 'value': 100.00},
+        'country': 'BR',
+    },
+)
+```
+</CodeGroup>
+
 ## When to Use Idempotency Keys
 
-| Endpoint | Recommended? | Why |
-|----------|-------------|-----|
+| Endpoint | Required? | Why |
+|----------|-----------|-----|
 | `POST /v1/payments` | **Required** | Prevents duplicate charges |
-| `POST /v1/payments/{id}/capture` | **Required** | Prevents double capture |
-| `POST /v1/payments/{payment_id}/refund` | **Required** | Prevents duplicate refunds |
+| `POST /v1/payments/{id}/transactions/{txn}/capture` | **Required** | Prevents double capture |
+| `POST /v1/payments/{id}/transactions/{txn}/refund` | **Required** | Prevents duplicate refunds |
+| `POST /v1/payments/{id}/transactions/{txn}/cancel` | **Required** | Prevents double cancellation |
+| `POST /v1/customers/{id}/payment-methods` | **Required** | Prevents duplicate enrollments |
 | `POST /v1/checkout/sessions` | Recommended | Prevents duplicate sessions |
 | `GET` endpoints | Not needed | GET requests are naturally idempotent |
 
 <Warning>
-  Omitting idempotency keys on payment creation is dangerous. If your server times out waiting for a response and retries, you risk creating a duplicate payment. Always include an idempotency key for state-changing operations.
+Omitting idempotency keys on payment creation is dangerous. If your server times out waiting for a response and retries, you risk creating a duplicate payment. Always include an idempotency key for state-changing operations.
 </Warning>
 
 ## Generating Idempotency Keys
 
-Use a value that uniquely identifies the operation from your system's perspective. Common patterns:
+Use a value that uniquely identifies the operation from your system's perspective:
 
 | Pattern | Example | Good For |
 |---------|---------|----------|
 | Order ID + attempt | `order-9876-attempt-1` | E-commerce payments |
 | UUID v4 | `550e8400-e29b-41d4-a716-446655440000` | General purpose |
-| Hash of payload | `sha256(payload)` | Deduplication by content |
-
-```javascript
-const { randomUUID } = require('crypto');
-
-const idempotencyKey = `${orderId}-${randomUUID()}`;
-```
+| Operation + reference | `refund-order-9876-item-a` | Specific operations |
 
 <Note>
-  If you retry with the same idempotency key but a **different request body**, Yuno returns a `409 Conflict` error. The key is bound to the original request parameters.
+If you retry with the same idempotency key but a **different request body**, Yuno returns a `409 Conflict` error. The key is bound to the original request parameters.
 </Note>
 
 ## Key Expiration
 
 Idempotency keys are stored for **24 hours**. After expiration, a request with the same key is treated as a new request. Design your retry logic to complete within this window.
 
+## Retry Pattern with Idempotency
+
+Here is a complete retry pattern combining idempotency keys with exponential backoff:
+
+<CodeGroup>
+```javascript Node.js
+async function createPaymentWithRetry(paymentData, orderId, maxRetries = 3) {
+  // Use a stable key derived from the order ID
+  const idempotencyKey = `pay-${orderId}`;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch('https://api-sandbox.y.uno/v1/payments', {
+        method: 'POST',
+        headers: {
+          'public-api-key': process.env.YUNO_PUBLIC_KEY,
+          'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+          'X-Idempotency-Key': idempotencyKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(paymentData),
+      });
+
+      if (response.ok) return await response.json();
+
+      // Non-retryable errors
+      if ([400, 401, 403, 404, 409].includes(response.status)) {
+        throw new Error(`Non-retryable error: ${response.status}`);
+      }
+
+      // Retryable errors -- continue to next attempt
+      if (attempt === maxRetries) {
+        throw new Error(`Max retries exceeded: ${response.status}`);
+      }
+    } catch (error) {
+      if (attempt === maxRetries) throw error;
+    }
+
+    // Exponential backoff
+    await new Promise(r => setTimeout(r, Math.min(1000 * 2 ** attempt, 30000)));
+  }
+}
+```
+
+```python Python
+import time
+
+def create_payment_with_retry(payment_data, order_id, max_retries=3):
+    idempotency_key = f'pay-{order_id}'
+
+    for attempt in range(max_retries + 1):
+        try:
+            response = requests.post(
+                'https://api-sandbox.y.uno/v1/payments',
+                headers={
+                    'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+                    'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+                    'X-Idempotency-Key': idempotency_key,
+                    'Content-Type': 'application/json',
+                },
+                json=payment_data,
+            )
+
+            if response.ok:
+                return response.json()
+
+            # Non-retryable errors
+            if response.status_code in [400, 401, 403, 404, 409]:
+                raise Exception(f'Non-retryable error: {response.status_code}')
+
+            # Retryable -- continue
+            if attempt == max_retries:
+                raise Exception(f'Max retries exceeded: {response.status_code}')
+
+        except requests.exceptions.ConnectionError:
+            if attempt == max_retries:
+                raise
+
+        # Exponential backoff
+        time.sleep(min(2 ** attempt, 30))
+```
+</CodeGroup>
+
 ## Best Practices
 
 - **Always use idempotency keys** for `POST` requests that create or modify resources
-- **Generate keys deterministically** from your order/transaction IDs when possible
+- **Generate keys deterministically** from your order/transaction IDs when possible -- this ensures the same order always produces the same key
 - **Do not reuse keys** across different operations (e.g., payment and refund for the same order should have different keys)
 - **Implement retry with backoff** -- combine idempotency keys with exponential backoff for robust error handling
 - **Log your keys** alongside request/response data for debugging
+- **Complete retries within 24 hours** before the key expires
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/core-concepts/error-handling">
+    Full error catalog and retry strategies.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/core-concepts/webhooks">
+    Handle asynchronous payment events.
+  </Card>
+</CardGroup>
