@@ -2,3 +2,186 @@
 title: "Create Customer"
 openapi: "POST /v1/customers"
 ---
+
+Create a customer record in Yuno. The returned `id` is used to associate the customer with checkout sessions and enrolled payment methods.
+
+## When to use
+
+Create a customer before starting a payment flow when you need to vault payment methods, display saved cards in checkout, or track payment history per customer. The more customer data you provide, the better your approval rates and fraud prevention.
+
+## Authentication
+
+<Note>
+Requires both `public-api-key` and `private-secret-key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/customers \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_customer_id": "cust-12345",
+    "email": "john.doe@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "gender": "M",
+    "date_of_birth": "1990-02-28",
+    "country": "CO",
+    "nationality": "CO",
+    "document": {
+      "document_type": "CC",
+      "document_number": "1010268952"
+    },
+    "phone": {
+      "number": "3132450765",
+      "country_code": "57"
+    }
+  }'
+```
+
+```javascript Node.js
+const response = await fetch("https://api-sandbox.y.uno/v1/customers", {
+  method: "POST",
+  headers: {
+    "public-api-key": "YOUR_PUBLIC_API_KEY",
+    "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    merchant_customer_id: "cust-12345",
+    email: "john.doe@example.com",
+    first_name: "John",
+    last_name: "Doe",
+    gender: "M",
+    date_of_birth: "1990-02-28",
+    country: "CO",
+    nationality: "CO",
+    document: {
+      document_type: "CC",
+      document_number: "1010268952",
+    },
+    phone: {
+      number: "3132450765",
+      country_code: "57",
+    },
+  }),
+});
+const customer = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api-sandbox.y.uno/v1/customers",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "Content-Type": "application/json",
+    },
+    json={
+        "merchant_customer_id": "cust-12345",
+        "email": "john.doe@example.com",
+        "first_name": "John",
+        "last_name": "Doe",
+        "gender": "M",
+        "date_of_birth": "1990-02-28",
+        "country": "CO",
+        "nationality": "CO",
+        "document": {
+            "document_type": "CC",
+            "document_number": "1010268952",
+        },
+        "phone": {
+            "number": "3132450765",
+            "country_code": "57",
+        },
+    },
+)
+customer = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `merchant_customer_id` | string | Yes | Your external customer identifier (1-255 chars) |
+| `email` | string | Yes | Customer email address (3-255 chars) |
+| `first_name` | string | No | Customer first name (1-255 chars) |
+| `last_name` | string | No | Customer last name (1-255 chars) |
+| `gender` | string | No | `M`, `F`, or `NB` |
+| `date_of_birth` | string | No | Format: `YYYY-MM-DD` |
+| `country` | string | No | ISO 3166-1 alpha-2 country code |
+| `nationality` | string | No | Nationality country code (ISO 3166-1 alpha-2) |
+| `document` | object | No | Identity document with `document_type` and `document_number` |
+| `phone` | object | No | Phone with `number` and `country_code` (calling code, e.g., `"57"`) |
+| `billing_address` | object | No | Address with `address_line_1`, `state`, `city`, `zip_code` (all required if provided) |
+| `shipping_address` | object | No | Same structure as `billing_address` |
+| `metadata` | array | No | Key-value pairs for custom data |
+| `merchant_customer_created_at` | string | No | ISO 8601 timestamp of when the customer was created in your system |
+
+## Response
+
+```json
+{
+  "id": "5ac25323-9cc6-4247-bf04-df712b31e892",
+  "merchant_customer_id": "cust-12345",
+  "first_name": "John",
+  "last_name": "Doe",
+  "gender": "M",
+  "date_of_birth": "1990-02-28",
+  "email": "john.doe@example.com",
+  "nationality": "CO",
+  "country": "CO",
+  "document": {
+    "document_type": "CC",
+    "document_number": "1010268952"
+  },
+  "phone": {
+    "number": "3132450765",
+    "country_code": "57"
+  },
+  "billing_address": null,
+  "shipping_address": null,
+  "metadata": null,
+  "created_at": "2026-03-01T09:59:35.135690Z",
+  "updated_at": "2026-03-01T09:59:35.135691Z",
+  "merchant_customer_created_at": null
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Yuno-generated UUID. Use this as `customer_id` in checkout sessions and payment method endpoints |
+| `merchant_customer_id` | string | Your external identifier |
+| `created_at` | string | ISO 8601 creation timestamp |
+| `updated_at` | string | ISO 8601 last update timestamp |
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `INVALID_REQUEST` | Missing or invalid fields | Check required fields (`merchant_customer_id`, `email`) and value constraints |
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Confirm your account has Customers API access |
+
+## Notes
+
+<Warning>
+Creating a customer with a duplicate `merchant_customer_id` does **not** return an error -- it creates a new customer record with a different Yuno `id`. Use [Retrieve Customer by External ID](/api-reference/customers/get-by-external-id) to check for existing customers first.
+</Warning>
+
+- `document_type` values vary by country: `CC` (Colombia), `CPF` (Brazil), `SSN` (US), `DNI` (Argentina), `CURP` (Mexico).
+- Providing complete customer data (address, document, phone) improves payment approval rates and fraud scoring.
+
+## Related endpoints
+
+- [Get Customer](/api-reference/customers/get) -- retrieve by Yuno ID
+- [Retrieve Customer by External ID](/api-reference/customers/get-by-external-id) -- retrieve by your `merchant_customer_id`
+- [Update Customer](/api-reference/customers/update) -- modify customer details
+- [Enroll Payment Method](/api-reference/payment-methods/enroll) -- vault a payment method for this customer
