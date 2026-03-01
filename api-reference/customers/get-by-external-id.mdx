@@ -2,3 +2,100 @@
 title: "Retrieve Customer by External ID"
 openapi: "GET /v1/customers/merchant-customer-id/{merchant_customer_id}"
 ---
+
+Retrieve a customer using your external `merchant_customer_id` instead of the Yuno-generated UUID.
+
+## When to use
+
+Use this endpoint when you need to look up a Yuno customer using the identifier from your own system. This is useful for checking if a customer already exists before creating a duplicate, or when you do not have the Yuno `id` stored.
+
+## Authentication
+
+<Note>
+Requires both `public-api-key` and `private-secret-key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api-sandbox.y.uno/v1/customers?merchant_customer_id=cust-12345" \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY"
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://api-sandbox.y.uno/v1/customers?merchant_customer_id=cust-12345",
+  {
+    method: "GET",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+  }
+);
+const customer = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api-sandbox.y.uno/v1/customers",
+    params={"merchant_customer_id": "cust-12345"},
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+)
+customer = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `merchant_customer_id` | string (query) | Yes | Your external customer identifier (1-255 chars) |
+
+<Info>
+The actual API path uses the `merchant_customer_id` as a **query parameter** on the `/v1/customers` endpoint: `GET /v1/customers?merchant_customer_id={id}`. The OpenAPI spec also defines a path-based variant at `/v1/customers/merchant-customer-id/{merchant_customer_id}`.
+</Info>
+
+## Response
+
+Returns the same customer object structure as [Create Customer](/api-reference/customers/create).
+
+```json
+{
+  "id": "5ac25323-9cc6-4247-bf04-df712b31e892",
+  "merchant_customer_id": "cust-12345",
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com",
+  "country": "CO",
+  "created_at": "2026-03-01T09:59:35.135690Z",
+  "updated_at": "2026-03-01T09:59:35.135691Z"
+}
+```
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `CUSTOMER_NOT_FOUND` | No customer matches the external ID | Verify the `merchant_customer_id` value |
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Confirm your account has Customers API access |
+| 404 | `NOT_FOUND` | Not found | Check the external ID is correct |
+
+## Notes
+
+- If multiple customers share the same `merchant_customer_id` (see [Create Customer](/api-reference/customers/create) notes), this endpoint returns the most recently created match.
+- Use the returned `id` field as the `customer_id` for checkout sessions and payment method operations.
+
+## Related endpoints
+
+- [Get Customer](/api-reference/customers/get) -- retrieve by Yuno UUID
+- [Create Customer](/api-reference/customers/create) -- create a new customer
+- [Update Customer](/api-reference/customers/update) -- modify the customer profile

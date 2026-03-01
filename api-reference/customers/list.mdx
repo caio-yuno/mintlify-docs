@@ -2,3 +2,87 @@
 title: "List Customers"
 openapi: "GET /v1/customers"
 ---
+
+Retrieve a list of customers associated with your merchant account.
+
+## When to use
+
+Use this endpoint to browse or search your customer records. Useful for admin dashboards, customer lookup, and reconciliation workflows.
+
+## Authentication
+
+<Note>
+Requires both `public-api-key` and `private-secret-key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET "https://api-sandbox.y.uno/v1/customers" \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY"
+```
+
+```javascript Node.js
+const response = await fetch("https://api-sandbox.y.uno/v1/customers", {
+  method: "GET",
+  headers: {
+    "public-api-key": "YOUR_PUBLIC_API_KEY",
+    "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+  },
+});
+const customers = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api-sandbox.y.uno/v1/customers",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+)
+customers = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| No additional parameters required beyond authentication headers. | | | |
+
+## Response
+
+Returns a list of customer objects. Each object has the same structure as the [Create Customer](/api-reference/customers/create) response.
+
+```json
+[
+  {
+    "id": "5ac25323-9cc6-4247-bf04-df712b31e892",
+    "merchant_customer_id": "cust-12345",
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "country": "CO",
+    "created_at": "2026-03-01T09:59:35.135690Z",
+    "updated_at": "2026-03-01T09:59:35.135691Z"
+  }
+]
+```
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Confirm your account has Customers API access |
+
+## Related endpoints
+
+- [Create Customer](/api-reference/customers/create) -- create a new customer
+- [Get Customer](/api-reference/customers/get) -- retrieve a single customer by Yuno ID
+- [Retrieve Customer by External ID](/api-reference/customers/get-by-external-id) -- look up by your `merchant_customer_id`

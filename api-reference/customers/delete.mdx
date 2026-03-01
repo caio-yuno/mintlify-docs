@@ -2,3 +2,80 @@
 title: "Delete Customer"
 openapi: "DELETE /v1/customers/{customer_id}"
 ---
+
+Delete a customer record from Yuno.
+
+## When to use
+
+Use this endpoint to remove a customer when they request account deletion or when you need to clean up test data. Deleting a customer also invalidates their enrolled payment methods.
+
+## Authentication
+
+<Note>
+Requires both `public-api-key` and `private-secret-key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X DELETE https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892 \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY"
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892",
+  {
+    method: "DELETE",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+  }
+);
+```
+
+```python Python
+import requests
+
+response = requests.delete(
+    "https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+)
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string (path) | Yes | Yuno-generated customer UUID (36-64 chars) |
+
+## Response
+
+Returns HTTP 200 on successful deletion.
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `CUSTOMER_NOT_FOUND` | Customer does not exist | Verify the customer UUID |
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Confirm your account has Customers API access |
+
+## Notes
+
+<Warning>
+This action is irreversible. All enrolled payment methods for this customer will be invalidated. Unenroll payment methods explicitly with [Unenroll Payment Method](/api-reference/payment-methods/unenroll) if you need to preserve the customer record.
+</Warning>
+
+## Related endpoints
+
+- [Get Customer](/api-reference/customers/get) -- retrieve customer details before deleting
+- [Create Customer](/api-reference/customers/create) -- create a new customer
+- [Unenroll Payment Method](/api-reference/payment-methods/unenroll) -- remove individual payment methods without deleting the customer

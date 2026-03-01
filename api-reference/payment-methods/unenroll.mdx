@@ -3,4 +3,134 @@ title: "Unenroll Payment Method"
 openapi: "DELETE /v1/customers/{customer_id}/payment-methods/{payment_method_id}"
 ---
 
-Removes a vaulted payment method. The `vaulted_token` becomes invalid.
+Remove an enrolled payment method. The method's status changes to `UNENROLLED` and its `vaulted_token` can no longer be used for payments.
+
+## When to use
+
+Call this endpoint when a customer wants to remove a saved payment method, when a card has expired, or when you need to clean up unused vaulted tokens. The payment method is soft-deleted: the record remains but is no longer usable.
+
+## Authentication
+
+<Note>
+Requires both `public-api-key` and `private-secret-key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<Info>
+The actual unenroll API path is `POST /v1/customers/payment-methods/{payment_method_id}/unenroll`. Note that it does **not** include `customer_id` in the path and uses `POST`, not `DELETE`. The OpenAPI spec maps the `DELETE` operation for documentation purposes.
+</Info>
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/customers/payment-methods/4945a392-de69-4484-a224-8427343d0a1e/unenroll \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY"
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://api-sandbox.y.uno/v1/customers/payment-methods/4945a392-de69-4484-a224-8427343d0a1e/unenroll",
+  {
+    method: "POST",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+  }
+);
+const method = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api-sandbox.y.uno/v1/customers/payment-methods/4945a392-de69-4484-a224-8427343d0a1e/unenroll",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+)
+method = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `payment_method_id` | string (path) | Yes | The `vaulted_token` UUID of the payment method to unenroll (36 chars) |
+
+## Response
+
+Returns the payment method object with its status updated to `UNENROLLED`.
+
+```json
+{
+  "idempotency_key": "5c767e46-2f5a-47b3-b4ba-f99e1842ea6b",
+  "name": "VISA ****1111",
+  "description": "VISA ****1111",
+  "type": "CARD",
+  "category": "CARD",
+  "country": "CO",
+  "parent_type": null,
+  "status": "UNENROLLED",
+  "sub_status": null,
+  "vaulted_token": "4945a392-de69-4484-a224-8427343d0a1e",
+  "callback_url": null,
+  "action": "FORM",
+  "redirect_url": null,
+  "created_at": "2026-03-01T09:59:53.226079Z",
+  "updated_at": "2026-03-01T10:00:08.271644Z",
+  "card_data": {
+    "iin": "41111111",
+    "lfd": "1111",
+    "holder_name": "John Doe",
+    "expiration_month": 12,
+    "expiration_year": 2028,
+    "number_length": 16,
+    "security_code_length": 3,
+    "brand": "VISA",
+    "issuer": "CONOTOXIA SP Z O O",
+    "issuer_code": null,
+    "country_code": "PL",
+    "category": "CLASSIC",
+    "type": "DEBIT",
+    "fingerprint": "7c7bfc9f-86bf-427b-a130-c51b7452d645"
+  },
+  "last_successfully_used": null,
+  "last_successfully_used_at": null,
+  "preferred": null
+}
+```
+
+| Field | Value | Description |
+|-------|-------|-------------|
+| `status` | `"UNENROLLED"` | Changes from `ENROLLED` to `UNENROLLED` |
+| `updated_at` | (new timestamp) | Reflects the time of unenrollment |
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `INVALID_REQUEST` | Invalid request | Verify the `payment_method_id` is a valid UUID |
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Confirm your account has Payment Methods API access |
+
+## Notes
+
+<Warning>
+Unenrollment is a soft delete. The `vaulted_token` becomes invalid for payments, but the record persists in the system. The method will no longer appear in [List Enrolled Payment Methods](/api-reference/payment-methods/list).
+</Warning>
+
+- The actual API path is `POST /v1/customers/payment-methods/{payment_method_id}/unenroll` -- it does **not** include `customer_id` in the path, unlike other payment method endpoints.
+- Re-enrolling the same card after unenrollment creates a new enrollment with a new `vaulted_token`.
+- Any in-flight payments using the old `vaulted_token` may still complete, but new payments will be rejected.
+
+## Related endpoints
+
+- [Enroll Payment Method](/api-reference/payment-methods/enroll) -- vault a new payment method
+- [List Enrolled Payment Methods](/api-reference/payment-methods/list) -- verify the method no longer appears after unenrollment
+- [Retrieve Payment Method](/api-reference/payment-methods/get) -- check the method's status
+- [Delete Customer](/api-reference/customers/delete) -- remove the customer entirely (also invalidates all payment methods)

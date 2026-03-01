@@ -2,3 +2,111 @@
 title: "Update Checkout Session"
 openapi: "PATCH /v1/checkout/sessions/{checkout_session_id}"
 ---
+
+Update an existing checkout session. Use this to modify the payment amount, metadata, or other session properties before the customer completes payment.
+
+## When to use
+
+Call this endpoint when you need to adjust a session after creation -- for example, when a customer changes their cart, applies a coupon, or you need to update metadata before payment.
+
+## Authentication
+
+<Note>
+Requires both `public-api-key` and `private-secret-key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X PATCH https://api-sandbox.y.uno/v1/checkout/sessions/70bc6ef1-510b-452c-9fea-3894a58971ac \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": {
+      "currency": "COP",
+      "value": 45000
+    },
+    "metadata": [
+      { "key": "coupon", "value": "SAVE10" }
+    ]
+  }'
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://api-sandbox.y.uno/v1/checkout/sessions/70bc6ef1-510b-452c-9fea-3894a58971ac",
+  {
+    method: "PATCH",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      amount: { currency: "COP", value: 45000 },
+      metadata: [{ key: "coupon", value: "SAVE10" }],
+    }),
+  }
+);
+const session = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.patch(
+    "https://api-sandbox.y.uno/v1/checkout/sessions/70bc6ef1-510b-452c-9fea-3894a58971ac",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "Content-Type": "application/json",
+    },
+    json={
+        "amount": {"currency": "COP", "value": 45000},
+        "metadata": [{"key": "coupon", "value": "SAVE10"}],
+    },
+)
+session = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `checkout_session_id` | string (path) | Yes | UUID of the checkout session to update |
+| `amount` | object | No | Updated payment amount with `currency` and `value` |
+| `payment_description` | string | No | Updated payment description |
+| `callback_url` | string | No | Updated callback URL |
+| `metadata` | array | No | Updated metadata (replaces the full array) |
+| `installments` | object | No | Updated installment configuration |
+
+## Response
+
+Returns the full updated checkout session object (same structure as [Create Checkout Session](/api-reference/checkout-sessions/create)).
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `INVALID_REQUEST` | Invalid request body or session already used | Check field constraints. You cannot update a session after payment |
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Confirm your account has Checkout API access |
+| 404 | `NOT_FOUND` | Session does not exist | Verify the checkout session ID |
+
+## Notes
+
+<Warning>
+You cannot update a checkout session after it has been used to create a payment (`used: true`).
+</Warning>
+
+- This is a `PATCH` endpoint -- only include the fields you want to change.
+- Updating `metadata` replaces the entire metadata array; it does not merge individual keys.
+
+## Related endpoints
+
+- [Create Checkout Session](/api-reference/checkout-sessions/create) -- create a new session
+- [Get Checkout Session](/api-reference/checkout-sessions/get) -- retrieve session details
+- [Get Available Payment Methods](/api-reference/checkout-sessions/get-payment-methods) -- list payment methods for a session

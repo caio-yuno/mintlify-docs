@@ -3,6 +3,173 @@ title: "Create Checkout Session"
 openapi: "POST /v1/checkout/sessions"
 ---
 
+Create a new checkout session to initialize a payment flow. The checkout session ties together the customer, order, and available payment methods into a single transaction context.
+
+## When to use
+
+Call this endpoint at the start of every payment flow. The returned `checkout_session` ID is required by the SDK to render the checkout UI and by the One-Time Token endpoint to tokenize payment details.
+
+## Authentication
+
+<Note>
+Requires both `public-api-key` and `private-secret-key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/checkout/sessions \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_order_id": "order-001",
+    "payment_description": "Premium subscription",
+    "country": "CO",
+    "account_id": "YOUR_ACCOUNT_ID",
+    "customer_id": "5ac25323-9cc6-4247-bf04-df712b31e892",
+    "amount": {
+      "currency": "COP",
+      "value": 50000
+    },
+    "callback_url": "https://www.example.com/callback",
+    "workflow": "SDK_CHECKOUT",
+    "metadata": [
+      { "key": "plan", "value": "premium" }
+    ]
+  }'
+```
+
+```javascript Node.js
+const response = await fetch("https://api-sandbox.y.uno/v1/checkout/sessions", {
+  method: "POST",
+  headers: {
+    "public-api-key": "YOUR_PUBLIC_API_KEY",
+    "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    merchant_order_id: "order-001",
+    payment_description: "Premium subscription",
+    country: "CO",
+    account_id: "YOUR_ACCOUNT_ID",
+    customer_id: "5ac25323-9cc6-4247-bf04-df712b31e892",
+    amount: {
+      currency: "COP",
+      value: 50000,
+    },
+    callback_url: "https://www.example.com/callback",
+    workflow: "SDK_CHECKOUT",
+    metadata: [{ key: "plan", value: "premium" }],
+  }),
+});
+const session = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api-sandbox.y.uno/v1/checkout/sessions",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "Content-Type": "application/json",
+    },
+    json={
+        "merchant_order_id": "order-001",
+        "payment_description": "Premium subscription",
+        "country": "CO",
+        "account_id": "YOUR_ACCOUNT_ID",
+        "customer_id": "5ac25323-9cc6-4247-bf04-df712b31e892",
+        "amount": {
+            "currency": "COP",
+            "value": 50000,
+        },
+        "callback_url": "https://www.example.com/callback",
+        "workflow": "SDK_CHECKOUT",
+        "metadata": [{"key": "plan", "value": "premium"}],
+    },
+)
+session = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `merchant_order_id` | string | Yes | Unique order identifier in your system (3-255 chars) |
+| `payment_description` | string | Yes | Human-readable payment description (1-255 chars) |
+| `country` | string | Yes | ISO 3166-1 alpha-2 country code. Supported: `AR`, `BO`, `BR`, `CL`, `CO`, `CR`, `EC`, `SV`, `GT`, `HN`, `MX`, `NI`, `PA`, `PY`, `PE`, `US`, `UY` |
+| `account_id` | string | Yes | Your Yuno account UUID (36-64 chars) |
+| `amount` | object | Yes | Payment amount with `currency` (ISO 4217) and `value` (minimum 0) |
+| `customer_id` | string | No | Yuno customer UUID from [Create Customer](/api-reference/customers/create). Required to show enrolled payment methods |
+| `callback_url` | string | No | URL to redirect the customer after checkout. Required for APMs with redirection (3-526 chars) |
+| `workflow` | string | No | Checkout type: `SDK_CHECKOUT` (default), `CHECKOUT`, or `SDK_SEAMLESS` |
+| `metadata` | array | No | Key-value pairs for custom data (max 120 items). Each item has `key` (max 48 chars) and `value` (max 512 chars) |
+| `installments` | object | No | Installment configuration. Use either `plan_id` (pre-configured) or `plan[]` (custom rates) |
+
+## Response
+
 <Note>
 This endpoint returns HTTP **200** (not 201). The checkout session is created and returned in the response body.
 </Note>
+
+```json
+{
+  "merchant_order_id": "order-001",
+  "checkout_session": "70bc6ef1-510b-452c-9fea-3894a58971ac",
+  "country": "CO",
+  "payment_description": "Premium subscription",
+  "customer_id": "5ac25323-9cc6-4247-bf04-df712b31e892",
+  "callback_url": "https://www.example.com/callback?checkoutSession=70bc6ef1-510b-452c-9fea-3894a58971ac",
+  "amount": {
+    "currency": "COP",
+    "value": 50000
+  },
+  "created_at": "2026-03-01T09:59:51.310340Z",
+  "metadata": [
+    { "key": "plan", "value": "premium" }
+  ],
+  "workflow": "SDK_CHECKOUT",
+  "installments": {
+    "plan_id": null,
+    "plan": null
+  },
+  "used": false
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `checkout_session` | string | UUID of the created session. Use this for all subsequent operations |
+| `callback_url` | string | Yuno automatically appends `?checkoutSession=<id>` to the URL you provide |
+| `workflow` | string | Defaults to `SDK_CHECKOUT` if not specified |
+| `used` | boolean | Whether the session has already been used to create a payment |
+| `created_at` | string | ISO 8601 creation timestamp |
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `INVALID_REQUEST` | Missing or invalid fields in request body | Check required fields and value constraints |
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify `public-api-key` and `private-secret-key` headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized for this API | Confirm your account has Checkout API access enabled |
+
+## Notes
+
+<Warning>
+Yuno appends `?checkoutSession=<session_id>` to your `callback_url` automatically. Do not include this parameter yourself.
+</Warning>
+
+- `installments.plan_id` and `installments.plan[]` are mutually exclusive -- use one or the other.
+- The `used` field is set to `true` once a payment is created from this session.
+- Pass a `customer_id` to display the customer's enrolled (vaulted) payment methods in the checkout UI.
+
+## Related endpoints
+
+- [Get Checkout Session](/api-reference/checkout-sessions/get) -- retrieve session details
+- [Get Available Payment Methods](/api-reference/checkout-sessions/get-payment-methods) -- list payment methods for a session
+- [Create Customer](/api-reference/customers/create) -- create a customer to associate with the session

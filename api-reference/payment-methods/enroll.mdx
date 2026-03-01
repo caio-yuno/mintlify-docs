@@ -3,4 +3,197 @@ title: "Enroll Payment Method"
 openapi: "POST /v1/customers/{customer_id}/payment-methods"
 ---
 
-Vaults a payment method for a customer. Returns a `vaulted_token` for recurring use.
+Vault a payment method for a customer. Returns a `vaulted_token` that can be used for recurring payments without requiring the customer to re-enter their card details.
+
+## When to use
+
+Enroll a payment method when a customer wants to save a card or alternative payment method for future use. The returned `vaulted_token` can be passed to checkout sessions and OTT creation for one-click payments.
+
+## Authentication
+
+<Note>
+Requires `public-api-key`, `private-secret-key`, and `X-Idempotency-Key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892/payment-methods \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "X-Idempotency-Key: ffd0068f-19b6-49bd-8385-d7ac4e65fa51" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": "YOUR_ACCOUNT_ID",
+    "country": "CO",
+    "type": "CARD",
+    "workflow": "DIRECT",
+    "card_data": {
+      "number": "4111111111111111",
+      "expiration_month": 12,
+      "expiration_year": 2028,
+      "security_code": "123",
+      "holder_name": "John Doe"
+    }
+  }'
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892/payment-methods",
+  {
+    method: "POST",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+      "X-Idempotency-Key": "ffd0068f-19b6-49bd-8385-d7ac4e65fa51",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      account_id: "YOUR_ACCOUNT_ID",
+      country: "CO",
+      type: "CARD",
+      workflow: "DIRECT",
+      card_data: {
+        number: "4111111111111111",
+        expiration_month: 12,
+        expiration_year: 2028,
+        security_code: "123",
+        holder_name: "John Doe",
+      },
+    }),
+  }
+);
+const method = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892/payment-methods",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "X-Idempotency-Key": "ffd0068f-19b6-49bd-8385-d7ac4e65fa51",
+        "Content-Type": "application/json",
+    },
+    json={
+        "account_id": "YOUR_ACCOUNT_ID",
+        "country": "CO",
+        "type": "CARD",
+        "workflow": "DIRECT",
+        "card_data": {
+            "number": "4111111111111111",
+            "expiration_month": 12,
+            "expiration_year": 2028,
+            "security_code": "123",
+            "holder_name": "John Doe",
+        },
+    },
+)
+method = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string (path) | Yes | Yuno customer UUID (36-64 chars) |
+| `X-Idempotency-Key` | string (header) | Yes | UUID to prevent duplicate enrollments |
+| `account_id` | string | Yes | Your Yuno account UUID (36-64 chars) |
+| `country` | string | Yes | ISO 3166-1 alpha-2 country code |
+| `type` | string | Yes | Payment method type: `CARD`, `NU_PAY_ENROLLMENT` |
+| `workflow` | string | No | Set to `DIRECT` for PCI-certified merchants sending raw card data |
+| `card_data` | object | No | Card details (only for `DIRECT` workflow). Requires `number`, `expiration_month`, `expiration_year` |
+| `card_data.security_code` | string | No | CVV/CVC code (3-4 chars) |
+| `card_data.holder_name` | string | No | Cardholder name (3-26 chars) |
+| `provider_data` | object | No | For token migration from another provider (requires agreement with Yuno) |
+| `callback_url` | string | No | Return URL after APM enrollment (3-255 chars) |
+| `verify` | object | No | Card verification config with `vault_on_success` (boolean) and optional `currency` |
+
+## Response
+
+```json
+{
+  "idempotency_key": "ffd0068f-19b6-49bd-8385-d7ac4e65fa51",
+  "name": "VISA ****1111",
+  "description": "VISA ****1111",
+  "type": "CARD",
+  "category": "CARD",
+  "country": "CO",
+  "parent_type": null,
+  "status": "ENROLLED",
+  "sub_status": "ENROLLED",
+  "vaulted_token": "d14ee7e6-5cbe-4818-80d7-5c7a26c8f1d6",
+  "callback_url": null,
+  "action": "FORM",
+  "redirect_url": null,
+  "created_at": "2026-03-01T10:00:14.339913Z",
+  "updated_at": "2026-03-01T10:00:14.339914Z",
+  "card_data": {
+    "iin": "41111111",
+    "lfd": "1111",
+    "holder_name": "John Doe",
+    "expiration_month": 12,
+    "expiration_year": 2028,
+    "number_length": 16,
+    "security_code_length": 3,
+    "brand": "VISA",
+    "issuer": "CONOTOXIA SP Z O O",
+    "issuer_code": null,
+    "country_code": "PL",
+    "category": "CLASSIC",
+    "type": "DEBIT",
+    "fingerprint": "7c7bfc9f-86bf-427b-a130-c51b7452d645"
+  },
+  "last_successfully_used": null,
+  "last_successfully_used_at": null,
+  "preferred": null,
+  "verify": {
+    "vault_on_success": false,
+    "payment": null
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `vaulted_token` | string | UUID of the vaulted payment method. Use this as `payment_method_id` in other endpoints |
+| `status` | string | Enrollment status: `ENROLLED`, `UNENROLLED`, or `PENDING` |
+| `action` | string/null | `FORM` indicates an SDK form action is associated. `null` means no additional action needed |
+| `redirect_url` | string/null | Redirect URL for APM enrollments that require external authorization |
+| `card_data.fingerprint` | string | Card fingerprint UUID for duplicate detection across enrollments |
+| `card_data.issuer` | string/null | Issuing bank name |
+| `parent_type` | string/null | Parent payment type (undocumented field present in responses) |
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `INVALID_REQUEST` | Invalid request body or missing fields | Check required fields and card data format |
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Confirm your account has Payment Methods API access |
+
+## Notes
+
+<Warning>
+Direct card enrollment with `card_data` requires PCI certification. Non-PCI merchants should use the SDK enrollment flow (omit `workflow` and `card_data`).
+</Warning>
+
+<Info>
+Enrolling the same card multiple times creates **separate** enrollments with distinct `vaulted_token` values. Use the `card_data.fingerprint` field to detect duplicates in your application logic.
+</Info>
+
+- The `X-Idempotency-Key` header prevents duplicate enrollments if the same request is retried.
+- For token migration from another provider, use `provider_data` with the provider `id` and `payment_method_token` instead of `card_data`.
+- When `verify.vault_on_success` is `true`, Yuno performs a verification transaction and the response includes a nested `payment` object with transaction details.
+
+## Related endpoints
+
+- [Retrieve Payment Method](/api-reference/payment-methods/get) -- get full details of an enrolled method
+- [List Enrolled Payment Methods](/api-reference/payment-methods/list) -- list all enrolled methods for a customer
+- [Unenroll Payment Method](/api-reference/payment-methods/unenroll) -- remove an enrolled method
+- [Create Customer](/api-reference/customers/create) -- create a customer before enrolling payment methods
