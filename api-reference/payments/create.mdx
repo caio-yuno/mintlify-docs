@@ -2,3 +2,237 @@
 title: "Create Payment"
 openapi: "POST /v1/payments"
 ---
+
+Create a payment after a checkout session has been established. Supports single-step (authorize and capture) and two-step (authorize only) flows.
+
+## When to use
+
+Use this endpoint to process a payment after your customer has selected a payment method through a checkout session. Choose single-step (`capture: true`) for immediate charges or two-step (`capture: false`) when you need to authorize first and capture later (for example, after order fulfillment).
+
+## Authentication
+
+<Note>All payment endpoints require both your public and private API keys.</Note>
+
+| Header | Type | Required | Description |
+|---|---|---|---|
+| `public-api-key` | string | Yes | Your public API key from the Yuno dashboard |
+| `private-secret-key` | string | Yes | Your private secret key from the Yuno dashboard |
+| `X-Idempotency-Key` | string | Yes | UUID v4 to prevent duplicate payment processing |
+
+## Request example
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "X-Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Order #1234 - Premium Plan",
+    "country": "CO",
+    "merchant_order_id": "order-1234",
+    "amount": {
+      "currency": "USD",
+      "value": 10000
+    },
+    "workflow": "DIRECT",
+    "payment_method": {
+      "type": "CARD",
+      "detail": {
+        "card": {
+          "card_data": {
+            "number": "4196111100001000",
+            "expiration_month": 12,
+            "expiration_year": 2027,
+            "security_code": "123",
+            "holder_name": "John Doe"
+          },
+          "capture": true
+        }
+      }
+    }
+  }'
+```
+
+```javascript Node.js
+const response = await fetch("https://api-sandbox.y.uno/v1/payments", {
+  method: "POST",
+  headers: {
+    "public-api-key": "YOUR_PUBLIC_API_KEY",
+    "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    "X-Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    description: "Order #1234 - Premium Plan",
+    country: "CO",
+    merchant_order_id: "order-1234",
+    amount: {
+      currency: "USD",
+      value: 10000,
+    },
+    workflow: "DIRECT",
+    payment_method: {
+      type: "CARD",
+      detail: {
+        card: {
+          card_data: {
+            number: "4196111100001000",
+            expiration_month: 12,
+            expiration_year: 2027,
+            security_code: "123",
+            holder_name: "John Doe",
+          },
+          capture: true,
+        },
+      },
+    },
+  }),
+});
+
+const payment = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api-sandbox.y.uno/v1/payments",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "X-Idempotency-Key": "550e8400-e29b-41d4-a716-446655440000",
+        "Content-Type": "application/json",
+    },
+    json={
+        "description": "Order #1234 - Premium Plan",
+        "country": "CO",
+        "merchant_order_id": "order-1234",
+        "amount": {
+            "currency": "USD",
+            "value": 10000,
+        },
+        "workflow": "DIRECT",
+        "payment_method": {
+            "type": "CARD",
+            "detail": {
+                "card": {
+                    "card_data": {
+                        "number": "4196111100001000",
+                        "expiration_month": 12,
+                        "expiration_year": 2027,
+                        "security_code": "123",
+                        "holder_name": "John Doe",
+                    },
+                    "capture": True,
+                },
+            },
+        },
+    },
+)
+
+payment = response.json()
+```
+
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `description` | string | Yes | Payment description (3-255 characters) |
+| `country` | string | Yes | Customer's country in ISO 3166-1 alpha-2 format. Supported: `AR`, `BO`, `BR`, `CL`, `CO`, `CR`, `EC`, `SV`, `GT`, `HN`, `MX`, `NI`, `PA`, `PY`, `PE`, `US`, `UY` |
+| `merchant_order_id` | string | Yes | Your unique order identifier (3-255 characters) |
+| `amount.currency` | string | Yes | ISO 4217 currency code. Supported: `ARS`, `BOV`, `BOB`, `BRL`, `CLP`, `COP`, `CRC`, `USD`, `SVC`, `GTQ`, `HNL`, `MXN`, `NIO`, `PAB`, `PYG`, `PEN`, `UYU` |
+| `amount.value` | number | Yes | Amount in smallest currency unit (for example, `10000` = $100.00 USD) |
+| `workflow` | string | Yes | One of `SDK_CHECKOUT`, `DIRECT`, or `REDIRECT` |
+| `payment_method.type` | string | Yes | Payment method type (for example, `CARD`) |
+| `payment_method.detail.card.capture` | boolean | No | `true` for single-step (default), `false` for two-step auth-then-capture |
+| `payment_method.detail.card.card_data` | object | Yes | Card details: `number`, `expiration_month`, `expiration_year`, `security_code`, `holder_name` |
+| `customer_payer` | object | No | Customer information including `first_name`, `last_name`, `email`, `document`, `phone`, `billing_address` |
+| `metadata` | array | No | Array of `{key, value}` objects for custom data |
+| `callback_url` | string | No | URL for payment callbacks |
+
+## Response
+
+A successful request returns a `201` status code with the full payment object.
+
+**Single-step payment (`capture: true`):**
+
+```json
+{
+  "id": "86af11d8-4709-41c2-a048-aaa982ef7765",
+  "account_id": "abc12345-1234-1234-1234-abc123456789",
+  "description": "Order #1234 - Premium Plan",
+  "country": "CO",
+  "status": "SUCCEEDED",
+  "sub_status": "APPROVED",
+  "merchant_order_id": "order-1234",
+  "created_at": "2026-03-01T10:30:00.000000",
+  "amount": {
+    "value": 10000,
+    "currency": "USD",
+    "captured": 10000,
+    "refunded": 0
+  },
+  "checkout": {
+    "session": "438b-session-id",
+    "sdk_action_required": false
+  },
+  "transactions": {
+    "id": "txn-uuid-here",
+    "type": "PURCHASE",
+    "status": "SUCCEEDED",
+    "amount": 10000,
+    "response_code": "SUCCEEDED",
+    "response_message": "The payment was approved"
+  },
+  "workflow": "DIRECT",
+  "metadata": []
+}
+```
+
+**Two-step payment (`capture: false`):**
+
+```json
+{
+  "id": "97bg22e9-5810-52d3-b159-bbb093fg8876",
+  "status": "PENDING",
+  "sub_status": "AUTHORIZED",
+  "transactions": {
+    "id": "txn-uuid-here",
+    "type": "AUTHORIZE",
+    "status": "SUCCEEDED"
+  }
+}
+```
+
+<Warning>
+The Create Payment response returns `transactions` as a **single object**. The [Get Payment](/api-reference/payments/get) endpoint returns `transactions` as an **array**. Handle both structures in your integration.
+</Warning>
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|---|---|---|---|
+| 400 | `INVALID_REQUEST` | Malformed request body or missing required fields | Verify all required fields are present and correctly formatted |
+| 400 | `INVALID_PARAMETERS` | Invalid parameter value (for example, unsupported country code) | Check parameter values against supported options |
+| 401 | `INVALID_CREDENTIALS` | Missing or invalid API keys | Verify your `public-api-key` and `private-secret-key` headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized for this API | Contact Yuno support to verify your account permissions |
+
+## Related endpoints
+
+- [Authorize Payment](/api-reference/payments/authorize) - Create a two-step authorization
+- [Capture Payment](/api-reference/payments/capture) - Capture an authorized payment
+- [Get Payment](/api-reference/payments/get) - Retrieve payment details
+- [Refund Payment](/api-reference/payments/refund) - Refund a completed payment
+
+<Note>
+If you use `metadata` for routing logic, you must also set the same metadata in the Checkout Session. Setting it only in the Payment request will not activate routing rules.
+</Note>
+
+<Warning>
+Amount values are in the **smallest currency unit**. For USD, `10000` represents $100.00. For BRL, `5000` represents R$50.00.
+</Warning>
