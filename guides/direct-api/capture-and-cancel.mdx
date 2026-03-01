@@ -7,250 +7,325 @@ description: "Two-step payment flows: authorize then capture or authorize then c
 
 Two-step (authorize and capture) payment flows let you reserve funds on a customer's card without immediately charging them. This is useful for scenarios like hotel reservations, pre-orders, or marketplace payments where the final amount may change.
 
+<Note>
+Two-step flows are only available for **card payments**. Alternative payment methods like PIX and Boleto do not support authorization holds.
+</Note>
+
 ## Flow Diagram
 
-```mermaid
-graph TD
-  A[Create Payment<br/>capture: false] --> B{Authorization}
-  B -->|Approved| C[AUTHORIZED]
-  C --> D[Capture Payment]
-  C --> E[Cancel Payment]
-  D --> F[SUCCEEDED]
-  E --> G[CANCELLED]
+```
+Your Server                        Yuno API
+    |                                  |
+    |  1. POST /v1/payments            |
+    |     { capture: false }           |
+    |--------------------------------->|
+    |   { status: "AUTHORIZED" }       |
+    |<---------------------------------|
+    |                                  |
+    |  ... time passes ...             |
+    |                                  |
+    |  2a. POST /v1/payments/{id}/     |
+    |      transactions/{txn}/capture  |
+    |--------------------------------->|
+    |   { status: "SUCCEEDED" }        |
+    |<---------------------------------|
+    |                                  |
+    |  -- OR --                        |
+    |                                  |
+    |  2b. POST /v1/payments/{id}/     |
+    |      transactions/{txn}/cancel   |
+    |--------------------------------->|
+    |   { status: "CANCELLED" }        |
+    |<---------------------------------|
 ```
 
 ## Step 1: Authorize
 
-Create a payment with `capture: false` to authorize without capturing:
+Create a payment with `capture: false` to authorize without capturing. The payment status will be `PENDING` with an `AUTHORIZE` transaction status.
 
 <CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: auth-order-456" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "payment_method": {
+      "type": "CARD",
+      "vaulted_token": "cbdcc878-ceb4-4dd8-b0f0-49d444855de0"
+    },
+    "amount": { "currency": "USD", "value": 150.00 },
+    "country": "CO",
+    "capture": false,
+    "customer": {
+      "email": "customer@example.com"
+    },
+    "description": "Hotel reservation #456"
+  }'
+```
+
 ```javascript Node.js
 const authorization = await fetch('https://api-sandbox.y.uno/v1/payments', {
   method: 'POST',
   headers: {
     'public-api-key': process.env.YUNO_PUBLIC_KEY,
     'private-secret-key': process.env.YUNO_PRIVATE_KEY,
-    'account-code': process.env.YUNO_ACCOUNT_CODE,
+    'X-Idempotency-Key': 'auth-order-456',
     'Content-Type': 'application/json',
   },
   body: JSON.stringify({
-    checkout_session: 'session-id',
-    payment_method: { type: 'CARD', token: 'one-time-token' },
+    checkout_session: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    payment_method: {
+      type: 'CARD',
+      vaulted_token: 'cbdcc878-ceb4-4dd8-b0f0-49d444855de0',
+    },
     amount: { currency: 'USD', value: 150.00 },
     country: 'CO',
-    capture: false,  // Authorization only
-    customer: {
-      email: 'customer@example.com',
-    },
+    capture: false, // Authorization only
+    customer: { email: 'customer@example.com' },
+    description: 'Hotel reservation #456',
   }),
 });
+
 const authResult = await authorization.json();
-// authResult.status === 'AUTHORIZED'
+// Store authResult.id (payment_id) and the transaction_id
+// authResult.status === 'PENDING' (with AUTHORIZE transaction)
 ```
 
 ```python Python
 import requests
+import os
 
 response = requests.post(
     'https://api-sandbox.y.uno/v1/payments',
     headers={
-        'public-api-key': YUNO_PUBLIC_KEY,
-        'private-secret-key': YUNO_PRIVATE_KEY,
-        'account-code': YUNO_ACCOUNT_CODE,
+        'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+        'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+        'X-Idempotency-Key': 'auth-order-456',
         'Content-Type': 'application/json',
     },
     json={
-        'checkout_session': 'session-id',
-        'payment_method': {'type': 'CARD', 'token': 'one-time-token'},
+        'checkout_session': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        'payment_method': {
+            'type': 'CARD',
+            'vaulted_token': 'cbdcc878-ceb4-4dd8-b0f0-49d444855de0',
+        },
         'amount': {'currency': 'USD', 'value': 150.00},
         'country': 'CO',
         'capture': False,  # Authorization only
-        'customer': {
-            'email': 'customer@example.com',
-        },
+        'customer': {'email': 'customer@example.com'},
+        'description': 'Hotel reservation #456',
     },
 )
+
 auth_result = response.json()
-# auth_result['status'] == 'AUTHORIZED'
-```
-
-```go Go
-payload := map[string]interface{}{
-    "checkout_session": "session-id",
-    "payment_method":   map[string]interface{}{"type": "CARD", "token": "one-time-token"},
-    "amount":           map[string]interface{}{"currency": "USD", "value": 150.00},
-    "country":          "CO",
-    "capture":          false, // Authorization only
-    "customer": map[string]interface{}{
-        "email": "customer@example.com",
-    },
-}
-
-body, _ := json.Marshal(payload)
-req, _ := http.NewRequest("POST",
-    "https://api-sandbox.y.uno/v1/payments",
-    bytes.NewBuffer(body),
-)
-
-req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
-req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
-req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
-req.Header.Set("Content-Type", "application/json")
-
-resp, err := http.DefaultClient.Do(req)
-```
-</CodeGroup>
-
-<Note>
-Authorizations typically expire after 7 days (varies by provider and card issuer). Capture the payment before the authorization expires, or the funds will be released automatically.
-</Note>
-
-## Step 2a: Capture
-
-Capture the authorized payment to transfer the funds:
-
-<CodeGroup>
-```javascript Full Capture
-const capture = await fetch(
-  `https://api-sandbox.y.uno/v1/payments/${paymentId}/capture`,
-  {
-    method: 'POST',
-    headers: {
-      'public-api-key': process.env.YUNO_PUBLIC_KEY,
-      'private-secret-key': process.env.YUNO_PRIVATE_KEY,
-      'account-code': process.env.YUNO_ACCOUNT_CODE,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({}),
-  }
-);
-// Payment status changes to SUCCEEDED
-```
-
-```javascript Partial Capture
-const partialCapture = await fetch(
-  `https://api-sandbox.y.uno/v1/payments/${paymentId}/capture`,
-  {
-    method: 'POST',
-    headers: { /* auth headers */ },
-    body: JSON.stringify({
-      amount: { currency: 'USD', value: 120.00 },  // Less than authorized
-    }),
-  }
-);
-```
-
-```python Python
-import requests
-
-capture = requests.post(
-    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/capture',
-    headers={
-        'public-api-key': YUNO_PUBLIC_KEY,
-        'private-secret-key': YUNO_PRIVATE_KEY,
-        'account-code': YUNO_ACCOUNT_CODE,
-        'Content-Type': 'application/json',
-    },
-    json={},
-)
-# Payment status changes to SUCCEEDED
-```
-
-```go Go
-req, _ := http.NewRequest("POST",
-    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/capture", paymentID),
-    bytes.NewBufferString("{}"),
-)
-
-req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
-req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
-req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
-req.Header.Set("Content-Type", "application/json")
-
-resp, err := http.DefaultClient.Do(req)
-// Payment status changes to SUCCEEDED
+# Store auth_result['id'] and the transaction_id
 ```
 </CodeGroup>
 
 <Warning>
-Not all providers support partial capture. Verify provider capabilities in the [Coverage Matrix](/reference/coverage) before implementing partial capture flows.
+Authorizations typically expire after **5-7 days** (varies by provider and card issuer). Capture the payment before the authorization expires, or the funds will be released automatically.
 </Warning>
 
-## Step 2b: Cancel (Void)
+## Step 2a: Capture
 
-Cancel an authorized payment to release the held funds:
+Capture the authorized payment to transfer the funds. The capture endpoint requires both the `payment_id` and the `transaction_id` from the authorization response.
 
 <CodeGroup>
+```bash Full Capture
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/capture \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: capture-order-456" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_reference": "capture-hotel-456"
+  }'
+```
+
+```bash Partial Capture
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/capture \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: capture-order-456-partial" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": { "currency": "USD", "value": 120.00 },
+    "merchant_reference": "capture-hotel-456-partial"
+  }'
+```
+
 ```javascript Node.js
-const cancel = await fetch(
-  `https://api-sandbox.y.uno/v1/payments/${paymentId}/cancel`,
+const capture = await fetch(
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/transactions/${transactionId}/capture`,
   {
     method: 'POST',
     headers: {
       'public-api-key': process.env.YUNO_PUBLIC_KEY,
       'private-secret-key': process.env.YUNO_PRIVATE_KEY,
-      'account-code': process.env.YUNO_ACCOUNT_CODE,
+      'X-Idempotency-Key': 'capture-order-456',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      reason: 'Customer cancelled order',
+      merchant_reference: 'capture-hotel-456',
     }),
   }
 );
-// Payment status changes to CANCELLED
+
+const captureResult = await capture.json();
+// captureResult.status === 'SUCCEEDED'
+// captureResult.payment.status === 'SUCCEEDED'
 ```
 
 ```python Python
-import requests
-
-cancel = requests.post(
-    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/cancel',
+capture = requests.post(
+    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/capture',
     headers={
-        'public-api-key': YUNO_PUBLIC_KEY,
-        'private-secret-key': YUNO_PRIVATE_KEY,
-        'account-code': YUNO_ACCOUNT_CODE,
+        'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+        'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+        'X-Idempotency-Key': 'capture-order-456',
         'Content-Type': 'application/json',
     },
     json={
-        'reason': 'Customer cancelled order',
+        'merchant_reference': 'capture-hotel-456',
     },
 )
-# Payment status changes to CANCELLED
-```
 
-```go Go
-payload := map[string]interface{}{
-    "reason": "Customer cancelled order",
-}
-
-body, _ := json.Marshal(payload)
-req, _ := http.NewRequest("POST",
-    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/cancel", paymentID),
-    bytes.NewBuffer(body),
-)
-
-req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
-req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
-req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
-req.Header.Set("Content-Type", "application/json")
-
-resp, err := http.DefaultClient.Do(req)
-// Payment status changes to CANCELLED
+capture_result = capture.json()
+# capture_result['status'] == 'SUCCEEDED'
 ```
 </CodeGroup>
+
+### Capture Request Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `amount` | object | No | Amount to capture. Omit for full capture. |
+| `amount.currency` | string | Yes (if amount) | ISO 4217 currency code |
+| `amount.value` | number | Yes (if amount) | Amount to capture (must be <= authorized amount) |
+| `merchant_reference` | string | Yes | Your reference for this capture transaction (3-255 chars) |
+
+<Warning>
+Not all providers support partial capture. Verify provider capabilities in the Yuno Dashboard before implementing partial capture flows. Do not execute a capture while another is in progress -- wait for the current operation to complete.
+</Warning>
+
+## Step 2b: Cancel (Void)
+
+Cancel an authorized payment to release the held funds. Cancellation is preferred over refund for un-captured authorizations because it avoids processing fees.
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/cancel \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: cancel-order-456" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "description": "Customer cancelled hotel reservation",
+    "merchant_reference": "cancel-hotel-456"
+  }'
+```
+
+```javascript Node.js
+const cancel = await fetch(
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/transactions/${transactionId}/cancel`,
+  {
+    method: 'POST',
+    headers: {
+      'public-api-key': process.env.YUNO_PUBLIC_KEY,
+      'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+      'X-Idempotency-Key': 'cancel-order-456',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      reason: 'REQUESTED_BY_CUSTOMER',
+      description: 'Customer cancelled hotel reservation',
+      merchant_reference: 'cancel-hotel-456',
+    }),
+  }
+);
+
+const cancelResult = await cancel.json();
+// cancelResult.type === 'CANCEL'
+// cancelResult.status === 'SUCCEEDED'
+// cancelResult.payment.status === 'CANCELED'
+```
+
+```python Python
+cancel = requests.post(
+    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/cancel',
+    headers={
+        'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+        'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+        'X-Idempotency-Key': 'cancel-order-456',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'reason': 'REQUESTED_BY_CUSTOMER',
+        'description': 'Customer cancelled hotel reservation',
+        'merchant_reference': 'cancel-hotel-456',
+    },
+)
+
+cancel_result = cancel.json()
+```
+</CodeGroup>
+
+### Cancel Request Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `reason` | string | No | Reason code: `DUPLICATE`, `FRAUDULENT`, or `REQUESTED_BY_CUSTOMER` |
+| `description` | string | No | Human-readable description (3-255 chars) |
+| `merchant_reference` | string | Yes | Your reference for this cancel transaction (3-255 chars) |
+
+<Note>
+Payments with `PENDING` status due to 3DS authentication cannot be cancelled. These payments are in a temporary state awaiting user authentication and will automatically update based on the authentication outcome.
+</Note>
 
 ## Status Transitions
 
 | From | Action | To | Notes |
 |------|--------|----|-------|
-| `AUTHORIZED` | Capture | `SUCCEEDED` | Full or partial amount |
-| `AUTHORIZED` | Cancel | `CANCELLED` | Funds released |
-| `AUTHORIZED` | Expiry | `EXPIRED` | Automatic after ~7 days |
+| `PENDING` (AUTHORIZE) | Capture | `SUCCEEDED` | Full or partial amount |
+| `PENDING` (AUTHORIZE) | Cancel | `CANCELED` | Funds released |
+| `PENDING` (AUTHORIZE) | Expiry | `EXPIRED` | Automatic after ~5-7 days |
 | `SUCCEEDED` | Refund | `REFUNDED` | See [Refunds](/guides/direct-api/refunds) |
+
+## Error Handling
+
+| HTTP Status | Error Code | Cause | Resolution |
+|-------------|-----------|-------|------------|
+| `400` | `INVALID_REQUEST` | Missing required fields | Check `merchant_reference` is provided |
+| `400` | `PAYMENT_NOT_CAPTURABLE` | Payment not in authorized state | Verify payment status before capturing |
+| `400` | `AMOUNT_EXCEEDS_AUTHORIZED` | Capture amount > authorized amount | Reduce the capture amount |
+| `401` | `INVALID_CREDENTIALS` | Invalid API keys | Check authentication headers |
+| `409` | `CONFLICT` | Duplicate idempotency key with different payload | Use a new idempotency key |
 
 ## Best Practices
 
-- Set internal reminders to capture or cancel authorizations before they expire
-- Use cancel (void) instead of refund for un-captured authorizations to avoid processing fees
-- Log the authorization ID for reconciliation purposes
-- Implement idempotency keys to prevent duplicate captures
+- **Track authorization expiry** -- Set internal reminders to capture or cancel authorizations before they expire (typically 5-7 days for cards)
+- **Prefer cancel over refund** -- Use cancel (void) for un-captured authorizations to avoid processing fees
+- **Use idempotency keys** -- Always include `X-Idempotency-Key` to prevent duplicate captures or cancellations
+- **Do not overlap operations** -- Wait for a capture or cancel to complete before starting another
+- **Log transaction IDs** -- Store the authorization `transaction_id` for reconciliation
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Refunds" icon="arrow-rotate-left" href="/guides/direct-api/refunds">
+    Process full and partial refunds after capture.
+  </Card>
+  <Card title="Payment Flow" icon="arrow-right" href="/core-concepts/payment-flow">
+    Understand the complete payment lifecycle.
+  </Card>
+  <Card title="Transactions" icon="arrow-right-arrow-left" href="/core-concepts/transactions">
+    How payments relate to individual processing attempts.
+  </Card>
+  <Card title="Idempotency" icon="shield" href="/core-concepts/idempotency">
+    Safely retry API requests without duplicates.
+  </Card>
+</CardGroup>
