@@ -363,6 +363,192 @@ bank_transfer = requests.post(
 }
 ```
 
+## OXXO Payment (Mexico)
+
+OXXO is a cash voucher method in Mexico. The customer receives a reference number to pay at any OXXO store. Only `customer.email` is required.
+
+<CodeGroup>
+```javascript Node.js
+const oxxoPayment = await fetch('https://api-sandbox.y.uno/v1/payments', {
+  method: 'POST',
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'account-code': process.env.YUNO_ACCOUNT_CODE,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    checkout_session: 'session-id',
+    payment_method: { type: 'OXXO' },
+    amount: { currency: 'MXN', value: 500.00 },
+    country: 'MX',
+    customer: {
+      email: 'cliente@example.com',
+    },
+  }),
+});
+```
+
+```python Python
+import requests
+
+oxxo_payment = requests.post(
+    'https://api-sandbox.y.uno/v1/payments',
+    headers={
+        'public-api-key': YUNO_PUBLIC_KEY,
+        'private-secret-key': YUNO_PRIVATE_KEY,
+        'account-code': YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+    },
+    json={
+        'checkout_session': 'session-id',
+        'payment_method': {'type': 'OXXO'},
+        'amount': {'currency': 'MXN', 'value': 500.00},
+        'country': 'MX',
+        'customer': {
+            'email': 'cliente@example.com',
+        },
+    },
+)
+```
+</CodeGroup>
+
+<Note>
+OXXO payments return a voucher reference in the response. The customer must complete payment at an OXXO store within the expiration window (typically 24-72 hours). Use [webhooks](/guides/webhooks/setup) to receive confirmation when the customer pays.
+</Note>
+
+## Card Payment (Mexico)
+
+Card payments in Mexico use MXN currency. Document fields (CURP or RFC) are optional for cards but recommended for higher approval rates.
+
+<CodeGroup>
+```javascript Node.js
+const mxCardPayment = await fetch('https://api-sandbox.y.uno/v1/payments', {
+  method: 'POST',
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'account-code': process.env.YUNO_ACCOUNT_CODE,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    checkout_session: 'session-id',
+    payment_method: {
+      type: 'CARD',
+      token: 'one-time-token-from-tokenization',
+    },
+    amount: { currency: 'MXN', value: 1500.00 },
+    country: 'MX',
+    customer: {
+      email: 'cliente@example.com',
+      first_name: 'Maria',
+      last_name: 'Garcia',
+      document: {
+        document_type: 'CURP',
+        document_number: 'GARM850101MDFRRL09',
+      },
+    },
+    description: 'Order #456',
+  }),
+});
+```
+
+```python Python
+import requests
+
+mx_card_payment = requests.post(
+    'https://api-sandbox.y.uno/v1/payments',
+    headers={
+        'public-api-key': YUNO_PUBLIC_KEY,
+        'private-secret-key': YUNO_PRIVATE_KEY,
+        'account-code': YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+    },
+    json={
+        'checkout_session': 'session-id',
+        'payment_method': {
+            'type': 'CARD',
+            'token': 'one-time-token-from-tokenization',
+        },
+        'amount': {'currency': 'MXN', 'value': 1500.00},
+        'country': 'MX',
+        'customer': {
+            'email': 'cliente@example.com',
+            'first_name': 'Maria',
+            'last_name': 'Garcia',
+            'document': {
+                'document_type': 'CURP',
+                'document_number': 'GARM850101MDFRRL09',
+            },
+        },
+        'description': 'Order #456',
+    },
+)
+```
+</CodeGroup>
+
+## PSE Payment (Colombia)
+
+PSE (Pagos Seguros en Linea) is a bank transfer method in Colombia. It requires a Colombian identification document (CC for individuals, NIT for businesses).
+
+<CodeGroup>
+```javascript Node.js
+const psePayment = await fetch('https://api-sandbox.y.uno/v1/payments', {
+  method: 'POST',
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'account-code': process.env.YUNO_ACCOUNT_CODE,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    checkout_session: 'session-id',
+    payment_method: { type: 'PSE' },
+    amount: { currency: 'COP', value: 75000 },
+    country: 'CO',
+    customer: {
+      email: 'cliente@example.com',
+      document: {
+        document_type: 'CC',
+        document_number: '1234567890',
+      },
+    },
+  }),
+});
+```
+
+```python Python
+import requests
+
+pse_payment = requests.post(
+    'https://api-sandbox.y.uno/v1/payments',
+    headers={
+        'public-api-key': YUNO_PUBLIC_KEY,
+        'private-secret-key': YUNO_PRIVATE_KEY,
+        'account-code': YUNO_ACCOUNT_CODE,
+        'Content-Type': 'application/json',
+    },
+    json={
+        'checkout_session': 'session-id',
+        'payment_method': {'type': 'PSE'},
+        'amount': {'currency': 'COP', 'value': 75000},
+        'country': 'CO',
+        'customer': {
+            'email': 'cliente@example.com',
+            'document': {
+                'document_type': 'CC',
+                'document_number': '1234567890',
+            },
+        },
+    },
+)
+```
+</CodeGroup>
+
+<Note>
+PSE payments redirect the customer to their bank's website to authorize the transfer. The response includes a `redirect_url` field. Use [webhooks](/guides/webhooks/setup) to receive the final payment status after the customer completes authorization.
+</Note>
+
 <Warning>
 Always verify payment status server-side. Do not rely solely on the synchronous response for fulfillment decisions. Use [webhooks](/guides/webhooks/setup) for definitive payment status updates.
 </Warning>

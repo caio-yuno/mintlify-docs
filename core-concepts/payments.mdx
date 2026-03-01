@@ -80,14 +80,19 @@ curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
 
 Different payment methods require different fields in the request body. Missing a required field results in a `400` error.
 
-| Payment Method | Country | Required Fields |
-|---|---|---|
-| PIX | BR | `customer.document` (CPF or CNPJ), `customer.email` |
-| Boleto | BR | `customer.document` (CPF or CNPJ), `customer.name`, `customer.email` |
-| OXXO | MX | `customer.email` |
-| PSE | CO | `customer.document` (CC or CE), `customer.email` |
-| Cards | All | None beyond card token (3DS may require `customer.email`, `customer.phone`) |
-| Bank Transfer | Varies | `customer.document` (country-specific) |
+| Payment Method | Country | Currency | Required Fields |
+|---|---|---|---|
+| PIX | BR | BRL | `customer.document` (CPF or CNPJ), `customer.email` |
+| Boleto | BR | BRL | `customer.document` (CPF or CNPJ), `customer.name`, `customer.email` |
+| OXXO | MX | MXN | `customer.email` |
+| SPEI | MX | MXN | `customer.email`, `customer.document` (CURP or RFC) |
+| Cards | MX | MXN | Card token, `customer.email` (CURP/RFC recommended for higher approval rates) |
+| PSE | CO | COP | `customer.document` (CC or CE), `customer.email` |
+| Cards | CO | COP | Card token, `customer.email`, `customer.document` (CC or NIT recommended) |
+| Cards | AR | ARS | Card token, `customer.email`, `customer.document` (DNI or CUIT) |
+| Bank Transfer | AR | ARS | `customer.document` (DNI or CUIT), `customer.email` |
+| Cards | All | Multiple | None beyond card token (3DS may require `customer.email`, `customer.phone`) |
+| Bank Transfer | Varies | Varies | `customer.document` (country-specific) |
 
 <Tip>
 Use the Get Payment Methods endpoint on a checkout session to discover which fields are required for each available method.

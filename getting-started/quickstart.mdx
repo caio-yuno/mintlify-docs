@@ -304,6 +304,67 @@ description: "Create your first payment with Yuno in minutes"
         HttpResponse.BodyHandlers.ofString());
     ```
     </CodeGroup>
+
+    ### Other Country Examples
+
+    The example above uses Brazil (BRL/CPF). Below are equivalent payment examples for Mexico and Colombia.
+
+    <Tabs>
+      <Tab title="Mexico — OXXO">
+        OXXO is a cash voucher payment method popular in Mexico. The customer receives a voucher to pay at any OXXO convenience store.
+
+        ```bash cURL
+        curl -X POST https://api-sandbox.y.uno/v1/payments \
+          -H "public-api-key: your-public-api-key" \
+          -H "private-secret-key: your-private-secret-key" \
+          -H "account-code: your-account-code" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "checkout_session": "your-checkout-session-id",
+            "payment_method": {
+              "type": "OXXO"
+            },
+            "amount": {
+              "currency": "MXN",
+              "value": 500.00
+            },
+            "country": "MX",
+            "customer": {
+              "email": "cliente@example.com"
+            }
+          }'
+        ```
+      </Tab>
+      <Tab title="Colombia — PSE">
+        PSE (Pagos Seguros en Linea) is a bank transfer method used in Colombia. It requires a Colombian identification document (CC or NIT).
+
+        ```bash cURL
+        curl -X POST https://api-sandbox.y.uno/v1/payments \
+          -H "public-api-key: your-public-api-key" \
+          -H "private-secret-key: your-private-secret-key" \
+          -H "account-code: your-account-code" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "checkout_session": "your-checkout-session-id",
+            "payment_method": {
+              "type": "PSE"
+            },
+            "amount": {
+              "currency": "COP",
+              "value": 50000
+            },
+            "country": "CO",
+            "customer": {
+              "document": {
+                "document_type": "CC",
+                "document_number": "1234567890"
+              },
+              "email": "cliente@example.com"
+            }
+          }'
+        ```
+      </Tab>
+    </Tabs>
   </Step>
 
   <Step title="Handle the response">
