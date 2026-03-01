@@ -271,7 +271,6 @@
               "api-reference/payments/authorize",
               "api-reference/payments/get",
               "api-reference/payments/get-by-merchant-order",
-              "api-reference/payments/list",
               "api-reference/payments/capture",
               "api-reference/payments/cancel",
               "api-reference/payments/refund",
