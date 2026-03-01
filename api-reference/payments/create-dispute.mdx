@@ -2,3 +2,89 @@
 title: "Create Dispute"
 openapi: "POST /v1/payments/{payment_id}/disputes"
 ---
+
+Create a dispute (chargeback) record for a payment. This registers a dispute initiated by the cardholder's bank and begins the dispute resolution process.
+
+## When to use
+
+Use this endpoint to create a dispute record when you receive a chargeback notification from a payment provider. This enables tracking and management of the dispute lifecycle within Yuno.
+
+## Authentication
+
+| Header | Type | Required | Description |
+|---|---|---|---|
+| `public-api-key` | string | Yes | Your public API key from the Yuno dashboard |
+| `private-secret-key` | string | Yes | Your private secret key from the Yuno dashboard |
+
+## Request example
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments/86af11d8-4709-41c2-a048-aaa982ef7765/disputes \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+```javascript Node.js
+const paymentId = "86af11d8-4709-41c2-a048-aaa982ef7765";
+
+const response = await fetch(
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/disputes`,
+  {
+    method: "POST",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  }
+);
+
+const dispute = await response.json();
+```
+
+```python Python
+import requests
+
+payment_id = "86af11d8-4709-41c2-a048-aaa982ef7765"
+
+response = requests.post(
+    f"https://api-sandbox.y.uno/v1/payments/{payment_id}/disputes",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "Content-Type": "application/json",
+    },
+    json={},
+)
+
+dispute = response.json()
+```
+
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `payment_id` | string (UUID v4) | Yes | Path parameter. The payment to create a dispute for |
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|---|---|---|---|
+| 400 | `INVALID_REQUEST` | Payment is not in a disputable state | Verify the payment has `SUCCEEDED` status |
+| 400 | `INVALID_PARAMETERS` | Invalid UUID format | Ensure `payment_id` is a valid UUID v4 |
+| 401 | `INVALID_CREDENTIALS` | Missing or invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Contact Yuno support |
+| 404 | `NOT_FOUND` | Payment does not exist | Verify the `payment_id` is correct |
+
+## Related endpoints
+
+- [Update Dispute](/api-reference/payments/update-dispute) - Update an existing dispute
+- [Get Payment](/api-reference/payments/get) - Check payment details
+- [Refund Payment](/api-reference/payments/refund) - Refund a payment proactively before a dispute escalates

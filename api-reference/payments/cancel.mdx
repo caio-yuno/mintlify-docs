@@ -2,3 +2,152 @@
 title: "Cancel Payment"
 openapi: "POST /v1/payments/{payment_id}/cancel"
 ---
+
+Cancel a payment that has `PENDING` status with an `AUTHORIZED` sub-status. This releases the held funds back to the customer.
+
+## When to use
+
+Use this endpoint to void an authorization that you no longer intend to capture. Common scenarios include order cancellations, inventory issues, or when the customer requests cancellation before fulfillment.
+
+## Authentication
+
+| Header | Type | Required | Description |
+|---|---|---|---|
+| `public-api-key` | string | Yes | Your public API key from the Yuno dashboard |
+| `private-secret-key` | string | Yes | Your private secret key from the Yuno dashboard |
+| `X-Idempotency-Key` | string | Yes | UUID v4 to prevent duplicate processing |
+
+## Request example
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments/86af11d8-4709-41c2-a048-aaa982ef7765/cancel \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "X-Idempotency-Key: 880h1722-h51e-74g7-d049-779988773333" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_reference": "cancel-order-5678",
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "description": "Customer requested cancellation before shipment"
+  }'
+```
+
+```javascript Node.js
+const paymentId = "86af11d8-4709-41c2-a048-aaa982ef7765";
+
+const response = await fetch(
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/cancel`,
+  {
+    method: "POST",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+      "X-Idempotency-Key": "880h1722-h51e-74g7-d049-779988773333",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      merchant_reference: "cancel-order-5678",
+      reason: "REQUESTED_BY_CUSTOMER",
+      description: "Customer requested cancellation before shipment",
+    }),
+  }
+);
+
+const cancellation = await response.json();
+```
+
+```python Python
+import requests
+
+payment_id = "86af11d8-4709-41c2-a048-aaa982ef7765"
+
+response = requests.post(
+    f"https://api-sandbox.y.uno/v1/payments/{payment_id}/cancel",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "X-Idempotency-Key": "880h1722-h51e-74g7-d049-779988773333",
+        "Content-Type": "application/json",
+    },
+    json={
+        "merchant_reference": "cancel-order-5678",
+        "reason": "REQUESTED_BY_CUSTOMER",
+        "description": "Customer requested cancellation before shipment",
+    },
+)
+
+cancellation = response.json()
+```
+
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `payment_id` | string (UUID v4) | Yes | Path parameter. The payment to cancel |
+| `merchant_reference` | string | Yes | Your reference for this cancellation (3-255 characters) |
+| `reason` | string | No | One of: `DUPLICATE`, `FRAUDULENT`, `REQUESTED_BY_CUSTOMER` |
+| `description` | string | No | Cancellation description (3-255 characters) |
+| `response_additional_data.receipt` | boolean | No | Whether to generate a receipt |
+| `response_additional_data.receipt_language` | string | No | Receipt language: `ES`, `EN`, or `PT` |
+
+## Response
+
+A successful request returns a `200` status code with a `CANCEL` transaction. The payment status updates to `CANCELED`.
+
+```json
+{
+  "id": "cancel-txn-uuid",
+  "type": "CANCEL",
+  "status": "SUCCEEDED",
+  "category": "CARD",
+  "amount": {
+    "value": 150000,
+    "currency": "COP",
+    "captured": 0,
+    "refunded": 0
+  },
+  "merchant_reference": "cancel-order-5678",
+  "response_code": "SUCCEEDED",
+  "response_message": "The payment was canceled",
+  "payment": {
+    "id": "86af11d8-4709-41c2-a048-aaa982ef7765",
+    "status": "CANCELED",
+    "sub_status": "CANCELED"
+  },
+  "customer_payer": null,
+  "simplified_mode": false,
+  "receipt": false,
+  "receipt_url": null,
+  "receipt_language": null,
+  "created_at": "2026-03-01T10:40:00.000000",
+  "updated_at": "2026-03-01T10:40:00.000000"
+}
+```
+
+<Warning>
+Only payments with `PENDING` status and `AUTHORIZED` sub-status can be canceled. Payments pending due to 3DS authentication **cannot** be canceled -- they will auto-resolve to either verified or canceled. For completed payments, use [Refund](/api-reference/payments/refund) instead.
+</Warning>
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|---|---|---|---|
+| 400 | `INVALID_REQUEST` | Payment is not in a cancelable state | Verify the payment has `PENDING`/`AUTHORIZED` status. Use [Refund](/api-reference/payments/refund) for `SUCCEEDED` payments |
+| 400 | `INVALID_PARAMETERS` | Invalid UUID format or parameter values | Ensure IDs are valid UUID v4 format |
+| 401 | `INVALID_CREDENTIALS` | Missing or invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Contact Yuno support |
+
+## Related endpoints
+
+- [Authorize Payment](/api-reference/payments/authorize) - Create the authorization to cancel
+- [Capture Payment](/api-reference/payments/capture) - Capture instead of canceling
+- [Cancel or Refund](/api-reference/payments/cancel-or-refund) - Auto-detect whether to cancel or refund
+- [Get Payment](/api-reference/payments/get) - Check payment status before canceling
+
+<Note>
+If you are unsure whether a payment needs cancellation or refund, use the [Cancel or Refund](/api-reference/payments/cancel-or-refund) endpoint instead. It automatically determines the correct action based on payment status.
+</Note>

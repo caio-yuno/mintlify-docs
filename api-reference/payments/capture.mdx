@@ -2,3 +2,144 @@
 title: "Capture Payment"
 openapi: "POST /v1/payments/{payment_id}/capture"
 ---
+
+Capture a previously authorized payment to finalize the charge and transfer funds. Required for two-step payment flows where `capture: false` was used during authorization.
+
+## When to use
+
+Use this endpoint after a successful [authorization](/api-reference/payments/authorize) when you are ready to charge the customer -- typically after order confirmation or fulfillment. Supports both full and partial capture amounts.
+
+## Authentication
+
+| Header | Type | Required | Description |
+|---|---|---|---|
+| `public-api-key` | string | Yes | Your public API key from the Yuno dashboard |
+| `private-secret-key` | string | Yes | Your private secret key from the Yuno dashboard |
+| `X-Idempotency-Key` | string | Yes | UUID v4 to prevent duplicate capture processing |
+
+## Request example
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments/86af11d8-4709-41c2-a048-aaa982ef7765/capture \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "X-Idempotency-Key: 770g0611-g40d-63f6-c938-668877662222" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_reference": "capture-order-5678",
+    "reason": "Order fulfilled and shipped"
+  }'
+```
+
+```javascript Node.js
+const paymentId = "86af11d8-4709-41c2-a048-aaa982ef7765";
+
+const response = await fetch(
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/capture`,
+  {
+    method: "POST",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+      "X-Idempotency-Key": "770g0611-g40d-63f6-c938-668877662222",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      merchant_reference: "capture-order-5678",
+      reason: "Order fulfilled and shipped",
+    }),
+  }
+);
+
+const capture = await response.json();
+```
+
+```python Python
+import requests
+
+payment_id = "86af11d8-4709-41c2-a048-aaa982ef7765"
+
+response = requests.post(
+    f"https://api-sandbox.y.uno/v1/payments/{payment_id}/capture",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "X-Idempotency-Key": "770g0611-g40d-63f6-c938-668877662222",
+        "Content-Type": "application/json",
+    },
+    json={
+        "merchant_reference": "capture-order-5678",
+        "reason": "Order fulfilled and shipped",
+    },
+)
+
+capture = response.json()
+```
+
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `payment_id` | string (UUID v4) | Yes | Path parameter. The payment ID from the authorization response |
+| `merchant_reference` | string | Yes | Your reference for this capture (3-255 characters) |
+| `reason` | string | Yes | Reason for the capture (3-255 characters) |
+| `amount` | object | No | Partial capture amount. Omit for full capture |
+| `amount.currency` | string | Conditional | ISO 4217 currency code (required if `amount` is provided) |
+| `amount.value` | string | Conditional | Amount as a **string** (required if `amount` is provided) |
+| `simplified_mode` | boolean | No | Whether to use simplified mode |
+
+<Warning>
+Do not execute a capture while another capture is already in progress for the same payment. This may lead to unexpected behavior.
+</Warning>
+
+## Response
+
+A successful request returns a `200` status code with a `CAPTURE` transaction. The payment status updates to `SUCCEEDED`/`APPROVED`.
+
+```json
+{
+  "id": "capture-txn-uuid",
+  "type": "CAPTURE",
+  "status": "SUCCEEDED",
+  "category": "CARD",
+  "amount": {
+    "value": 150000,
+    "currency": "COP",
+    "captured": 150000,
+    "refunded": 0
+  },
+  "merchant_reference": "capture-order-5678",
+  "response_code": "SUCCEEDED",
+  "response_message": "The payment was approved",
+  "payment": {
+    "id": "86af11d8-4709-41c2-a048-aaa982ef7765",
+    "status": "SUCCEEDED",
+    "sub_status": "APPROVED"
+  },
+  "created_at": "2026-03-01T10:35:00.000000",
+  "updated_at": "2026-03-01T10:35:00.000000"
+}
+```
+
+<Note>
+When using partial capture, pass `amount.value` as a **string**, not a number. For example: `"value": "10000"` rather than `"value": 10000`.
+</Note>
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|---|---|---|---|
+| 400 | `INVALID_REQUEST` | Malformed request or payment not in capturable state | Verify payment has `PENDING`/`AUTHORIZED` status |
+| 400 | `INVALID_PARAMETERS` | Invalid UUID format or parameter values | Ensure IDs are valid UUID v4 format |
+| 401 | `INVALID_CREDENTIALS` | Missing or invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Contact Yuno support |
+
+## Related endpoints
+
+- [Authorize Payment](/api-reference/payments/authorize) - Create the authorization to capture
+- [Cancel Payment](/api-reference/payments/cancel) - Cancel instead of capturing
+- [Get Payment](/api-reference/payments/get) - Check payment status before capturing

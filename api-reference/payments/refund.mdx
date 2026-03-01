@@ -2,3 +2,295 @@
 title: "Refund Payment"
 openapi: "POST /v1/payments/{payment_id}/refund"
 ---
+
+Refund a completed payment, either fully or partially. Full refunds return the entire captured amount; partial refunds return a specified portion while keeping the payment active.
+
+## When to use
+
+Use this endpoint to return funds to a customer after a payment has been captured and completed (`SUCCEEDED` status). Supports full refunds for complete reversals and partial refunds for adjustments like returned items.
+
+## Authentication
+
+| Header | Type | Required | Description |
+|---|---|---|---|
+| `public-api-key` | string | Yes | Your public API key from the Yuno dashboard |
+| `private-secret-key` | string | Yes | Your private secret key from the Yuno dashboard |
+| `X-Idempotency-Key` | string | Yes | UUID v4 to prevent duplicate refund processing |
+
+## Request example
+
+### Full refund
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments/86af11d8-4709-41c2-a048-aaa982ef7765/refund \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "X-Idempotency-Key: 990i2833-i62f-85h8-e150-880099884444" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_reference": "refund-order-1234",
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "description": "Full refund - customer unsatisfied",
+    "customer_payer": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john.doe@example.com"
+    }
+  }'
+```
+
+```javascript Node.js
+const paymentId = "86af11d8-4709-41c2-a048-aaa982ef7765";
+
+const response = await fetch(
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/refund`,
+  {
+    method: "POST",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+      "X-Idempotency-Key": "990i2833-i62f-85h8-e150-880099884444",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      merchant_reference: "refund-order-1234",
+      reason: "REQUESTED_BY_CUSTOMER",
+      description: "Full refund - customer unsatisfied",
+      customer_payer: {
+        first_name: "John",
+        last_name: "Doe",
+        email: "john.doe@example.com",
+      },
+    }),
+  }
+);
+
+const refund = await response.json();
+```
+
+```python Python
+import requests
+
+payment_id = "86af11d8-4709-41c2-a048-aaa982ef7765"
+
+response = requests.post(
+    f"https://api-sandbox.y.uno/v1/payments/{payment_id}/refund",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "X-Idempotency-Key": "990i2833-i62f-85h8-e150-880099884444",
+        "Content-Type": "application/json",
+    },
+    json={
+        "merchant_reference": "refund-order-1234",
+        "reason": "REQUESTED_BY_CUSTOMER",
+        "description": "Full refund - customer unsatisfied",
+        "customer_payer": {
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+        },
+    },
+)
+
+refund = response.json()
+```
+
+</CodeGroup>
+
+### Partial refund
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments/86af11d8-4709-41c2-a048-aaa982ef7765/refund \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "X-Idempotency-Key: aa1j3944-j73g-96i9-f261-991100995555" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_reference": "partial-refund-order-1234",
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "description": "Partial refund - 1 item returned",
+    "amount": {
+      "currency": "USD",
+      "value": "15000"
+    },
+    "customer_payer": {
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john.doe@example.com"
+    }
+  }'
+```
+
+```javascript Node.js
+const paymentId = "86af11d8-4709-41c2-a048-aaa982ef7765";
+
+const response = await fetch(
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/refund`,
+  {
+    method: "POST",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+      "X-Idempotency-Key": "aa1j3944-j73g-96i9-f261-991100995555",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      merchant_reference: "partial-refund-order-1234",
+      reason: "REQUESTED_BY_CUSTOMER",
+      description: "Partial refund - 1 item returned",
+      amount: {
+        currency: "USD",
+        value: "15000",
+      },
+      customer_payer: {
+        first_name: "John",
+        last_name: "Doe",
+        email: "john.doe@example.com",
+      },
+    }),
+  }
+);
+
+const refund = await response.json();
+```
+
+```python Python
+import requests
+
+payment_id = "86af11d8-4709-41c2-a048-aaa982ef7765"
+
+response = requests.post(
+    f"https://api-sandbox.y.uno/v1/payments/{payment_id}/refund",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "X-Idempotency-Key": "aa1j3944-j73g-96i9-f261-991100995555",
+        "Content-Type": "application/json",
+    },
+    json={
+        "merchant_reference": "partial-refund-order-1234",
+        "reason": "REQUESTED_BY_CUSTOMER",
+        "description": "Partial refund - 1 item returned",
+        "amount": {
+            "currency": "USD",
+            "value": "15000",
+        },
+        "customer_payer": {
+            "first_name": "John",
+            "last_name": "Doe",
+            "email": "john.doe@example.com",
+        },
+    },
+)
+
+refund = response.json()
+```
+
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `payment_id` | string (UUID v4) | Yes | Path parameter. The payment to refund |
+| `merchant_reference` | string | Yes | Your reference for this refund (3-255 characters) |
+| `customer_payer` | object | Yes | Customer info: `first_name`, `last_name`, `email` |
+| `reason` | string | No | One of: `DUPLICATE`, `FRAUDULENT`, `REQUESTED_BY_CUSTOMER` |
+| `description` | string | No | Refund description (3-255 characters) |
+| `amount` | object | No | Partial refund amount. Omit for full refund |
+| `amount.currency` | string | Conditional | ISO 4217 currency code (required with `amount`) |
+| `amount.value` | string | Conditional | Refund amount as a **string** (required with `amount`) |
+| `simplified_mode` | boolean | No | Whether to use simplified mode |
+| `response_additional_data.receipt` | boolean | No | Whether to generate a receipt |
+| `response_additional_data.receipt_language` | string | No | Receipt language: `ES`, `EN`, or `PT` |
+
+<Warning>
+The `amount.value` in refund requests must be a **string**, not a number. Use `"value": "15000"` instead of `"value": 15000`. This differs from the Create Payment request where `value` is a number.
+</Warning>
+
+## Response
+
+A successful request returns a `200` status code.
+
+**Full refund:**
+
+```json
+{
+  "id": "86af11d8-4709-41c2-a048-aaa982ef7765",
+  "status": "REFUNDED",
+  "sub_status": "REFUNDED",
+  "amount": {
+    "value": 30000,
+    "currency": "USD",
+    "captured": 30000,
+    "refunded": 30000
+  },
+  "transactions": {
+    "id": "refund-txn-uuid",
+    "type": "REFUND",
+    "status": "SUCCEEDED",
+    "amount": 30000,
+    "response_code": "SUCCEEDED"
+  },
+  "customer_payer": {
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "merchant_customer_validations": {
+      "account_is_verified": false,
+      "email_is_verified": false,
+      "phone_is_verified": false
+    }
+  }
+}
+```
+
+**Partial refund:**
+
+```json
+{
+  "id": "86af11d8-4709-41c2-a048-aaa982ef7765",
+  "status": "SUCCEEDED",
+  "sub_status": "PARTIALLY_REFUNDED",
+  "amount": {
+    "value": 50000,
+    "currency": "USD",
+    "captured": 50000,
+    "refunded": 15000
+  },
+  "transactions": {
+    "id": "refund-txn-uuid",
+    "type": "REFUND",
+    "status": "SUCCEEDED",
+    "amount": 15000
+  }
+}
+```
+
+<Note>
+Partial refunds keep the payment `status` as `SUCCEEDED` with `sub_status` changed to `PARTIALLY_REFUNDED`. Full refunds change the `status` to `REFUNDED`. The `amount.refunded` field tracks the total refunded amount.
+</Note>
+
+<Note>
+Refund responses may include `merchant_customer_validations` in the `customer_payer` object with `account_is_verified`, `email_is_verified`, and `phone_is_verified` fields. These are not present in create or retrieve responses.
+</Note>
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|---|---|---|---|
+| 400 | `INVALID_REQUEST` | Payment is not in a refundable state | Verify the payment has `SUCCEEDED` status. Use [Cancel](/api-reference/payments/cancel) for `PENDING`/`AUTHORIZED` payments |
+| 400 | `INVALID_PARAMETERS` | Invalid UUID format, amount exceeds captured amount, or missing required fields | Verify IDs and ensure refund amount does not exceed available balance |
+| 401 | `INVALID_CREDENTIALS` | Missing or invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Contact Yuno support |
+
+## Related endpoints
+
+- [Cancel or Refund](/api-reference/payments/cancel-or-refund) - Auto-detect whether to cancel or refund
+- [Cancel Payment](/api-reference/payments/cancel) - Cancel an authorized (uncaptured) payment
+- [Get Payment](/api-reference/payments/get) - Check payment status and refund amounts

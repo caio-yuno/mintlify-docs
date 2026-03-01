@@ -2,3 +2,90 @@
 title: "Update Dispute"
 openapi: "PATCH /v1/payments/{payment_id}/disputes/{dispute_id}"
 ---
+
+Update an existing dispute record with new information, evidence, or status changes. Use this to respond to chargebacks with supporting documentation.
+
+## When to use
+
+Use this endpoint to update a dispute with evidence or status changes during the chargeback resolution process. Submit compelling evidence such as delivery confirmations, customer communications, or transaction records to contest a dispute.
+
+## Authentication
+
+| Header | Type | Required | Description |
+|---|---|---|---|
+| `public-api-key` | string | Yes | Your public API key from the Yuno dashboard |
+| `private-secret-key` | string | Yes | Your private secret key from the Yuno dashboard |
+
+## Request example
+
+<CodeGroup>
+
+```bash cURL
+curl -X PATCH https://api-sandbox.y.uno/v1/payments/86af11d8-4709-41c2-a048-aaa982ef7765/disputes/dispute-uuid-here \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+```javascript Node.js
+const paymentId = "86af11d8-4709-41c2-a048-aaa982ef7765";
+const disputeId = "dispute-uuid-here";
+
+const response = await fetch(
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/disputes/${disputeId}`,
+  {
+    method: "PATCH",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({}),
+  }
+);
+
+const dispute = await response.json();
+```
+
+```python Python
+import requests
+
+payment_id = "86af11d8-4709-41c2-a048-aaa982ef7765"
+dispute_id = "dispute-uuid-here"
+
+response = requests.patch(
+    f"https://api-sandbox.y.uno/v1/payments/{payment_id}/disputes/{dispute_id}",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "Content-Type": "application/json",
+    },
+    json={},
+)
+
+dispute = response.json()
+```
+
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `payment_id` | string (UUID v4) | Yes | Path parameter. The payment associated with the dispute |
+| `dispute_id` | string (UUID v4) | Yes | Path parameter. The dispute to update |
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|---|---|---|---|
+| 400 | `INVALID_PARAMETERS` | Invalid UUID format | Ensure both `payment_id` and `dispute_id` are valid UUID v4 |
+| 401 | `INVALID_CREDENTIALS` | Missing or invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Contact Yuno support |
+| 404 | `NOT_FOUND` | Payment or dispute does not exist | Verify both IDs are correct |
+
+## Related endpoints
+
+- [Create Dispute](/api-reference/payments/create-dispute) - Create a new dispute
+- [Get Payment](/api-reference/payments/get) - Check payment and dispute details
