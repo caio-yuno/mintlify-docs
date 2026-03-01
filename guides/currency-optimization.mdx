@@ -194,6 +194,104 @@ Yuno provides a currency conversion API that lets you quote, lock, and apply exc
   The currency conversion endpoint may not be available in sandbox environments. Contact Yuno support to enable it for your account if you receive a 404 response.
 </Warning>
 
+## Currency Hedging Strategies
+
+Effective hedging reduces exposure to exchange rate volatility, particularly important in LatAm markets where currencies like ARS and BRL can swing 5-10% in a month.
+
+### Natural Hedging
+
+The simplest hedging approach is matching your revenue and expense currencies. If you collect BRL in Brazil and also pay suppliers or staff in BRL, the exposure nets out.
+
+- **Match revenue to expenses**: Open local accounts and pay local costs (hosting, salaries, marketing) in the same currency you collect
+- **Reinvest locally**: Use local currency revenue for market expansion rather than converting to USD
+- **Time settlements strategically**: Align settlement dates with known local currency obligations
+
+### Forward Contracts
+
+For predictable cross-border flows, lock in exchange rates for future settlement periods:
+
+1. Estimate your monthly settlement volume per currency (e.g., $200K BRL equivalent)
+2. Contract a forward rate with your banking partner for 30, 60, or 90 days
+3. Apply the locked rate at settlement via your treasury management system
+4. Compare realized rate against spot to measure hedging effectiveness
+
+### Netting Across Markets
+
+If you operate in multiple LatAm countries, net opposing currency flows before converting:
+
+- Offset BRL collections against BRL payouts (e.g., seller payouts in a marketplace)
+- Consolidate USD needs across MXN, COP, and CLP settlements into a single conversion
+- Reduce the total volume subject to FX conversion fees
+
+### Hedging Cost-Benefit Analysis
+
+| Strategy | Setup Cost | Ongoing Cost | Risk Reduction | Best For |
+|----------|-----------|-------------|----------------|----------|
+| **Natural hedging** | Low (requires local entity) | Minimal | Medium | Merchants with local operations |
+| **Forward contracts** | Medium (banking relationship) | 0.1-0.5% premium | High | Predictable monthly volumes >$100K |
+| **Options contracts** | High (premiums) | 1-3% premium | Very high | Large merchants with volatile corridors |
+| **Netting** | Low (operational process) | Minimal | Medium | Multi-market merchants with two-way flows |
+| **No hedging** | None | None | None | Small volumes or stable currency pairs |
+
+<Tip>
+  For most LatAm merchants processing under $500K/month, natural hedging combined with rate locking via Yuno's currency conversion API provides the best cost-to-protection ratio without the complexity of financial derivatives.
+</Tip>
+
+## Corridor-Specific FX Patterns
+
+Understanding the characteristics of each currency corridor helps you choose the right strategy and set realistic FX cost expectations.
+
+| Corridor | Typical Spread | Volatility | Liquidity | Recommended Strategy |
+|----------|---------------|------------|-----------|---------------------|
+| USD to BRL | 1.0-2.5% | High | High | Rate locking for large transactions; daily settlement to limit exposure |
+| USD to MXN | 0.8-2.0% | Medium | High | Cost-optimized routing; weekly settlement acceptable |
+| USD to COP | 1.5-3.0% | Medium-High | Medium | Local acquirer preferred; forward contracts for >$200K/month |
+| USD to ARS | 3.0-8.0% | Very High | Low | Settle daily; minimize ARS holdings; consider parallel rate implications |
+| EUR to BRL | 1.2-3.0% | High | Medium | Avoid double conversion (EUR to USD to BRL); use direct EUR/BRL providers |
+| USD to CLP | 1.0-2.5% | Medium | Medium | Standard routing; batch settlements effective |
+| USD to PEN | 1.0-2.0% | Low-Medium | Medium | Stable corridor; weekly settlement acceptable |
+
+<Warning>
+  The ARS corridor is subject to government-imposed capital controls that change frequently. Official and parallel exchange rates can diverge significantly. Always verify current regulations before configuring ARS settlement flows.
+</Warning>
+
+### Seasonal and Event-Driven Volatility
+
+Plan for known volatility windows in LatAm FX markets:
+
+- **Central bank rate decisions**: BRL and MXN often move 1-3% on rate announcement days (typically monthly)
+- **Election cycles**: ARS and BRL show elevated volatility during presidential campaigns
+- **Commodity price shifts**: CLP (copper) and COP (oil) correlate with commodity markets
+- **US Federal Reserve meetings**: All LatAm currencies react to USD policy changes
+
+## FX Rate Monitoring Dashboard
+
+Track these metrics daily in **Dashboard > Analytics > Currency** to identify optimization opportunities and detect anomalies.
+
+### Key Metrics to Track
+
+| Metric | Description | Frequency | Alert Threshold |
+|--------|-------------|-----------|-----------------|
+| **Mid-market rate deviation** | Difference between your effective rate and the interbank mid-market rate | Real-time | >2.0% deviation |
+| **Provider markup comparison** | Side-by-side FX markup across your active providers for each currency pair | Daily | >0.5% variance between providers |
+| **Locked rate utilization** | Percentage of eligible cross-border transactions using a pre-quoted locked rate | Daily | &lt;70% utilization |
+| **Settlement FX impact** | FX cost incurred between authorization time and settlement time | Per settlement | >0.3% slippage |
+| **Conversion volume by pair** | Total amount converted per currency pair per day | Daily | Monitor for concentration risk |
+| **Failed rate quotes** | Rate quote API calls that failed or expired before use | Daily | >15% failure rate |
+
+### Setting Up FX Alerts
+
+Configure automated alerts in **Dashboard > Analytics > Currency > Alerts**:
+
+1. **Rate spike alert**: Notify when a currency pair moves more than 2% from the daily open
+2. **Provider markup alert**: Notify when any provider's markup exceeds your configured threshold
+3. **Settlement slippage alert**: Notify when settlement FX differs from authorization FX by more than 0.3%
+4. **Volume concentration alert**: Notify when more than 80% of FX volume routes to a single provider
+
+<Note>
+  FX monitoring data is available with a 15-minute delay in the Dashboard. For real-time rate data, use the currency conversion API's rate quote endpoint and compare against a third-party mid-market feed.
+</Note>
+
 ## Best Practices for Cross-Border Payments
 
 - **Price in local currency** whenever possible to avoid DCC markup and improve conversion rates
