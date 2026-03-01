@@ -12,12 +12,12 @@ A payment represents a charge against a customer's selected payment method. Paym
 <CodeGroup>
 ```bash cURL
 curl -X POST https://api-sandbox.y.uno/v1/payments \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code" \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: pay-order-9876" \
   -H "Content-Type: application/json" \
   -d '{
-    "checkout_session": "cs_abc123def456",
+    "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
     "payment_method": {
       "type": "PIX"
     },
@@ -35,27 +35,79 @@ curl -X POST https://api-sandbox.y.uno/v1/payments \
     }
   }'
 ```
+
+```javascript Node.js
+const response = await fetch('https://api-sandbox.y.uno/v1/payments', {
+  method: 'POST',
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'X-Idempotency-Key': 'pay-order-9876',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    checkout_session: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+    payment_method: { type: 'PIX' },
+    amount: { currency: 'BRL', value: 100.00 },
+    country: 'BR',
+    customer: {
+      document: { document_type: 'CPF', document_number: '12345678901' },
+      email: 'customer@example.com',
+    },
+  }),
+});
+
+const payment = await response.json();
+```
+
+```python Python
+import requests
+import os
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/payments',
+    headers={
+        'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+        'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+        'X-Idempotency-Key': 'pay-order-9876',
+        'Content-Type': 'application/json',
+    },
+    json={
+        'checkout_session': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        'payment_method': {'type': 'PIX'},
+        'amount': {'currency': 'BRL', 'value': 100.00},
+        'country': 'BR',
+        'customer': {
+            'document': {'document_type': 'CPF', 'document_number': '12345678901'},
+            'email': 'customer@example.com',
+        },
+    },
+)
+
+payment = response.json()
+```
 </CodeGroup>
 
 ## Payment Statuses
 
 | Status | Meaning | Next Actions |
-|--------|---------|--------------|
-| `PENDING` | Awaiting customer action or provider confirmation | Wait for webhook update |
-| `AUTHORIZED` | Funds reserved (auth-only mode) | Capture or cancel |
-| `SUCCEEDED` | Funds captured successfully | Refund if needed |
-| `DECLINED` | Provider/issuer declined the charge | Retry with different method or provider |
+|--------|---------|-------------|
+| `PENDING` | Awaiting customer action or provider confirmation | Wait for [webhook](/core-concepts/webhooks) update |
+| `AUTHORIZED` | Funds reserved (auth-only mode with `capture: false`) | [Capture or cancel](/guides/direct-api/capture-and-cancel) |
+| `SUCCEEDED` | Funds captured successfully | [Refund](/guides/direct-api/refunds) if needed |
+| `DECLINED` | Provider or issuer declined the charge | Retry with different method or provider |
 | `REJECTED` | Yuno validation or fraud rules blocked the payment | Fix request and retry |
 | `CANCELLED` | Cancelled before completion | Create new payment |
-| `REFUNDED` | Captured funds returned to customer | No further action |
+| `REFUNDED` | Captured funds fully returned to customer | No further action |
+| `PARTIALLY_REFUNDED` | Part of the captured funds returned | Additional refunds possible |
 
 ## Auto-Capture vs Manual Capture
 
-By default, payments are auto-captured. Set `"capture": false` to use manual capture (auth-only).
+By default, payments are auto-captured. Set `"capture": false` to use manual capture (auth-only), which reserves funds without charging.
 
 ```json
 {
-  "checkout_session": "cs_abc123def456",
+  "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
   "capture": false,
   "payment_method": { "type": "CARD" },
   "amount": { "currency": "BRL", "value": 200.00 },
@@ -66,56 +118,39 @@ By default, payments are auto-captured. Set `"capture": false` to use manual cap
 ### Capturing an Authorized Payment
 
 ```bash
-curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/capture \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: capture-order-9876" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "merchant_reference": "capture-9876"
+  }'
 ```
 
 <Warning>
-  Capture authorized payments within the provider's hold period (typically 5-7 days for cards). Uncaptured authorizations are voided automatically.
+Capture authorized payments within the provider's hold period (typically 5-7 days for cards). Uncaptured authorizations are voided automatically.
 </Warning>
-
-## Required Fields by Payment Method
-
-Different payment methods require different fields in the request body. Missing a required field results in a `400` error.
-
-| Payment Method | Country | Currency | Required Fields |
-|---|---|---|---|
-| PIX | BR | BRL | `customer.document` (CPF or CNPJ), `customer.email` |
-| Boleto | BR | BRL | `customer.document` (CPF or CNPJ), `customer.name`, `customer.email` |
-| OXXO | MX | MXN | `customer.email` |
-| SPEI | MX | MXN | `customer.email`, `customer.document` (CURP or RFC) |
-| Cards | MX | MXN | Card token, `customer.email` (CURP/RFC recommended for higher approval rates) |
-| PSE | CO | COP | `customer.document` (CC or CE), `customer.email` |
-| Cards | CO | COP | Card token, `customer.email`, `customer.document` (CC or NIT recommended) |
-| Cards | AR | ARS | Card token, `customer.email`, `customer.document` (DNI or CUIT) |
-| Bank Transfer | AR | ARS | `customer.document` (DNI or CUIT), `customer.email` |
-| Cards | All | Multiple | None beyond card token (3DS may require `customer.email`, `customer.phone`) |
-| Bank Transfer | Varies | Varies | `customer.document` (country-specific) |
-
-<Tip>
-Use the Get Payment Methods endpoint on a checkout session to discover which fields are required for each available method.
-</Tip>
 
 ## Refunds
 
 Refund a succeeded payment partially or fully:
 
 ```bash
-curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/refund \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code" \
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/refund \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: refund-order-9876" \
   -H "Content-Type: application/json" \
   -d '{
-    "amount": 50.00,
-    "reason": "Customer requested partial refund"
+    "amount": { "currency": "BRL", "value": 50.00 },
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "merchant_reference": "refund-9876"
   }'
 ```
 
 <Note>
-  Refund availability depends on the payment method and provider. Some methods (e.g., Boleto, OXXO) may not support refunds through the API.
+Refund availability depends on the payment method and provider. Some methods (e.g., Boleto, OXXO) may not support refunds through the API.
 </Note>
 
 ## Cancellations
@@ -123,10 +158,40 @@ curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/refund \
 Cancel a payment that has not yet been captured:
 
 ```bash
-curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/cancel \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/cancel \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: cancel-order-9876" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "merchant_reference": "cancel-9876"
+  }'
+```
+
+## Response Structure
+
+```json
+{
+  "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "status": "SUCCEEDED",
+  "amount": {
+    "currency": "BRL",
+    "value": 100.00,
+    "refunded": 0,
+    "captured": 100.00
+  },
+  "country": "BR",
+  "payment_method": { "type": "PIX" },
+  "provider": {
+    "name": "provider_name",
+    "transaction_id": "txn_abc123"
+  },
+  "merchant_order_id": "order-9876",
+  "created_at": "2026-03-01T14:31:00.000Z",
+  "updated_at": "2026-03-01T14:31:02.000Z"
+}
 ```
 
 ## Next Steps
@@ -135,7 +200,13 @@ curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/cancel \
   <Card title="Transactions" icon="arrow-right-arrow-left" href="/core-concepts/transactions">
     Understand how payments relate to individual processing attempts.
   </Card>
-  <Card title="Create Payment API" icon="code" href="/api-reference/payments/create-payment">
-    See the full API specification for payment creation.
+  <Card title="Payment Flow" icon="arrow-right" href="/core-concepts/payment-flow">
+    See the complete payment lifecycle state machine.
+  </Card>
+  <Card title="Create Payment Guide" icon="code" href="/guides/direct-api/create-payment">
+    Method-specific payment creation examples.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/core-concepts/webhooks">
+    Receive real-time payment status notifications.
   </Card>
 </CardGroup>
