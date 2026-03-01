@@ -1,55 +1,97 @@
-# Mintlify Starter Kit
+# Yuno API Documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+Official documentation for [Yuno](https://y.uno) — the payment orchestration platform for Latin America and beyond.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+**Live site:** [yuno-3979e326.mintlify.app](https://yuno-3979e326.mintlify.app/)
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+## What's Inside
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+| Section | Pages | Description |
+|---------|-------|-------------|
+| **Getting Started** | 5 | Authentication, environments, quickstart with multi-language examples |
+| **Core Concepts** | 11 | Payment flows, checkout sessions, customers, webhooks, idempotency, error handling |
+| **Guides** | 40+ | SDK integration (Web, iOS, Android, Flutter), direct API, testing, webhooks, payment methods |
+| **API Reference** | 90+ | Full OpenAPI 3.1 spec with 58 paths, 45 schemas, interactive playground |
+| **Features** | 25+ | Subscriptions, digital wallets, installments, network tokens, payouts, splits, BaaS |
+| **Security** | 12 | 3DS optimization, PCI compliance, chargeback prevention, incident response |
+| **AI** | 8 | Aida ML engine, MCP integration, agent orchestration, error recovery |
+| **SDKs** | 15 | Web, iOS, Android, Flutter, React components, Vue components |
+| **Reference** | 9 | Country matrix, provider comparison, glossary, response codes |
 
-## AI-assisted writing
+**Total: 230+ pages** covering payments, orchestration, and compliance across 17+ countries.
 
-Set up your AI coding tool to work with Mintlify:
+## Tech Stack
+
+- **Platform:** [Mintlify](https://mintlify.com)
+- **API Spec:** OpenAPI 3.1.0 (`api-reference/openapi.json`)
+- **Config:** `docs.json`
+
+## LLM Readability
+
+This documentation is optimized for AI/LLM consumption:
+
+- **`/llms.txt`** — Auto-generated index of all pages for LLM discovery
+- **`/llms-full.txt`** — Complete documentation in a single file for full-context ingestion
+- **MCP Server** — Connect AI tools directly to Yuno's API via the [MCP integration guide](https://yuno-3979e326.mintlify.app/ai/llm-mcp-integration)
+- **Agent workflows** — Multi-step orchestration patterns for AI agents
+
+AI tools (Claude Code, Cursor, Windsurf, etc.) can index the full documentation via:
+
+```
+https://yuno-3979e326.mintlify.app/llms.txt
+https://yuno-3979e326.mintlify.app/llms-full.txt
+```
+
+## Local Development
 
 ```bash
-npx skills add https://mintlify.com/docs
-```
-
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
-
-## Development
-
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
+# Install Mintlify CLI
 npm i -g mint
-```
 
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
+# Preview locally
 mint dev
 ```
 
-View your local preview at `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000) to view the docs.
 
-## Publishing changes
+## Deployment
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+Changes pushed to `main` are automatically deployed via the Mintlify GitHub app.
 
-## Need help?
+## Repository Structure
 
-### Troubleshooting
+```
+.
+├── docs.json                    # Navigation and site config
+├── api-reference/
+│   ├── openapi.json             # OpenAPI 3.1 spec (58 paths, 45 schemas)
+│   ├── checkout-sessions/       # Checkout session endpoints
+│   ├── payments/                # Payment CRUD + capture/cancel/refund
+│   ├── customers/               # Customer management
+│   ├── subscriptions/           # Subscription lifecycle
+│   ├── recipients/              # Recipient onboarding + transfers
+│   ├── baas/                    # Banking as a Service
+│   ├── campaigns/               # Campaign management
+│   └── ...
+├── getting-started/             # Quickstart, auth, environments
+├── core-concepts/               # Payment flow, webhooks, idempotency
+├── guides/
+│   ├── sdk/                     # Web, mobile, framework SDKs
+│   ├── direct-api/              # Direct API integration
+│   ├── testing/                 # Sandbox, test cards, scenarios
+│   ├── webhooks/                # Setup, events, signatures, local testing
+│   └── payment-methods/         # PIX, Boleto, OXXO, cards, BNPL
+├── features/                    # Subscriptions, wallets, tokens, payouts
+├── security/                    # 3DS, PCI, chargebacks, incidents
+├── ai/                          # Aida, MCP, agent orchestration
+├── platform/                    # Dashboard guides
+├── reference/                   # Country matrix, provider coverage, glossary
+├── troubleshooting/             # Error codes, FAQ
+└── changelog/                   # SDK and API changelogs
+```
 
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
+## Support
 
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+- **Email:** support@y.uno
+- **Dashboard:** [dashboard.y.uno](https://dashboard.y.uno)
+- **GitHub:** [github.com/yuno-payments](https://github.com/yuno-payments)
