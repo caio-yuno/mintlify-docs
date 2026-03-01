@@ -2,3 +2,164 @@
 title: "Create Payment Link"
 openapi: "POST /v1/payment-links"
 ---
+
+Creates a shareable payment link that redirects customers to a Yuno-hosted checkout page to complete a payment.
+
+## When to use
+
+Use this endpoint to generate a payment URL you can share via email, SMS, chat, or embed on your website. Payment links are ideal when you do not have a custom checkout integration and want a quick way to collect payments from customers.
+
+## Authentication
+
+All requests require the following headers:
+
+| Header | Description |
+|--------|-------------|
+| `public-api-key` | Your Yuno public API key |
+| `private-secret-key` | Your Yuno private secret key |
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payment-links \
+  -H "public-api-key: your-public-key" \
+  -H "private-secret-key: your-secret-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": "493e9374-510a-4201-9e09-de669d75f256",
+    "country": "CO",
+    "amount": {
+      "currency": "COP",
+      "value": 50000
+    },
+    "payment_method_types": ["CARD"],
+    "description": "Invoice #1234",
+    "merchant_order_id": "order-1234",
+    "one_time_use": true,
+    "callback_url": "https://yoursite.com/payment/complete"
+  }'
+```
+
+```javascript Node.js
+const response = await fetch('https://api-sandbox.y.uno/v1/payment-links', {
+  method: 'POST',
+  headers: {
+    'public-api-key': 'your-public-key',
+    'private-secret-key': 'your-secret-key',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    account_id: '493e9374-510a-4201-9e09-de669d75f256',
+    country: 'CO',
+    amount: { currency: 'COP', value: 50000 },
+    payment_method_types: ['CARD'],
+    description: 'Invoice #1234',
+    merchant_order_id: 'order-1234',
+    one_time_use: true,
+    callback_url: 'https://yoursite.com/payment/complete'
+  })
+});
+const paymentLink = await response.json();
+console.log(paymentLink.checkout_url); // Share this URL with the customer
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/payment-links',
+    headers={
+        'public-api-key': 'your-public-key',
+        'private-secret-key': 'your-secret-key',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'account_id': '493e9374-510a-4201-9e09-de669d75f256',
+        'country': 'CO',
+        'amount': {'currency': 'COP', 'value': 50000},
+        'payment_method_types': ['CARD'],
+        'description': 'Invoice #1234',
+        'merchant_order_id': 'order-1234',
+        'one_time_use': True,
+        'callback_url': 'https://yoursite.com/payment/complete'
+    }
+)
+payment_link = response.json()
+print(payment_link['checkout_url'])  # Share this URL with the customer
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `account_id` | string | Yes | Your Yuno account UUID |
+| `country` | string | Yes | ISO 3166-1 alpha-2 country code. Supported: AR, BO, BR, CL, CO, CR, EC, SV, GT, HN, MX, NI, PA, PY, PE, US, UY |
+| `amount.currency` | string | Yes | ISO 4217 currency code |
+| `amount.value` | number | Yes | Payment amount |
+| `payment_method_types` | array | Yes | Allowed payment methods (e.g., `["CARD"]`) |
+| `description` | string | No | Description shown to the customer (3-255 chars) |
+| `merchant_order_id` | string | No | Your internal order reference (3-255 chars) |
+| `capture` | boolean | No | Capture payment immediately (default: `true`). Set `false` for authorization-only |
+| `one_time_use` | boolean | No | Link can only be used once (default: `false`) |
+| `vault_on_success` | boolean | No | Enroll the customer's card after successful payment |
+| `callback_url` | string | No | URL to redirect the customer after payment (max 256 chars) |
+| `availability.start_at` | string | No | When the link becomes valid (ISO 8601) |
+| `availability.finish_at` | string | No | When the link expires (ISO 8601) |
+| `customer_payer` | object | No | Pre-fill customer details (id, name, email, document, etc.) |
+| `taxes` | array | No | Tax line items (Colombia only). Each entry has `type`, `tax_base`, `value`, `percentage` |
+| `metadata` | array | No | Up to 50 key-value pairs (key max 48 chars, value max 512 chars) |
+
+## Response
+
+Returns the payment link object including the `checkout_url` that you share with your customer:
+
+```json
+{
+  "code": "e1512b4d-9057-4c73-8e49-921c51eb5ba2",
+  "country": "CO",
+  "status": "CREATED",
+  "amount": { "currency": "COP", "value": 50000 },
+  "description": "Invoice #1234",
+  "merchant_order_id": "order-1234",
+  "capture": true,
+  "one_time_use": true,
+  "payment_method_types": ["CARD"],
+  "checkout_url": "https://checkout.sandbox.y.uno/payment?session=2f6d9754-43d0-4dca-b023-6aba4b107179",
+  "callback_url": "https://yoursite.com/payment/complete",
+  "availability": {
+    "start_at": "2024-01-15T14:00:12Z",
+    "finish_at": "2024-12-29T14:00:12Z"
+  },
+  "payments": null,
+  "payments_number": 0,
+  "account_code": "493e9374-510a-4201-9e09-de669d75f256"
+}
+```
+
+The `checkout_url` is the hosted checkout page URL. Share this with your customer via any channel.
+
+## Payment link status lifecycle
+
+```
+CREATED --> PAID (after successful payment)
+        --> CANCELED (via cancel endpoint)
+        --> EXPIRED (after finish_at date)
+```
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `INVALID_REQUEST` | Invalid request body | Check required fields and value formats |
+| 401 | -- | Invalid or missing API keys | Verify `public-api-key` and `private-secret-key` headers |
+
+## Related endpoints
+
+- [Retrieve Payment Link](/api-reference/payment-links/get) -- Check payment link status and details
+- [Cancel Payment Link](/api-reference/payment-links/cancel) -- Cancel an unused payment link
+
+<Note>
+The `taxes` field is only supported for Colombia (`CO`). When `one_time_use` is `true`, the payment link becomes invalid after the first successful payment. The `vault_on_success` option automatically enrolls the customer's card for future use after a successful payment.
+</Note>

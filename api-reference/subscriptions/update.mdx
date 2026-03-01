@@ -2,3 +2,130 @@
 title: "Update Subscription"
 openapi: "PATCH /v1/subscriptions/{subscription_id}"
 ---
+
+Updates one or more fields of an existing subscription. Only include the fields you want to change.
+
+## When to use
+
+Use this endpoint to modify subscription details such as the billing amount, frequency, payment method, or retry configuration. Common use cases include upgrading/downgrading a plan, changing the billing day, or updating an expired card.
+
+## Authentication
+
+All requests require the following headers:
+
+| Header | Description |
+|--------|-------------|
+| `public-api-key` | Your Yuno public API key |
+| `private-secret-key` | Your Yuno private secret key |
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X PATCH https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798 \
+  -H "public-api-key: your-public-key" \
+  -H "private-secret-key: your-secret-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": {
+      "currency": "USD",
+      "value": 25000
+    },
+    "frequency": {
+      "type": "MONTH",
+      "value": 1,
+      "monthly_billing_day": 15
+    }
+  }'
+```
+
+```javascript Node.js
+const response = await fetch(
+  'https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798',
+  {
+    method: 'PATCH',
+    headers: {
+      'public-api-key': 'your-public-key',
+      'private-secret-key': 'your-secret-key',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      amount: { currency: 'USD', value: 25000 },
+      frequency: { type: 'MONTH', value: 1, monthly_billing_day: 15 }
+    })
+  }
+);
+const subscription = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.patch(
+    'https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798',
+    headers={
+        'public-api-key': 'your-public-key',
+        'private-secret-key': 'your-secret-key',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'amount': {'currency': 'USD', 'value': 25000},
+        'frequency': {'type': 'MONTH', 'value': 1, 'monthly_billing_day': 15}
+    }
+)
+subscription = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `subscription_id` | string (path) | Yes | The subscription UUID to update |
+| `name` | string | No | Updated subscription name (3-255 chars) |
+| `description` | string | No | Updated description (3-255 chars) |
+| `amount.currency` | string | No | ISO 4217 currency code (required if `amount` is sent) |
+| `amount.value` | number | No | New charge amount per cycle (required if `amount` is sent) |
+| `frequency.type` | string | No | `DAY`, `WEEK`, or `MONTH` |
+| `frequency.value` | integer | No | Interval between charges |
+| `frequency.monthly_billing_day` | integer | No | Day of month for billing (1-31) |
+| `billing_cycles.total` | integer | No | Updated total billing cycles |
+| `payment_method.vaulted_token` | string | No | New vaulted card token |
+| `retries.retry_on_decline` | boolean | No | Enable/disable retry on decline |
+| `retries.amount` | integer | No | Max retry attempts (up to 7) |
+| `metadata` | object | No | Updated key-value pairs. Send empty value to unset a key |
+
+## Response
+
+Returns the updated subscription object with all current field values:
+
+```json
+{
+  "id": "0c7fed3e-ee0d-4d34-9547-778be4ec0798",
+  "name": "Premium Monthly Plan",
+  "status": "ACTIVE",
+  "amount": { "currency": "USD", "value": 25000 },
+  "frequency": { "type": "MONTH", "value": 1, "monthly_billing_day": 15 },
+  "billing_cycles": { "total": 12, "current": 3, "next_at": "2024-12-15T00:00:00Z" },
+  "updated_at": "2024-11-20T10:30:00.000000Z"
+}
+```
+
+## Error responses
+
+| Status | Description | Resolution |
+|--------|-------------|------------|
+| 400 | Invalid request body or field values | Check field formats and value ranges |
+| 401 | Invalid or missing API keys | Verify `public-api-key` and `private-secret-key` headers |
+| 404 | Subscription not found | Confirm the subscription ID exists in your account |
+
+## Related endpoints
+
+- [Create Subscription](/api-reference/subscriptions/create) -- Create a new subscription
+- [Retrieve Subscription](/api-reference/subscriptions/get) -- Get current subscription details
+- [Pause Subscription](/api-reference/subscriptions/pause) -- Temporarily stop billing
+- [Cancel Subscription](/api-reference/subscriptions/cancel) -- Permanently cancel
+
+<Note>
+The update endpoint supports `monthly_billing_day` in the `frequency` object, which is not available during creation. The `retries.amount` maximum is 7 (compared to 6 during creation). For PCI-certified merchants, `payment_method.card.card_data` allows sending full card details (number, expiration, CVV, holder name).
+</Note>

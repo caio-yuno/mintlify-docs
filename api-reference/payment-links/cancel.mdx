@@ -2,3 +2,113 @@
 title: "Cancel Payment Link"
 openapi: "POST /v1/payment-links/{payment_link_id}/cancel"
 ---
+
+Cancels an active payment link, preventing any future payments through it.
+
+## When to use
+
+Use this endpoint to invalidate a payment link that is no longer needed. Common reasons include duplicate links, fraudulent activity, or a customer request. Once canceled, the `checkout_url` becomes unusable.
+
+## Authentication
+
+All requests require the following headers:
+
+| Header | Description |
+|--------|-------------|
+| `public-api-key` | Your Yuno public API key |
+| `private-secret-key` | Your Yuno private secret key |
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payment-links/e1512b4d-9057-4c73-8e49-921c51eb5ba2/cancel \
+  -H "public-api-key: your-public-key" \
+  -H "private-secret-key: your-secret-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "description": "Customer no longer needs this payment link"
+  }'
+```
+
+```javascript Node.js
+const response = await fetch(
+  'https://api-sandbox.y.uno/v1/payment-links/e1512b4d-9057-4c73-8e49-921c51eb5ba2/cancel',
+  {
+    method: 'POST',
+    headers: {
+      'public-api-key': 'your-public-key',
+      'private-secret-key': 'your-secret-key',
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      reason: 'REQUESTED_BY_CUSTOMER',
+      description: 'Customer no longer needs this payment link'
+    })
+  }
+);
+const paymentLink = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/payment-links/e1512b4d-9057-4c73-8e49-921c51eb5ba2/cancel',
+    headers={
+        'public-api-key': 'your-public-key',
+        'private-secret-key': 'your-secret-key',
+        'Content-Type': 'application/json'
+    },
+    json={
+        'reason': 'REQUESTED_BY_CUSTOMER',
+        'description': 'Customer no longer needs this payment link'
+    }
+)
+payment_link = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `payment_link_id` | string (path) | Yes | The payment link UUID to cancel |
+| `reason` | string (body) | No | Cancellation reason: `DUPLICATE`, `FRAUDULENT`, `REQUESTED_BY_CUSTOMER`, or `OTHER` |
+| `description` | string (body) | No | Free-text description of the cancellation reason |
+| `merchant_reference` | string (body) | No | Your internal reference for this cancellation |
+
+## Response
+
+Returns the full payment link object with `status` changed to `CANCELED`:
+
+```json
+{
+  "code": "e1512b4d-9057-4c73-8e49-921c51eb5ba2",
+  "country": "CO",
+  "status": "CANCELED",
+  "amount": { "currency": "COP", "value": 50000 },
+  "description": "Invoice #1234",
+  "checkout_url": "https://checkout.sandbox.y.uno/payment?session=2f6d9754-43d0-4dca-b023-6aba4b107179",
+  "payments": null,
+  "payments_number": 0
+}
+```
+
+## Error responses
+
+| Status | Description | Resolution |
+|--------|-------------|------------|
+| 400 | Payment link cannot be canceled | Only links with status `CREATED` can be canceled |
+| 401 | Invalid or missing API keys | Verify `public-api-key` and `private-secret-key` headers |
+| 404 | Payment link not found | Confirm the payment link code exists in your account |
+
+## Related endpoints
+
+- [Create Payment Link](/api-reference/payment-links/create) -- Create a new payment link
+- [Retrieve Payment Link](/api-reference/payment-links/get) -- Check link status before canceling
+
+<Note>
+Only payment links with status `CREATED` can be canceled. Links that are already `PAID`, `CANCELED`, or `EXPIRED` cannot be canceled. The `reason` field accepts one of four predefined values: `DUPLICATE`, `FRAUDULENT`, `REQUESTED_BY_CUSTOMER`, or `OTHER`.
+</Note>

@@ -3,6 +3,94 @@ title: "Retrieve Payout by Merchant Reference"
 openapi: "GET /v1/payouts/merchant-ref/{merchant_reference}"
 ---
 
+Retrieves a payout using the merchant-assigned reference identifier instead of the Yuno payout ID.
+
+## When to use
+
+Use this endpoint when you need to look up a payout using your own internal reference rather than the Yuno-generated UUID. This is useful for reconciliation workflows where you track payouts by your own identifiers.
+
+## Authentication
+
+All requests require the following headers:
+
+| Header | Description |
+|--------|-------------|
+| `public-api-key` | Your Yuno public API key |
+| `private-secret-key` | Your Yuno private secret key |
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api-sandbox.y.uno/v1/payouts/merchant-ref/payout-ref-001 \
+  -H "public-api-key: your-public-key" \
+  -H "private-secret-key: your-secret-key"
+```
+
+```javascript Node.js
+const response = await fetch(
+  'https://api-sandbox.y.uno/v1/payouts/merchant-ref/payout-ref-001',
+  {
+    headers: {
+      'public-api-key': 'your-public-key',
+      'private-secret-key': 'your-secret-key'
+    }
+  }
+);
+const payout = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    'https://api-sandbox.y.uno/v1/payouts/merchant-ref/payout-ref-001',
+    headers={
+        'public-api-key': 'your-public-key',
+        'private-secret-key': 'your-secret-key'
+    }
+)
+payout = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `merchant_reference` | string (path) | Yes | The merchant-assigned payout reference you provided when creating the payout |
+
+## Response
+
+Returns the full payout object, same schema as [Get Payout](/api-reference/payouts/get):
+
+```json
+{
+  "id": "e2f3a4b5-c6d7-8e9f-0a1b-2c3d4e5f6a7b",
+  "status": "SUCCEEDED",
+  "amount": {
+    "currency": "BRL",
+    "value": 500.00
+  },
+  "country": "BR",
+  "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
+  "merchant_reference": "payout-ref-001",
+  "created_at": "2026-03-01T16:00:00.000Z"
+}
+```
+
+## Error responses
+
+| Status | Description | Resolution |
+|--------|-------------|------------|
+| 401 | Invalid or missing API keys | Verify `public-api-key` and `private-secret-key` headers |
+| 404 | Payout not found | Confirm the merchant reference matches a payout in your account |
+
+## Related endpoints
+
+- [Create Payout](/api-reference/payouts/create) -- Create a new payout
+- [Get Payout](/api-reference/payouts/get) -- Retrieve a payout by its Yuno UUID
+
 <Note>
-This endpoint may require UUID format for the reference parameter. Verify the correct format for your use case.
+The `merchant_reference` value must exactly match the reference you provided when creating the payout. This endpoint is useful when your system tracks payouts by internal order or transaction IDs rather than Yuno's UUIDs.
 </Note>
