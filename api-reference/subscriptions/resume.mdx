@@ -2,3 +2,101 @@
 title: "Resume Subscription"
 openapi: "POST /v1/subscriptions/{subscription_id}/resume"
 ---
+
+Reactivates a paused subscription, resuming billing cycles from where they left off.
+
+## When to use
+
+Use this endpoint to restart billing on a subscription that was previously paused. The subscription returns to `ACTIVE` status and billing cycles continue from the current cycle count.
+
+## Authentication
+
+All requests require the following headers:
+
+| Header | Description |
+|--------|-------------|
+| `public-api-key` | Your Yuno public API key |
+| `private-secret-key` | Your Yuno private secret key |
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/resume \
+  -H "public-api-key: your-public-key" \
+  -H "private-secret-key: your-secret-key"
+```
+
+```javascript Node.js
+const response = await fetch(
+  'https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/resume',
+  {
+    method: 'POST',
+    headers: {
+      'public-api-key': 'your-public-key',
+      'private-secret-key': 'your-secret-key'
+    }
+  }
+);
+const subscription = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/resume',
+    headers={
+        'public-api-key': 'your-public-key',
+        'private-secret-key': 'your-secret-key'
+    }
+)
+subscription = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `subscription_id` | string (path) | Yes | The UUID of the subscription to resume |
+
+No request body is required.
+
+## Response
+
+Returns the full subscription object with `status` changed back to `ACTIVE`:
+
+```json
+{
+  "id": "0c7fed3e-ee0d-4d34-9547-778be4ec0798",
+  "name": "Premium Monthly Plan",
+  "status": "ACTIVE",
+  "amount": { "currency": "USD", "value": 15000 },
+  "frequency": { "type": "MONTH", "value": 1 },
+  "billing_cycles": {
+    "total": 12,
+    "current": 3,
+    "next_at": "2024-12-20T10:30:00.000000Z"
+  },
+  "updated_at": "2024-11-20T10:30:00.000000Z"
+}
+```
+
+## Error responses
+
+| Status | Description | Resolution |
+|--------|-------------|------------|
+| 400 | Subscription is not in a resumable state | Only `PAUSED` subscriptions can be resumed |
+| 401 | Invalid or missing API keys | Verify `public-api-key` and `private-secret-key` headers |
+| 404 | Subscription not found | Confirm the subscription ID exists in your account |
+
+## Related endpoints
+
+- [Pause Subscription](/api-reference/subscriptions/pause) -- Temporarily stop billing
+- [Cancel Subscription](/api-reference/subscriptions/cancel) -- Permanently cancel
+- [Retrieve Subscription](/api-reference/subscriptions/get) -- Check current subscription status
+
+<Note>
+Only subscriptions with status `PAUSED` can be resumed. Subscriptions in `CANCELED` or `COMPLETED` status are terminal and cannot be reactivated. To start billing again after cancellation, create a new subscription.
+</Note>
