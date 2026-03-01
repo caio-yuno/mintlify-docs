@@ -1,6 +1,6 @@
 ---
 title: "How Payments Work"
-description: "End-to-end overview of the Yuno payment process from checkout to settlement"
+description: "End-to-end overview of the Yuno payment process from checkout session to settlement"
 ---
 
 ## Payment Flow Overview
@@ -55,11 +55,11 @@ The checkout session determines which payment methods are available to the custo
 
 ### 2. Customer Selects a Payment Method
 
-Using the Yuno SDK or your own UI, the customer chooses how to pay (card, PIX, Boleto, etc.). If using the SDK, Yuno handles method display, input validation, and tokenization automatically.
+Using the Yuno SDK or your own UI, the customer chooses how to pay (card, PIX, Boleto, OXXO, PSE, etc.). If using the SDK, Yuno handles method display, input validation, and card tokenization automatically.
 
 ### 3. Create the Payment
 
-Your server sends `POST /v1/payments` with the checkout session ID, selected payment method, customer details, and any method-specific fields (e.g., `customer.document` for PIX).
+Your server sends `POST /v1/payments` with the checkout session ID, selected payment method, customer details, and any method-specific fields (e.g., `customer.document` for PIX in Brazil).
 
 ### 4. Yuno Routes and Processes
 
@@ -67,16 +67,34 @@ This is where orchestration happens. Yuno:
 
 - **Selects the optimal provider** based on your routing rules (cost, approval rate, geographic preference)
 - **Handles 3DS authentication** for card payments when required by the issuer
-- **Retries with fallback providers** if the primary provider declines or times out
+- **Retries with fallback providers** if the primary provider declines or times out (cascading)
 - **Normalizes the response** so you receive a consistent format regardless of which provider processed the payment
 
 ### 5. Webhook Notification
 
-Yuno sends a `POST` request to your configured webhook URL with the payment result. This is essential for asynchronous methods like PIX (where the customer pays after receiving a QR code) and Boleto (where the customer pays at a bank or convenience store).
+Yuno sends a `POST` request to your configured webhook URL with the payment result. This is essential for:
+
+- **Asynchronous payment methods** -- PIX (QR code), Boleto (bank slip), and OXXO (voucher) where the customer pays after the initial request
+- **3DS challenge flows** -- where the final status depends on customer interaction
+- **Provider-side status changes** -- captures, refunds, and disputes that occur after the initial response
 
 <Warning>
   Always rely on webhooks for final payment status -- not the synchronous API response. Some payment methods confirm asynchronously, and the initial response may show `PENDING` before settling to `SUCCEEDED` or `DECLINED`.
 </Warning>
+
+## Payment Statuses
+
+| Status | Meaning | Typical Trigger |
+|--------|---------|-----------------| 
+| `PENDING` | Awaiting confirmation | PIX QR code generated, 3DS challenge in progress |
+| `AUTHORIZED` | Funds held, not yet captured | Two-step card payment (separate capture) |
+| `SUCCEEDED` | Payment completed | Card captured, PIX confirmed, Boleto paid |
+| `DECLINED` | Rejected by provider/issuer | Insufficient funds, fraud check |
+| `FAILED` | Processing error | Provider timeout, technical failure |
+| `CANCELLED` | Voided before settlement | Merchant cancelled authorized payment |
+| `EXPIRED` | Authorization window closed | No capture within provider deadline |
+| `REFUNDED` | Full refund processed | Merchant initiated full refund |
+| `PARTIALLY_REFUNDED` | Partial refund processed | Merchant initiated partial refund |
 
 ## Key Components
 
@@ -89,8 +107,32 @@ Yuno sends a `POST` request to your configured webhook URL with the payment resu
 | **Webhook** | Asynchronous notification of status changes | Delivered on every status transition |
 
 <Note>
-  A single payment can generate multiple transactions if Yuno cascades across providers. Each transaction represents one attempt with one provider.
+  A single payment can generate multiple transactions if Yuno cascades across providers. Each transaction represents one attempt with one provider. You see the final result; Yuno handles the routing complexity.
 </Note>
+
+## One-Step vs Two-Step Payments
+
+### One-Step (Authorize + Capture)
+
+The default flow. Yuno authorizes and captures the payment in a single request. The customer's funds are charged immediately.
+
+```
+Create Payment (capture: true) --> SUCCEEDED
+```
+
+### Two-Step (Authorize, then Capture)
+
+Separate the authorization from the capture. Useful for:
+- Verifying inventory before charging
+- Holding funds for pre-orders
+- Adjusting the final amount (partial capture)
+
+```
+Create Payment (capture: false) --> AUTHORIZED
+Capture Payment                 --> SUCCEEDED
+  -- or --
+Cancel Payment                  --> CANCELLED
+```
 
 ## Next Steps
 
@@ -98,7 +140,13 @@ Yuno sends a `POST` request to your configured webhook URL with the payment resu
   <Card title="Quickstart" icon="rocket" href="/getting-started/quickstart">
     Build your first payment integration end to end.
   </Card>
-  <Card title="Payment Flow Details" icon="diagram-project" href="/core-concepts/payment-flow">
-    Deep dive into payment statuses, capture modes, and lifecycle.
+  <Card title="Webhook Setup" icon="bell" href="/guides/webhooks/setup">
+    Receive real-time payment status notifications.
+  </Card>
+  <Card title="Test Scenarios" icon="list-check" href="/guides/testing/test-scenarios">
+    Validate every payment path in sandbox.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api-reference/introduction">
+    Browse all available API endpoints.
   </Card>
 </CardGroup>
