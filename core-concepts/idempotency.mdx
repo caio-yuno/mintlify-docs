@@ -41,7 +41,7 @@ Request 3 (key: "def-456")  -->  New key          -->  Processes as new request
 | Endpoint | Recommended? | Why |
 |----------|-------------|-----|
 | `POST /v1/payments` | **Required** | Prevents duplicate charges |
-| `POST /v1/payments/{id}/capture` | **Required** | Prevents double capture |
+| `POST /v1/payments/{payment_id}/transactions/{transaction_id}/capture` | **Required** | Prevents double capture |
 | `POST /v1/payments/{payment_id}/refund` | **Required** | Prevents duplicate refunds |
 | `POST /v1/checkout/sessions` | Recommended | Prevents duplicate sessions |
 | `GET` endpoints | Not needed | GET requests are naturally idempotent |

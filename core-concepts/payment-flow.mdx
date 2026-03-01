@@ -50,38 +50,41 @@ Yuno supports two capture strategies that determine when funds are actually tran
 
 ### Auto-Capture (Default)
 
-Authorization and capture happen in a single step. The payment moves directly from `PENDING` to `SUCCEEDED` (or `DECLINED`).
+When you create a payment via `POST /v1/payments`, Yuno authorizes and captures in a single step. The payment moves directly from `PENDING` to `SUCCEEDED` (or `DECLINED`). This is the default behavior for standard e-commerce purchases.
 
-```json
-{
-  "capture": true
-}
-```
+### Auth-Only (Two-Step Flow)
 
-Use auto-capture for standard e-commerce purchases where you fulfill immediately.
+For scenarios where the final amount may differ (hotel bookings, car rentals, pre-orders), use a two-step flow:
 
-### Auth-Only (Manual Capture)
+1. **Create the payment** via `POST /v1/payments` — payment is created in `PENDING` status
+2. **Authorize** via `POST /v1/payments/{payment_id}/authorize` — funds are reserved, status moves to `AUTHORIZED`
+3. **Capture** via `POST /v1/payments/{payment_id}/transactions/{transaction_id}/capture` — funds are transferred, status moves to `SUCCEEDED`
 
-Authorization reserves the funds, but you must explicitly capture later. This is useful for hotel bookings, car rentals, or any scenario where the final amount may differ.
+```bash
+# Step 1: Create payment
+curl -X POST https://api-sandbox.y.uno/v1/payments \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code" \
+  -H "Content-Type: application/json" \
+  -d '{ "checkout_session": "cs_abc123", ... }'
 
-```json
-{
-  "capture": false
-}
+# Step 2: Authorize (response includes transaction_id)
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/authorize \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code"
+
+# Step 3: Capture (use transaction_id from authorize response)
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/capture \
+  -H "public-api-key: your-public-api-key" \
+  -H "private-secret-key: your-private-secret-key" \
+  -H "account-code: your-account-code"
 ```
 
 <Warning>
   Authorized payments that are not captured within the provider's hold period (typically 5-7 days for cards) will be automatically voided.
 </Warning>
-
-To capture an authorized payment:
-
-```bash
-curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
-```
 
 ## Integration Patterns
 

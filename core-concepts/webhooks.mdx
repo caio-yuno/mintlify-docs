@@ -45,7 +45,7 @@ Every webhook delivery includes a JSON payload with the event type, timestamp, a
   "event_type": "payment.succeeded",
   "timestamp": "2026-02-28T14:30:00Z",
   "data": {
-    "payment_id": "pay_abc123",
+    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "status": "SUCCEEDED",
     "amount": {
       "currency": "BRL",
@@ -61,6 +61,10 @@ Every webhook delivery includes a JSON payload with the event type, timestamp, a
   }
 }
 ```
+
+<Note>
+The `data.id` field uses UUID format (e.g., `f47ac10b-58cc-...`), matching the `id` field in [Payment API responses](/api-reference/payments/get). Use this ID to correlate webhook events with your API calls.
+</Note>
 
 ## Delivery and Retry Policy
 

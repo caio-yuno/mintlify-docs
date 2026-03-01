@@ -331,7 +331,11 @@
                   "phone": "+5511999990000"
                 },
                 "description": "Premium subscription - March 2026",
-                "installments": 1
+                "installments": 1,
+                "metadata": {
+                  "order_source": "web",
+                  "campaign": "spring-2026"
+                }
               }
             }
           }
@@ -4845,6 +4849,17 @@
             "format": "uri",
             "description": "URL to redirect the customer after payment completion (required for 3DS, PIX, and redirect-based methods)",
             "example": "https://merchant.com/checkout/complete"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Custom key-value pairs for storing additional information. Keys and values must be strings. Maximum 50 keys, each key max 40 characters, each value max 500 characters.",
+            "example": {
+              "order_source": "web",
+              "campaign": "spring-2026"
+            }
           }
         },
         "example": {
@@ -5060,6 +5075,17 @@
             "type": "string",
             "description": "Your unique order reference. If not provided, inherits from the checkout session.",
             "example": "order-12345"
+          },
+          "metadata": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Custom key-value pairs for storing additional information. Keys and values must be strings. Maximum 50 keys, each key max 40 characters, each value max 500 characters.",
+            "example": {
+              "order_source": "web",
+              "campaign": "spring-2026"
+            }
           }
         },
         "example": {
@@ -5273,6 +5299,30 @@
             "transaction_id": "pi_3abc123def456"
           },
           "merchant_order_id": "order-20260301-001",
+          "customer_id": "cust_9a8b7c6d-5e4f-3210-abcd-ef0987654321",
+          "transactions": [
+            {
+              "id": "txn_1a2b3c4d-5e6f-7890-abcd-ef1234567890",
+              "status": "APPROVED",
+              "provider": "stripe_connect",
+              "provider_transaction_id": "pi_3abc123def456",
+              "response_code": "00",
+              "response_message": "Approved",
+              "created_at": "2026-03-01T14:31:01.000Z"
+            }
+          ],
+          "refunds": [],
+          "three_ds": {
+            "version": "2.2",
+            "eci": "05",
+            "status": "AUTHENTICATED"
+          },
+          "metadata": {
+            "order_source": "web",
+            "campaign": "spring-2026"
+          },
+          "installments": null,
+          "failure_reason": null,
           "created_at": "2026-03-01T14:31:00.000Z",
           "updated_at": "2026-03-01T14:31:02.000Z"
         }
@@ -7153,7 +7203,7 @@
             "example": [
               "payment.succeeded",
               "payment.failed",
-              "refund.succeeded"
+              "payment.refunded"
             ]
           },
           "status": {
@@ -7181,7 +7231,7 @@
           "events": [
             "payment.succeeded",
             "payment.failed",
-            "refund.succeeded"
+            "payment.refunded"
           ],
           "status": "ACTIVE",
           "secret": "whsec_abc123def456",
@@ -7210,7 +7260,7 @@
             "example": [
               "payment.succeeded",
               "payment.failed",
-              "refund.succeeded"
+              "payment.refunded"
             ]
           },
           "secret": {
@@ -7224,7 +7274,7 @@
           "events": [
             "payment.succeeded",
             "payment.failed",
-            "refund.succeeded"
+            "payment.refunded"
           ],
           "secret": "whsec_abc123def456"
         }

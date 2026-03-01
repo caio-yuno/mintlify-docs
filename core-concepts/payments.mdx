@@ -65,8 +65,10 @@ By default, payments are auto-captured. Set `"capture": false` to use manual cap
 
 ### Capturing an Authorized Payment
 
+Use the `transaction_id` from the authorize response to capture:
+
 ```bash
-curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/capture \
   -H "public-api-key: your-public-api-key" \
   -H "private-secret-key: your-private-secret-key" \
   -H "account-code: your-account-code"
