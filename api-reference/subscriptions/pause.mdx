@@ -2,3 +2,97 @@
 title: "Pause Subscription"
 openapi: "POST /v1/subscriptions/{subscription_id}/pause"
 ---
+
+Temporarily pauses an active subscription, stopping all future billing cycles until it is resumed.
+
+## When to use
+
+Use this endpoint when a customer requests a temporary hold on their subscription without canceling it. Pausing preserves the subscription configuration so it can be resumed later with [Resume Subscription](/api-reference/subscriptions/resume).
+
+## Authentication
+
+All requests require the following headers:
+
+| Header | Description |
+|--------|-------------|
+| `public-api-key` | Your Yuno public API key |
+| `private-secret-key` | Your Yuno private secret key |
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/pause \
+  -H "public-api-key: your-public-key" \
+  -H "private-secret-key: your-secret-key"
+```
+
+```javascript Node.js
+const response = await fetch(
+  'https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/pause',
+  {
+    method: 'POST',
+    headers: {
+      'public-api-key': 'your-public-key',
+      'private-secret-key': 'your-secret-key'
+    }
+  }
+);
+const subscription = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/pause',
+    headers={
+        'public-api-key': 'your-public-key',
+        'private-secret-key': 'your-secret-key'
+    }
+)
+subscription = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `subscription_id` | string (path) | Yes | The UUID of the subscription to pause |
+
+No request body is required.
+
+## Response
+
+Returns the full subscription object with `status` changed to `PAUSED`:
+
+```json
+{
+  "id": "0c7fed3e-ee0d-4d34-9547-778be4ec0798",
+  "name": "Premium Monthly Plan",
+  "status": "PAUSED",
+  "amount": { "currency": "USD", "value": 15000 },
+  "frequency": { "type": "MONTH", "value": 1 },
+  "billing_cycles": { "total": 12, "current": 3, "next_at": null },
+  "updated_at": "2024-11-20T10:30:00.000000Z"
+}
+```
+
+## Error responses
+
+| Status | Description | Resolution |
+|--------|-------------|------------|
+| 400 | Subscription is not in a pausable state | Only `ACTIVE` subscriptions can be paused |
+| 401 | Invalid or missing API keys | Verify `public-api-key` and `private-secret-key` headers |
+| 404 | Subscription not found | Confirm the subscription ID exists in your account |
+
+## Related endpoints
+
+- [Resume Subscription](/api-reference/subscriptions/resume) -- Reactivate a paused subscription
+- [Cancel Subscription](/api-reference/subscriptions/cancel) -- Permanently cancel (also works on paused subscriptions)
+- [Retrieve Subscription](/api-reference/subscriptions/get) -- Check current subscription status
+
+<Note>
+Only subscriptions with status `ACTIVE` can be paused. Once paused, a subscription can be either resumed back to `ACTIVE` or permanently canceled. No billing cycles are charged while a subscription is paused.
+</Note>
