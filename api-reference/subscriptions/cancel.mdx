@@ -2,3 +2,97 @@
 title: "Cancel Subscription"
 openapi: "POST /v1/subscriptions/{subscription_id}/cancel"
 ---
+
+Permanently cancels a subscription, stopping all future billing cycles. This action cannot be undone.
+
+## When to use
+
+Use this endpoint when a customer wants to permanently end their subscription. Cancellation is immediate and the subscription transitions to a terminal `CANCELED` status. If you need to temporarily stop billing, use [Pause Subscription](/api-reference/subscriptions/pause) instead.
+
+## Authentication
+
+All requests require the following headers:
+
+| Header | Description |
+|--------|-------------|
+| `public-api-key` | Your Yuno public API key |
+| `private-secret-key` | Your Yuno private secret key |
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/cancel \
+  -H "public-api-key: your-public-key" \
+  -H "private-secret-key: your-secret-key"
+```
+
+```javascript Node.js
+const response = await fetch(
+  'https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/cancel',
+  {
+    method: 'POST',
+    headers: {
+      'public-api-key': 'your-public-key',
+      'private-secret-key': 'your-secret-key'
+    }
+  }
+);
+const subscription = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/subscriptions/0c7fed3e-ee0d-4d34-9547-778be4ec0798/cancel',
+    headers={
+        'public-api-key': 'your-public-key',
+        'private-secret-key': 'your-secret-key'
+    }
+)
+subscription = response.json()
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `subscription_id` | string (path) | Yes | The UUID of the subscription to cancel |
+
+No request body is required.
+
+## Response
+
+Returns the full subscription object with `status` changed to `CANCELED`:
+
+```json
+{
+  "id": "0c7fed3e-ee0d-4d34-9547-778be4ec0798",
+  "name": "Premium Monthly Plan",
+  "status": "CANCELED",
+  "amount": { "currency": "USD", "value": 15000 },
+  "frequency": { "type": "MONTH", "value": 1 },
+  "billing_cycles": { "total": 12, "current": 3, "next_at": null },
+  "updated_at": "2024-11-20T10:30:00.000000Z"
+}
+```
+
+## Error responses
+
+| Status | Description | Resolution |
+|--------|-------------|------------|
+| 400 | Subscription cannot be canceled from its current state | Only `ACTIVE` or `PAUSED` subscriptions can be canceled |
+| 401 | Invalid or missing API keys | Verify `public-api-key` and `private-secret-key` headers |
+| 404 | Subscription not found | Confirm the subscription ID exists in your account |
+
+## Related endpoints
+
+- [Pause Subscription](/api-reference/subscriptions/pause) -- Temporarily stop billing (reversible alternative)
+- [Resume Subscription](/api-reference/subscriptions/resume) -- Reactivate a paused subscription
+- [Create Subscription](/api-reference/subscriptions/create) -- Create a new subscription after cancellation
+
+<Warning>
+Cancellation is **permanent and irreversible**. Once a subscription is canceled, it cannot be resumed or reactivated. To restart billing for the customer, you must create a new subscription. Subscriptions already in `CANCELED` or `COMPLETED` status cannot be canceled again.
+</Warning>
