@@ -331,7 +331,8 @@
                   "phone": "+5511999990000"
                 },
                 "description": "Premium subscription - March 2026",
-                "installments": 1
+                "installments": 1,
+                "capture": true
               }
             }
           }
@@ -362,7 +363,8 @@
                   },
                   "merchant_order_id": "order-20260301-001",
                   "created_at": "2026-03-01T14:31:00.000Z",
-                  "updated_at": "2026-03-01T14:31:02.000Z"
+                  "updated_at": "2026-03-01T14:31:02.000Z",
+                  "capture": true
                 }
               }
             }
@@ -514,7 +516,8 @@
                   },
                   "merchant_order_id": "order-20260301-001",
                   "created_at": "2026-03-01T14:31:00.000Z",
-                  "updated_at": "2026-03-01T14:31:02.000Z"
+                  "updated_at": "2026-03-01T14:31:02.000Z",
+                  "capture": false
                 }
               }
             }
@@ -1487,7 +1490,7 @@
       "get": {
         "operationId": "getPayout",
         "summary": "Get payout",
-        "description": "Retrieves the details of a payout by ID. Note: The path `/v1/payouts/merchant-ref/{reference}` may require a UUID format for the reference parameter — verify the correct format for your use case.",
+        "description": "Retrieves the details of a payout by ID. Note: The path `/v1/payouts/merchant-ref/{reference}` may require a UUID format for the reference parameter \u2014 verify the correct format for your use case.",
         "tags": [
           "Payouts"
         ],
@@ -4740,7 +4743,7 @@
                 "events": [
                   "payment.succeeded",
                   "payment.failed",
-                  "refund.succeeded"
+                  "payment.refunded"
                 ],
                 "secret": "whsec_abc123def456"
               }
