@@ -169,6 +169,125 @@
             }
           }
         }
+      },
+      "patch": {
+        "operationId": "updateCheckoutSession",
+        "summary": "Update checkout session",
+        "description": "Updates an existing checkout session. You can modify the amount, metadata, or other mutable fields before the session expires or a payment is completed.",
+        "tags": [
+          "Checkout Sessions"
+        ],
+        "x-ratelimit": {
+          "limit": 100,
+          "window": "60s"
+        },
+        "parameters": [
+          {
+            "name": "checkout_session_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the checkout session to update",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "object",
+                    "description": "Updated payment amount",
+                    "properties": {
+                      "currency": {
+                        "type": "string",
+                        "description": "ISO 4217 currency code",
+                        "example": "BRL"
+                      },
+                      "value": {
+                        "type": "number",
+                        "description": "Payment amount",
+                        "example": 200.00
+                      }
+                    }
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Key-value pairs for storing additional information",
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "example": {
+                      "order_id": "ORD-789",
+                      "updated_reason": "price_adjustment"
+                    }
+                  },
+                  "merchant_order_id": {
+                    "type": "string",
+                    "description": "Updated merchant order reference",
+                    "example": "order-updated-456"
+                  }
+                }
+              },
+              "example": {
+                "amount": {
+                  "currency": "BRL",
+                  "value": 200.00
+                },
+                "metadata": {
+                  "order_id": "ORD-789"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Checkout session updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request body",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Checkout session not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Checkout session cannot be updated (already completed or expired)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/v1/payments": {

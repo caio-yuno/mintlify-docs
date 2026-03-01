@@ -261,8 +261,6 @@
               "api-reference/checkout-sessions/create",
               "api-reference/checkout-sessions/get",
               "api-reference/checkout-sessions/update",
-              "api-reference/checkout-sessions/create-one-time-token",
-              "api-reference/checkout-sessions/create-sdk-token",
               "api-reference/checkout-sessions/get-payment-methods"
             ]
           },
