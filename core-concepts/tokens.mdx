@@ -25,7 +25,7 @@ A one-time token represents a single payment method submission. It is generated 
 ```javascript
 // SDK generates a one-time token after customer input
 yuno.mountCheckout({
-  checkoutSession: 'cs_abc123',
+  checkoutSession: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
   onTokenize: (token) => {
     // Send token.one_time_token to your server
     createPayment(token.one_time_token);
@@ -35,28 +35,58 @@ yuno.mountCheckout({
 
 ### Vaulted Tokens
 
-A vaulted token stores a payment method for future use, associated with a [customer profile](/core-concepts/customers). Use vaulted tokens for returning customers and one-click checkout.
+A vaulted token stores a payment method for future use, associated with a [customer profile](/core-concepts/customers). Use vaulted tokens for returning customers, one-click checkout, and recurring billing.
 
 | Property | Value |
 |----------|-------|
-| **Created by** | Yuno API (when `vaulted_token: true` in payment) |
+| **Created by** | Yuno API (via Enroll Payment Method endpoint) |
 | **Validity** | Persistent until deleted or expired |
 | **PCI scope** | None (Yuno stores sensitive data) |
 | **Use case** | Returning customers, one-click checkout, subscriptions |
 
-To vault a payment method during a payment:
+To enroll a card and get a vaulted token (Direct API, PCI-certified merchants):
+
+```bash
+curl -X POST https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: enroll-card-001" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "account_id": "your-account-id",
+    "country": "US",
+    "type": "CARD",
+    "workflow": "DIRECT",
+    "card_data": {
+      "holder_name": "John Doe",
+      "number": "4111111111111111",
+      "expiration_month": 12,
+      "expiration_year": 2028,
+      "security_code": "123"
+    }
+  }'
+```
+
+The response includes a `vaulted_token` to use in future payment requests:
 
 ```json
 {
-  "checkout_session": "cs_abc123",
-  "payment_method": { "type": "CARD" },
-  "customer": { "customer_id": "cust_456" },
-  "vaulted_token": true
+  "vaulted_token": "cbdcc878-ceb4-4dd8-b0f0-49d444855de0",
+  "name": "VISA ****1111",
+  "type": "CARD",
+  "status": "ENROLLED",
+  "card_data": {
+    "iin": "41111111",
+    "lfd": "1111",
+    "brand": "VISA",
+    "category": "CREDIT",
+    "fingerprint": "55a7fe38-cdc3-45dc-8c5f-820751799c76"
+  }
 }
 ```
 
 <Note>
-  The customer must have a Yuno customer profile before you can vault a token. Create one via `POST /v1/customers` if needed.
+The customer must have a Yuno customer profile before you can vault a token. Create one via `POST /v1/customers` if needed. See [Customers](/core-concepts/customers).
 </Note>
 
 ### SDK Tokens
@@ -71,28 +101,99 @@ SDK tokens are session-scoped tokens used internally by the Yuno SDK to maintain
 | Returning customer | Vaulted | Skip payment input, one-click pay |
 | Subscription billing | Vaulted | Charge recurring without customer presence |
 | SDK-based checkout | One-time + SDK | SDK manages both internally |
-| Server-to-server (PCI) | None (raw data) | Direct API with PCI compliance |
+| Server-to-server (PCI) | Vaulted | Direct API with enrolled card |
+
+## Using Tokens in Payments
+
+### One-Time Token (from SDK)
+
+```json
+{
+  "payment_method": {
+    "type": "CARD",
+    "token": "tok_4a8b9c2d-1e3f-5678-90ab-cdef12345678"
+  }
+}
+```
+
+### Vaulted Token (returning customer)
+
+```json
+{
+  "payment_method": {
+    "type": "CARD",
+    "vaulted_token": "cbdcc878-ceb4-4dd8-b0f0-49d444855de0"
+  }
+}
+```
+
+## Card Verification on Enrollment
+
+You can verify a card during enrollment by including the `verify` object. This performs a zero-amount authorization to confirm the card is valid:
+
+```json
+{
+  "account_id": "your-account-id",
+  "country": "US",
+  "type": "CARD",
+  "workflow": "DIRECT",
+  "card_data": {
+    "holder_name": "John Doe",
+    "number": "4111111111111111",
+    "expiration_month": 12,
+    "expiration_year": 2028,
+    "security_code": "123"
+  },
+  "verify": {
+    "vault_on_success": true,
+    "currency": "USD"
+  }
+}
+```
+
+When `vault_on_success` is `true`, the card is only vaulted if the verification succeeds. The response includes the verification payment details:
+
+```json
+{
+  "vaulted_token": "9c298b36-b005-42ed-92e1-808b2a785e5f",
+  "status": "ENROLLED",
+  "verify": {
+    "vault_on_success": true,
+    "currency": "USD",
+    "payment": {
+      "id": "2ff3872a-9b62-412f-be3e-69689b184e5f",
+      "status": "SUCCEEDED",
+      "sub_status": "VERIFIED"
+    }
+  }
+}
+```
+
+## Card Fingerprints
+
+When enrolling cards, the response includes a `fingerprint` field in `card_data`. This is a unique identifier for the physical card, regardless of how many times it is enrolled. Use fingerprints to detect duplicate enrollments.
 
 <Warning>
-  Vaulted tokens are tied to a specific customer and cannot be transferred between customers. If a customer wants to use a different card, create a new vaulted token.
+Vaulted tokens are tied to a specific customer and cannot be transferred between customers. The `fingerprint` may be `null` for some providers.
 </Warning>
 
 ## Retrieving Vaulted Tokens
 
-List all vaulted payment methods for a customer:
+List a specific enrolled payment method for a customer:
 
 ```bash
-curl -X GET https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
+curl -X GET https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods/{payment_method_id} \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY"
 ```
 
-## Deleting a Vaulted Token
+## What's Next
 
-```bash
-curl -X DELETE https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods/{token_id} \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
-```
+<CardGroup cols={2}>
+  <Card title="Customers" icon="user" href="/core-concepts/customers">
+    Create customer profiles for token vaulting.
+  </Card>
+  <Card title="Payment Methods" icon="credit-card" href="/core-concepts/payment-methods">
+    See all supported payment methods and their requirements.
+  </Card>
+</CardGroup>
