@@ -1,6 +1,6 @@
 ---
 title: "Vue Components"
-description: "Integrate Yuno checkout in Vue 3 applications with composables and components"
+description: "Integrate Yuno checkout in Vue 3 applications with composables, components, and slots"
 ---
 
 
@@ -15,6 +15,7 @@ Vue components require Vue 3.3+ with Composition API support. Vue 2 is not suppo
 ## Prerequisites
 
 - Vue 3.3+ application
+- Node.js 18+
 - Yuno API keys ([Authentication](/getting-started/authentication))
 - At least one payment method enabled in your [Dashboard](/platform/dashboard/connections)
 
@@ -36,7 +37,7 @@ pnpm add @yuno-payments/vue
 
 </CodeGroup>
 
-## Plugin Setup
+## Plugin setup
 
 Register the Yuno plugin in your application entry point:
 
@@ -58,7 +59,7 @@ app.use(YunoPlugin, {
 app.mount('#app');
 ```
 
-### Plugin Options
+### Plugin options
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
@@ -68,7 +69,7 @@ app.mount('#app');
 | `environment` | `'sandbox' \| 'production'` | No | Defaults to `'production'` |
 | `theme` | `YunoTheme` | No | Theme configuration object |
 
-## YunoCheckout Component
+## YunoCheckout component
 
 Renders the full checkout UI with all available payment methods.
 
@@ -107,7 +108,7 @@ function handleError(error: { code: string; message: string }) {
 </script>
 ```
 
-### YunoCheckout Props
+### YunoCheckout props
 
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
@@ -116,7 +117,7 @@ function handleError(error: { code: string; message: string }) {
 | `language` | `'en' \| 'es' \| 'pt'` | No | Overrides plugin language setting |
 | `layout` | `LayoutOptions` | No | Layout direction and display settings |
 
-### YunoCheckout Events
+### YunoCheckout events
 
 | Event | Payload | Description |
 |-------|---------|-------------|
@@ -129,7 +130,7 @@ function handleError(error: { code: string; message: string }) {
 Always verify the final payment status server-side via webhooks or the GET payment API. Client-side events should not be the sole source of truth.
 </Warning>
 
-## YunoPaymentForm Component
+## YunoPaymentForm component
 
 Renders a card-only payment form for custom checkout flows.
 
@@ -197,7 +198,7 @@ async function handleSubmit() {
 </script>
 ```
 
-### useYunoPayment Return Values
+### useYunoPayment return values
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -242,7 +243,7 @@ Components expose slots for customizing sections of the checkout UI:
 </template>
 ```
 
-### Available Slots
+### Available slots
 
 | Slot | Description |
 |------|-------------|
@@ -280,7 +281,7 @@ Override with CSS variables:
 }
 ```
 
-## Nuxt.js Integration
+## Nuxt.js integration
 
 Create a Nuxt plugin to register the Yuno plugin on the client side only:
 
@@ -312,7 +313,7 @@ export default defineNuxtConfig({
 The `.client.ts` suffix ensures the plugin runs only in the browser. Yuno SDK components require browser APIs and will fail during server-side rendering.
 </Warning>
 
-## Complete Example
+## Complete example
 
 A full checkout page in Vue with session management:
 
