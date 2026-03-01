@@ -9,36 +9,31 @@ All Yuno API errors follow a consistent JSON structure:
 
 ```json
 {
-  "error": {
-    "code": "INVALID_FIELD",
-    "message": "customer.document is required for PIX",
-    "type": "VALIDATION_ERROR",
-    "details": [
-      {
-        "field": "customer.document",
-        "message": "This field is required for the selected payment method"
-      }
-    ]
-  }
+  "code": "INVALID_REQUEST",
+  "messages": [
+    "Invalid request"
+  ]
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `code` | string | Machine-readable error code for programmatic handling |
-| `message` | string | Human-readable description of the error |
-| `type` | string | Error category (see below) |
-| `details` | array | Field-level errors when multiple validation issues exist |
+| `messages` | array | Human-readable descriptions of the error(s) |
+
+<Note>
+Always use the `code` field for programmatic error handling, not the `messages` array. Error messages may change over time, but error codes are stable.
+</Note>
 
 ## Error Categories
 
 ### Client Errors (4xx)
 
-| Status | Type | Common Causes | Action |
-|--------|------|---------------|--------|
-| `400` | `VALIDATION_ERROR` | Missing required fields, invalid format, malformed JSON | Fix request payload |
-| `401` | `AUTHENTICATION_ERROR` | Invalid or missing API keys | Check `public-api-key`, `private-secret-key`, `account-code` |
-| `403` | `AUTHORIZATION_ERROR` | Payment method not enabled, permission denied | Check Dashboard configuration |
+| Status | Error Code | Common Causes | Action |
+|--------|-----------|---------------|--------|
+| `400` | `INVALID_REQUEST` | Missing required fields, invalid format, malformed JSON | Fix request payload |
+| `401` | `INVALID_CREDENTIALS` | Invalid or missing API keys | Check `public-api-key` and `private-secret-key` |
+| `403` | `AUTHORIZATION_REQUIRED` | Payment method not enabled, permission denied | Check Dashboard configuration |
 | `404` | `NOT_FOUND` | Invalid endpoint, resource does not exist | Verify URL and resource ID |
 | `409` | `CONFLICT` | Idempotency key reused with different payload | Use a new idempotency key |
 | `422` | `UNPROCESSABLE_ENTITY` | Valid JSON but semantically incorrect | Review field values and business rules |
@@ -46,42 +41,51 @@ All Yuno API errors follow a consistent JSON structure:
 
 ### Server Errors (5xx)
 
-| Status | Type | Common Causes | Action |
-|--------|------|---------------|--------|
-| `500` | `INTERNAL_ERROR` | Yuno server error | Retry with idempotency key |
+| Status | Error Code | Common Causes | Action |
+|--------|-----------|---------------|--------|
+| `500` | `INTERNAL_ERROR` | Yuno server error | Retry with [idempotency key](/core-concepts/idempotency) |
 | `502` | `GATEWAY_ERROR` | Provider unreachable | Retry or wait for provider recovery |
 | `503` | `SERVICE_UNAVAILABLE` | Yuno maintenance or overload | Retry with backoff |
 | `504` | `TIMEOUT_ERROR` | Provider did not respond in time | Retry with idempotency key |
 
-## Common Errors by Payment Method
+## Payment-Specific Error Codes
 
-### PIX
+### PIX Errors
 
-| Error Code | Message | Fix |
-|------------|---------|-----|
-| `INVALID_FIELD` | `customer.document is required` | Add `customer.document` with CPF or CNPJ |
-| `INVALID_FORMAT` | `document_number format is invalid` | Use 11 digits (CPF) or 14 digits (CNPJ), no formatting |
-| `METHOD_NOT_AVAILABLE` | `PIX is not enabled` | Enable PIX in Dashboard > Payment Methods > Brazil |
+| Error Code | Message | Resolution |
+|------------|---------|------------|
+| `INVALID_REQUEST` | `customer.document is required` | Add `customer.document` with CPF or CNPJ |
+| `INVALID_REQUEST` | `document_number format is invalid` | Use 11 digits (CPF) or 14 digits (CNPJ), no formatting |
+| `AUTHORIZATION_REQUIRED` | `PIX is not enabled` | Enable PIX in Dashboard > Payment Methods > Brazil |
 
-### Cards
+### Card Errors
 
-| Error Code | Message | Fix |
-|------------|---------|-----|
-| `INVALID_CARD_NUMBER` | `Card number is invalid` | Verify Luhn check, correct number of digits |
-| `EXPIRED_CARD` | `Card has expired` | Use a valid expiration date |
-| `THREE_DS_REQUIRED` | `3DS authentication required` | Implement 3DS flow via SDK or redirect |
+| Error Code | Message | Resolution |
+|------------|---------|------------|
+| `INVALID_REQUEST` | `Card number is invalid` | Verify Luhn check, correct number of digits |
+| `INVALID_REQUEST` | `Card has expired` | Use a valid expiration date |
+| `INVALID_REQUEST` | `3DS authentication required` | Implement 3DS flow via SDK or redirect |
+
+### Capture/Cancel/Refund Errors
+
+| Error Code | Message | Resolution |
+|------------|---------|------------|
+| `INVALID_REQUEST` | `Payment cannot be captured` | Verify the payment is in an authorized state |
+| `INVALID_REQUEST` | `Payment cannot be cancelled` | Verify the payment is in a cancellable state |
+| `INVALID_REQUEST` | `Refund amount exceeds available` | Reduce the refund amount or check cumulative refunds |
 
 ## Retry Strategies
 
-<Note>
-  Always include an `X-Idempotency-Key` header when retrying requests. This prevents duplicate transactions even if the original request succeeded but the response was lost. See [Idempotency](/core-concepts/idempotency).
-</Note>
+<Warning>
+Always include an `X-Idempotency-Key` header when retrying requests. This prevents duplicate transactions even if the original request succeeded but the response was lost. See [Idempotency](/core-concepts/idempotency).
+</Warning>
 
 ### Exponential Backoff
 
 For rate limits (429) and server errors (5xx), implement exponential backoff:
 
-```javascript
+<CodeGroup>
+```javascript Node.js
 async function retryWithBackoff(fn, maxRetries = 3) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
@@ -97,7 +101,44 @@ async function retryWithBackoff(fn, maxRetries = 3) {
     }
   }
 }
+
+// Usage
+const payment = await retryWithBackoff(() =>
+  createPayment({
+    idempotencyKey: 'pay-order-123',
+    // ... payment data
+  })
+);
 ```
+
+```python Python
+import time
+import requests
+
+def retry_with_backoff(fn, max_retries=3):
+    for attempt in range(max_retries + 1):
+        try:
+            response = fn()
+            response.raise_for_status()
+            return response
+        except requests.exceptions.HTTPError as e:
+            if attempt == max_retries:
+                raise
+
+            retryable = e.response.status_code in [429, 500, 502, 503, 504]
+            if not retryable:
+                raise
+
+            delay = min(2 ** attempt, 30)
+            time.sleep(delay)
+
+# Usage
+payment = retry_with_backoff(lambda: create_payment(
+    idempotency_key='pay-order-123',
+    # ... payment data
+))
+```
+</CodeGroup>
 
 ### What to Retry vs What Not to Retry
 
@@ -110,13 +151,25 @@ async function retryWithBackoff(fn, maxRetries = 3) {
 | `504` Timeout | `409` Conflict (use new idempotency key) |
 
 <Warning>
-  Never retry `400` or `401` errors automatically. These indicate a problem with your request that must be fixed before retrying. Automated retries on these codes waste rate limit budget and will never succeed.
+Never retry `400` or `401` errors automatically. These indicate a problem with your request that must be fixed before retrying. Automated retries on these codes waste rate limit budget and will never succeed.
 </Warning>
 
 ## Error Handling Best Practices
 
-- **Parse the `code` field** for programmatic handling, not the `message` (messages may change)
+- **Parse the `code` field** for programmatic handling, not the `messages` (messages may change)
 - **Log full error responses** including headers and request body for debugging
-- **Surface `details` array** to identify which specific fields failed validation
+- **Surface `messages` array** to identify which specific fields failed validation
 - **Monitor error rates** by code and endpoint to detect integration issues early
 - **Set up alerts** for spikes in 5xx errors, which may indicate provider outages
+- **Use idempotency keys** on all state-changing requests to enable safe retries
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Idempotency" icon="shield" href="/core-concepts/idempotency">
+    Safely retry requests without duplicate transactions.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/core-concepts/webhooks">
+    Receive real-time event notifications.
+  </Card>
+</CardGroup>

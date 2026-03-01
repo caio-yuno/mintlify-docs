@@ -10,39 +10,58 @@ A Yuno payment moves through a defined set of statuses from creation to final re
 ## Payment Statuses
 
 | Status | Description | Terminal? |
-|--------|-------------|-----------|
+|--------|-------------|----------|
 | `PENDING` | Payment created, awaiting customer action or provider confirmation | No |
 | `AUTHORIZED` | Funds reserved on the customer's instrument (auth-only capture mode) | No |
 | `SUCCEEDED` | Payment completed and funds captured | Yes |
 | `DECLINED` | Provider or issuer declined the transaction | Yes |
 | `REJECTED` | Yuno rejected the request due to validation or fraud rules | Yes |
 | `CANCELLED` | Payment cancelled by merchant or customer before completion | Yes |
-| `REFUNDED` | Captured funds returned to the customer | Yes |
+| `REFUNDED` | All captured funds returned to the customer | Yes |
+| `PARTIALLY_REFUNDED` | Some captured funds returned to the customer | No |
 
 ## Status State Machine
 
 ```
-                    +----------+
-                    |  PENDING |
-                    +----+-----+
-                         |
-            +------------+------------+
-            |            |            |
-            v            v            v
-      +-----------+ +----------+ +----------+
-      | AUTHORIZED| | SUCCEEDED| | DECLINED |
-      +-----+-----+ +----+-----+ +----------+
-            |             |
-            v             v          +----------+
-      +-----------+  +----------+   | REJECTED |
-      | SUCCEEDED |  | REFUNDED |   +----------+
-      +-----+-----+  +----------+
-            |                        +----------+
-            v                        | CANCELLED|
-      +-----------+                  +----------+
-      | REFUNDED  |
-      +-----------+
+                        +-----------+
+                        |  PENDING  |
+                        +-----+-----+
+                              |
+               +--------------+--------------+
+               |              |              |
+               v              v              v
+         +-----------+  +----------+   +----------+
+         | AUTHORIZED|  | SUCCEEDED|   | DECLINED |
+         +-----+-----+  +----+-----+   +----------+
+               |              |
+         +-----+-----+  +----+-----+    +----------+
+         |           |  |          |    | REJECTED |
+         v           v  v          v    +----------+
+   +-----------+ +----------+ +-------------+
+   | SUCCEEDED | | REFUNDED | | PARTIALLY   |  +----------+
+   +-----+-----+ +----------+ | REFUNDED    |  | CANCELLED|
+         |                     +-------------+  +----------+
+         v
+   +-----------+
+   | REFUNDED  |
+   +-----------+
 ```
+
+### Status Transitions
+
+| From | Trigger | To | Notes |
+|------|---------|-----|------|
+| `PENDING` | Provider approves | `SUCCEEDED` | Auto-capture mode |
+| `PENDING` | Provider authorizes | `AUTHORIZED` | Auth-only mode (`capture: false`) |
+| `PENDING` | Provider declines | `DECLINED` | Hard or soft decline |
+| `PENDING` | Yuno rules block | `REJECTED` | Validation or fraud |
+| `PENDING` | Customer/merchant cancels | `CANCELLED` | Before provider processes |
+| `AUTHORIZED` | Merchant captures | `SUCCEEDED` | Full or partial capture |
+| `AUTHORIZED` | Merchant cancels | `CANCELLED` | Void/release hold |
+| `AUTHORIZED` | Hold expires | `CANCELLED` | Automatic after ~5-7 days |
+| `SUCCEEDED` | Full refund | `REFUNDED` | All funds returned |
+| `SUCCEEDED` | Partial refund | `PARTIALLY_REFUNDED` | Some funds returned |
+| `PARTIALLY_REFUNDED` | Additional refund | `REFUNDED` | All remaining funds returned |
 
 ## Capture Modes
 
@@ -71,16 +90,18 @@ Authorization reserves the funds, but you must explicitly capture later. This is
 ```
 
 <Warning>
-  Authorized payments that are not captured within the provider's hold period (typically 5-7 days for cards) will be automatically voided.
+Authorized payments that are not captured within the provider's hold period (typically 5-7 days for cards) will be automatically voided.
 </Warning>
 
-To capture an authorized payment:
+To capture:
 
 ```bash
-curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/capture \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: capture-001" \
+  -H "Content-Type: application/json" \
+  -d '{ "merchant_reference": "capture-order-001" }'
 ```
 
 ## Integration Patterns
@@ -88,12 +109,36 @@ curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
 | Pattern | Description | Use Case |
 |---------|-------------|----------|
 | **Full Checkout SDK** | Yuno renders the entire checkout UI | Fastest integration, least customization |
-| **Lite SDK** | Yuno handles payment input, you control the page layout | Balanced control and speed |
+| **Seamless SDK** | Yuno handles payment input, you control the page layout | Balanced control and speed |
 | **Direct API** | You build the UI and call Yuno APIs directly | Maximum control, PCI scope implications |
 
 <Note>
-  Direct API integration for card payments requires PCI DSS compliance since your servers handle raw card data. Use the SDK with tokenization to avoid PCI scope.
+Direct API integration for card payments requires PCI DSS compliance since your servers handle raw card data. Use the SDK with tokenization to avoid PCI scope.
 </Note>
+
+## Asynchronous Payment Methods
+
+Some payment methods (PIX, Boleto, OXXO, PSE) are inherently asynchronous. The initial API response returns `PENDING`, and the final status arrives via [webhook](/core-concepts/webhooks) when the customer completes the payment.
+
+```
+Your Server                    Yuno API                   Customer
+    |                              |                          |
+    |  POST /v1/payments           |                          |
+    |----------------------------->|                          |
+    |  { status: "PENDING" }       |                          |
+    |<-----------------------------|                          |
+    |                              |   QR code / bank slip    |
+    |                              |<-------------------------|
+    |                              |   Customer pays          |
+    |                              |<-------------------------|
+    |  Webhook: payment.succeeded  |                          |
+    |<-----------------------------|                          |
+    |  Fulfill order               |                          |
+```
+
+<Warning>
+Never fulfill an order based solely on the synchronous `POST /v1/payments` response for asynchronous methods. Always wait for the webhook confirmation.
+</Warning>
 
 ## Next Steps
 
@@ -103,5 +148,11 @@ curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/capture \
   </Card>
   <Card title="Transactions" icon="arrow-right-arrow-left" href="/core-concepts/transactions">
     Understand the relationship between payments and transactions.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/core-concepts/webhooks">
+    Receive real-time payment status notifications.
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/core-concepts/error-handling">
+    Handle API errors gracefully.
   </Card>
 </CardGroup>
