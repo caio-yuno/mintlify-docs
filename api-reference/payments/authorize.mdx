@@ -2,3 +2,218 @@
 title: "Authorize Payment"
 openapi: "POST /v1/payments"
 ---
+
+Create a payment authorization without capturing funds. This is the first step in a two-step payment flow where you authorize first and capture later.
+
+## When to use
+
+Use this endpoint when you need to verify and hold funds on a customer's payment method before fulfilling an order. Common scenarios include pre-orders, hotel reservations, and car rentals where the final amount may differ from the authorization.
+
+## Authentication
+
+| Header | Type | Required | Description |
+|---|---|---|---|
+| `public-api-key` | string | Yes | Your public API key from the Yuno dashboard |
+| `private-secret-key` | string | Yes | Your private secret key from the Yuno dashboard |
+| `X-Idempotency-Key` | string | Yes | UUID v4 to prevent duplicate processing |
+
+## Request example
+
+<CodeGroup>
+
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY" \
+  -H "X-Idempotency-Key: 660f9500-f39c-52e5-b827-557766551111" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "description": "Hotel reservation - 3 nights",
+    "country": "CO",
+    "merchant_order_id": "reservation-5678",
+    "amount": {
+      "currency": "COP",
+      "value": 150000
+    },
+    "workflow": "DIRECT",
+    "payment_method": {
+      "type": "CARD",
+      "detail": {
+        "card": {
+          "card_data": {
+            "number": "4196111100001000",
+            "expiration_month": 6,
+            "expiration_year": 2028,
+            "security_code": "456",
+            "holder_name": "Maria Silva"
+          },
+          "capture": false
+        }
+      }
+    }
+  }'
+```
+
+```javascript Node.js
+const response = await fetch("https://api-sandbox.y.uno/v1/payments", {
+  method: "POST",
+  headers: {
+    "public-api-key": "YOUR_PUBLIC_API_KEY",
+    "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    "X-Idempotency-Key": "660f9500-f39c-52e5-b827-557766551111",
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    description: "Hotel reservation - 3 nights",
+    country: "CO",
+    merchant_order_id: "reservation-5678",
+    amount: {
+      currency: "COP",
+      value: 150000,
+    },
+    workflow: "DIRECT",
+    payment_method: {
+      type: "CARD",
+      detail: {
+        card: {
+          card_data: {
+            number: "4196111100001000",
+            expiration_month: 6,
+            expiration_year: 2028,
+            security_code: "456",
+            holder_name: "Maria Silva",
+          },
+          capture: false,
+        },
+      },
+    },
+  }),
+});
+
+const authorization = await response.json();
+// Save authorization.id and authorization.transactions.id for capture
+```
+
+```python Python
+import requests
+
+response = requests.post(
+    "https://api-sandbox.y.uno/v1/payments",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+        "X-Idempotency-Key": "660f9500-f39c-52e5-b827-557766551111",
+        "Content-Type": "application/json",
+    },
+    json={
+        "description": "Hotel reservation - 3 nights",
+        "country": "CO",
+        "merchant_order_id": "reservation-5678",
+        "amount": {
+            "currency": "COP",
+            "value": 150000,
+        },
+        "workflow": "DIRECT",
+        "payment_method": {
+            "type": "CARD",
+            "detail": {
+                "card": {
+                    "card_data": {
+                        "number": "4196111100001000",
+                        "expiration_month": 6,
+                        "expiration_year": 2028,
+                        "security_code": "456",
+                        "holder_name": "Maria Silva",
+                    },
+                    "capture": False,
+                },
+            },
+        },
+    },
+)
+
+authorization = response.json()
+# Save authorization["id"] and authorization["transactions"]["id"] for capture
+```
+
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|---|---|---|---|
+| `description` | string | Yes | Payment description (3-255 characters) |
+| `country` | string | Yes | Customer's country in ISO 3166-1 alpha-2 format |
+| `merchant_order_id` | string | Yes | Your unique order identifier (3-255 characters) |
+| `amount.currency` | string | Yes | ISO 4217 currency code |
+| `amount.value` | number | Yes | Amount in smallest currency unit |
+| `workflow` | string | Yes | One of `SDK_CHECKOUT`, `DIRECT`, or `REDIRECT` |
+| `payment_method.type` | string | Yes | Payment method type (for example, `CARD`) |
+| `payment_method.detail.card.capture` | boolean | Yes | Must be `false` for authorization-only |
+| `payment_method.detail.card.card_data` | object | Yes | Card details: `number`, `expiration_month`, `expiration_year`, `security_code`, `holder_name` |
+
+<Warning>
+The key difference from [Create Payment](/api-reference/payments/create) is that `capture` must be set to `false`. This creates an `AUTHORIZE` transaction instead of a `PURCHASE` transaction.
+</Warning>
+
+## Response
+
+A successful request returns a `201` status code. The payment will have `PENDING` status with `AUTHORIZED` sub-status.
+
+```json
+{
+  "id": "97bg22e9-5810-52d3-b159-bbb093fg8876",
+  "status": "PENDING",
+  "sub_status": "AUTHORIZED",
+  "merchant_order_id": "reservation-5678",
+  "amount": {
+    "value": 150000,
+    "currency": "COP",
+    "captured": 0,
+    "refunded": 0
+  },
+  "transactions": {
+    "id": "auth-txn-uuid",
+    "type": "AUTHORIZE",
+    "status": "SUCCEEDED",
+    "amount": 150000,
+    "response_code": "SUCCEEDED",
+    "response_message": "The payment was approved"
+  },
+  "transactions_history": [
+    {
+      "id": "auth-txn-uuid",
+      "type": "AUTHORIZE",
+      "status": "SUCCEEDED",
+      "delayed_capture_settings": {
+        "delay": "PT1M",
+        "simplified_mode": false
+      }
+    }
+  ]
+}
+```
+
+<Note>
+Save both the `payment_id` (top-level `id`) and the `transaction_id` (`transactions.id`) from this response. You need both to [capture](/api-reference/payments/capture) or [cancel](/api-reference/payments/cancel) the authorization.
+</Note>
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|---|---|---|---|
+| 400 | `INVALID_REQUEST` | Malformed request body or missing required fields | Verify all required fields are present and correctly formatted |
+| 400 | `INVALID_PARAMETERS` | Invalid parameter value | Check parameter values against supported options |
+| 401 | `INVALID_CREDENTIALS` | Missing or invalid API keys | Verify your `public-api-key` and `private-secret-key` headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized for this API | Contact Yuno support to verify your account permissions |
+
+## Related endpoints
+
+- [Capture Payment](/api-reference/payments/capture) - Capture this authorization
+- [Cancel Payment](/api-reference/payments/cancel) - Cancel this authorization
+- [Create Payment](/api-reference/payments/create) - Single-step payment (auth + capture)
+- [Get Payment](/api-reference/payments/get) - Check authorization status
+
+<Note>
+The `delayed_capture_settings.delay` field in `transactions_history` shows the auto-capture delay in ISO 8601 duration format (for example, `PT1M` = 1 minute). If not captured within this window, the authorization may expire depending on the provider.
+</Note>
