@@ -2,3 +2,153 @@
 title: "List Enrolled Payment Methods"
 openapi: "GET /v1/customers/{customer_id}/payment-methods"
 ---
+
+List all enrolled (vaulted) payment methods for a customer. Only methods with `ENROLLED` status are returned; unenrolled methods are excluded.
+
+## When to use
+
+Use this endpoint to display a customer's saved payment methods in your UI, or to check which cards are available before initiating a payment. For richer details on a specific method (fingerprint, sub_status), use [Retrieve Payment Method](/api-reference/payment-methods/get) instead.
+
+## Authentication
+
+<Note>
+Requires both `public-api-key` and `private-secret-key` headers. See [Authentication](/api-reference/authentication) for details.
+</Note>
+
+## Request example
+
+<CodeGroup>
+```bash cURL
+curl -X GET https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892/payment-methods \
+  -H "public-api-key: YOUR_PUBLIC_API_KEY" \
+  -H "private-secret-key: YOUR_PRIVATE_SECRET_KEY"
+```
+
+```javascript Node.js
+const response = await fetch(
+  "https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892/payment-methods",
+  {
+    method: "GET",
+    headers: {
+      "public-api-key": "YOUR_PUBLIC_API_KEY",
+      "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+  }
+);
+const data = await response.json();
+const methods = data.payment_methods;
+```
+
+```python Python
+import requests
+
+response = requests.get(
+    "https://api-sandbox.y.uno/v1/customers/5ac25323-9cc6-4247-bf04-df712b31e892/payment-methods",
+    headers={
+        "public-api-key": "YOUR_PUBLIC_API_KEY",
+        "private-secret-key": "YOUR_PRIVATE_SECRET_KEY",
+    },
+)
+data = response.json()
+methods = data["payment_methods"]
+```
+</CodeGroup>
+
+## Key parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `customer_id` | string (path) | Yes | Yuno customer UUID (36-64 chars) |
+
+## Response
+
+Returns a wrapper object containing a `payment_methods` array.
+
+```json
+{
+  "payment_methods": [
+    {
+      "idempotency_key": null,
+      "name": "VISA ****1111",
+      "description": "VISA ****1111",
+      "icon": "https://icons.prod.y.uno/visa_logosimbolo.png",
+      "type": "CARD",
+      "category": "CARD",
+      "country": "CO",
+      "parent_type": null,
+      "status": "ENROLLED",
+      "sub_status": null,
+      "vaulted_token": "4945a392-de69-4484-a224-8427343d0a1e",
+      "callback_url": null,
+      "action": null,
+      "redirect_url": null,
+      "created_at": "2026-03-01T09:59:53.226079Z",
+      "updated_at": "2026-03-01T09:59:53.226080Z",
+      "card_data": {
+        "iin": "41111111",
+        "lfd": "1111",
+        "holder_name": "John Doe",
+        "expiration_month": 12,
+        "expiration_year": 2028,
+        "number_length": 16,
+        "security_code_length": 3,
+        "brand": "VISA",
+        "issuer": null,
+        "issuer_name": "CONOTOXIA SP Z O O",
+        "issuer_code": null,
+        "country_code": null,
+        "category": "CLASSIC",
+        "type": "DEBIT",
+        "fingerprint": null
+      },
+      "last_successfully_used": false,
+      "last_successfully_used_at": "",
+      "preferred": null
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `payment_methods` | array | Array of enrolled payment method objects |
+| `icon` | string | URL to the payment method icon (present in list, absent in single retrieve) |
+| `card_data.issuer_name` | string | Issuing bank name. **Note:** named `issuer_name` here vs `issuer` in single retrieve |
+| `card_data.fingerprint` | null | Always `null` in list response. Use [Retrieve Payment Method](/api-reference/payment-methods/get) for fingerprint |
+
+<Warning>
+The response field naming differs between this endpoint and single retrieve. The issuer field is `issuer_name` in list responses but `issuer` in [Retrieve Payment Method](/api-reference/payment-methods/get). Account for both field names in your integration code.
+</Warning>
+
+### List vs Single retrieve differences
+
+| Field | List (this endpoint) | Single Retrieve |
+|-------|---------------------|-----------------|
+| `icon` | Present | Absent |
+| Issuer field name | `issuer_name` | `issuer` |
+| `fingerprint` | `null` | Populated |
+| `sub_status` | `null` | Populated |
+| `country_code` in card_data | `null` | Populated |
+| `idempotency_key` | `null` | Populated |
+| Response wrapper | `{ payment_methods: [...] }` | Direct object |
+
+## Error responses
+
+| Status | Code | Description | Resolution |
+|--------|------|-------------|------------|
+| 400 | `INVALID_REQUEST` | Invalid request | Verify the customer UUID format |
+| 401 | `INVALID_CREDENTIALS` | Invalid API keys | Verify your API key headers |
+| 403 | `AUTHORIZATION_REQUIRED` | Merchant not authorized | Confirm your account has Payment Methods API access |
+
+## Notes
+
+- Only `ENROLLED` methods are returned. Unenrolled methods are excluded from the list.
+- The response is wrapped in `{ payment_methods: [...] }`, not a bare array.
+- For card fingerprint and full issuer details, call [Retrieve Payment Method](/api-reference/payment-methods/get) on individual items.
+
+## Related endpoints
+
+- [Retrieve Payment Method](/api-reference/payment-methods/get) -- get full details including fingerprint
+- [Enroll Payment Method](/api-reference/payment-methods/enroll) -- vault a new payment method
+- [Unenroll Payment Method](/api-reference/payment-methods/unenroll) -- remove an enrolled method
+- [Get Available Payment Methods](/api-reference/checkout-sessions/get-payment-methods) -- list methods in a checkout session context
