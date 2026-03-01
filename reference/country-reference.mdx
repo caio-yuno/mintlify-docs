@@ -1,0 +1,131 @@
+---
+title: "Country Reference"
+description: "Supported countries, currencies, document types, and payment method availability"
+---
+
+## Overview
+
+Yuno supports payment processing across Latin America, North America, and select regions worldwide. This reference provides detailed country-level information including currencies, required document types, and available payment methods.
+
+<Note>
+Actual payment method availability depends on your configured providers and merchant agreements. Enable providers in [Dashboard > Connections](/platform/dashboard/connections).
+</Note>
+
+## Americas
+
+### Latin America
+
+| Country | ISO Code | Currency | Currency Code | Required Document Types | Popular Payment Methods |
+|---------|----------|----------|---------------|------------------------|------------------------|
+| Argentina | AR | Argentine Peso | ARS | DNI, CUIT, CUIL | Cards (Visa, MC, Amex, Naranja, Cabal), Rapipago, Pago Facil, Transferencia 3.0 |
+| Bolivia | BO | Boliviano | BOB | CI, NIT | Cards (Visa, MC) |
+| Brazil | BR | Brazilian Real | BRL | CPF, CNPJ | Cards (Visa, MC, Amex, Elo, Hipercard), PIX, Boleto |
+| Chile | CL | Chilean Peso | CLP | RUT | Cards (Visa, MC, Amex, Redcompra), Khipu, Webpay |
+| Colombia | CO | Colombian Peso | COP | CC, CE, NIT, TI, PP | Cards (Visa, MC, Amex, Codensa), PSE, Efecty, Nequi |
+| Costa Rica | CR | Costa Rican Colon | CRC | CI, DIMEX | Cards (Visa, MC) |
+| Dominican Republic | DO | Dominican Peso | DOP | CI, RNC | Cards (Visa, MC) |
+| Ecuador | EC | US Dollar | USD | CI, RUC, PP | Cards (Visa, MC), bank transfer |
+| El Salvador | SV | US Dollar | USD | DUI, NIT | Cards (Visa, MC) |
+| Guatemala | GT | Guatemalan Quetzal | GTQ | DPI, NIT | Cards (Visa, MC) |
+| Honduras | HN | Honduran Lempira | HNL | DNI, RTN | Cards (Visa, MC) |
+| Mexico | MX | Mexican Peso | MXN | RFC, CURP, INE | Cards (Visa, MC, Amex, Carnet), OXXO, SPEI |
+| Nicaragua | NI | Nicaraguan Cordoba | NIO | CI | Cards (Visa, MC) |
+| Panama | PA | US Dollar / Balboa | USD / PAB | CI, RUC | Cards (Visa, MC) |
+| Paraguay | PY | Paraguayan Guarani | PYG | CI, RUC | Cards (Visa, MC) |
+| Peru | PE | Peruvian Sol | PEN | DNI, RUC, CE, PP | Cards (Visa, MC, Amex), PagoEfectivo |
+| Uruguay | UY | Uruguayan Peso | UYU | CI, RUT | Cards (Visa, MC) |
+
+### North America
+
+| Country | ISO Code | Currency | Currency Code | Required Document Types | Popular Payment Methods |
+|---------|----------|----------|---------------|------------------------|------------------------|
+| United States | US | US Dollar | USD | SSN (not typically required) | Cards (Visa, MC, Amex, Discover), ACH |
+| Canada | CA | Canadian Dollar | CAD | SIN (not typically required) | Cards (Visa, MC, Amex), Interac |
+
+## Europe (Summary)
+
+| Country | ISO Code | Currency | Currency Code |
+|---------|----------|----------|---------------|
+| Spain | ES | Euro | EUR |
+| Portugal | PT | Euro | EUR |
+| United Kingdom | GB | British Pound | GBP |
+| France | FR | Euro | EUR |
+| Germany | DE | Euro | EUR |
+| Italy | IT | Euro | EUR |
+| Netherlands | NL | Euro | EUR |
+
+<Note>
+European coverage is expanding. Contact your Yuno account manager for the latest availability and provider options in European markets.
+</Note>
+
+## Asia Pacific (Summary)
+
+| Country | ISO Code | Currency | Currency Code |
+|---------|----------|----------|---------------|
+| India | IN | Indian Rupee | INR |
+| Japan | JP | Japanese Yen | JPY |
+| Australia | AU | Australian Dollar | AUD |
+
+## Africa & Middle East (Summary)
+
+| Country | ISO Code | Currency | Currency Code |
+|---------|----------|----------|---------------|
+| Nigeria | NG | Nigerian Naira | NGN |
+| South Africa | ZA | South African Rand | ZAR |
+| United Arab Emirates | AE | UAE Dirham | AED |
+
+## Document Type Reference
+
+Tax identification documents are required for many Latin American payment methods. The following table lists all supported document types.
+
+| Document Type | Code | Country | Description | Format |
+|---------------|------|---------|-------------|--------|
+| CPF | `CPF` | BR | Cadastro de Pessoas Fisicas (Individual tax ID) | 11 digits (e.g., `12345678901`) |
+| CNPJ | `CNPJ` | BR | Cadastro Nacional da Pessoa Juridica (Business tax ID) | 14 digits (e.g., `12345678000199`) |
+| CC | `CC` | CO | Cedula de Ciudadania (Citizen ID) | 6-10 digits |
+| CE | `CE` | CO, PE | Cedula de Extranjeria (Foreign resident ID) | 6-7 digits |
+| NIT | `NIT` | CO, SV, GT | Numero de Identificacion Tributaria (Tax ID) | 9-10 digits |
+| TI | `TI` | CO | Tarjeta de Identidad (Minor ID) | 10-11 digits |
+| PP | `PP` | CO, PE, EC | Passport | Alphanumeric, varies by issuing country |
+| DNI | `DNI` | AR, PE, HN | Documento Nacional de Identidad (National ID) | AR: 7-8 digits, PE: 8 digits |
+| CUIT | `CUIT` | AR | Clave Unica de Identificacion Tributaria (Tax ID) | 11 digits (e.g., `20-12345678-9`) |
+| CUIL | `CUIL` | AR | Clave Unica de Identificacion Laboral (Labor ID) | 11 digits |
+| RUT | `RUT` | CL, UY | Rol Unico Tributario (Tax ID) | CL: 8-9 digits + check digit, UY: 12 digits |
+| RUC | `RUC` | PE, EC, PY, PA | Registro Unico de Contribuyente (Tax registry) | PE: 11 digits, EC: 13 digits |
+| RFC | `RFC` | MX | Registro Federal de Contribuyentes (Federal tax registry) | 12-13 alphanumeric characters |
+| CURP | `CURP` | MX | Clave Unica de Registro de Poblacion (Population registry) | 18 alphanumeric characters |
+| INE | `INE` | MX | Instituto Nacional Electoral (Voter ID) | 13 digits |
+| CI | `CI` | BO, CR, DO, EC, NI, PA, PY, UY | Cedula de Identidad (Identity card) | Varies by country |
+| DUI | `DUI` | SV | Documento Unico de Identidad | 9 digits |
+| DPI | `DPI` | GT | Documento Personal de Identificacion | 13 digits |
+| RTN | `RTN` | HN | Registro Tributario Nacional (Tax registry) | 14 digits |
+| DIMEX | `DIMEX` | CR | Documento de Identidad Migratoria para Extranjeros | 11-12 digits |
+| RNC | `RNC` | DO | Registro Nacional del Contribuyente (Tax registry) | 9 digits |
+
+## Currency Codes
+
+All currency codes follow the ISO 4217 standard. The following currencies are commonly used across Yuno-supported countries.
+
+| Currency | Code | Symbol | Decimal Places | Countries |
+|----------|------|--------|----------------|-----------|
+| Argentine Peso | ARS | $ | 2 | AR |
+| Boliviano | BOB | Bs | 2 | BO |
+| Brazilian Real | BRL | R$ | 2 | BR |
+| Canadian Dollar | CAD | CA$ | 2 | CA |
+| Chilean Peso | CLP | $ | 0 | CL |
+| Colombian Peso | COP | $ | 2 | CO |
+| Costa Rican Colon | CRC | ₡ | 2 | CR |
+| Dominican Peso | DOP | RD$ | 2 | DO |
+| Guatemalan Quetzal | GTQ | Q | 2 | GT |
+| Honduran Lempira | HNL | L | 2 | HN |
+| Mexican Peso | MXN | $ | 2 | MX |
+| Nicaraguan Cordoba | NIO | C$ | 2 | NI |
+| Panamanian Balboa | PAB | B/. | 2 | PA |
+| Paraguayan Guarani | PYG | ₲ | 0 | PY |
+| Peruvian Sol | PEN | S/ | 2 | PE |
+| US Dollar | USD | $ | 2 | US, EC, SV, PA |
+| Uruguayan Peso | UYU | $U | 2 | UY |
+
+<Warning>
+Some currencies have zero decimal places (CLP, PYG). Sending decimal values for these currencies will result in a validation error. Always verify the decimal precision for the target currency.
+</Warning>

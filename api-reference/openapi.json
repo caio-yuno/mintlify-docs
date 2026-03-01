@@ -32,7 +32,9 @@
         "operationId": "createCheckoutSession",
         "summary": "Create checkout session",
         "description": "Creates a new checkout session to initialize a payment flow. Returns HTTP 200 (not 201).",
-        "tags": ["Checkout Sessions"],
+        "tags": [
+          "Checkout Sessions"
+        ],
         "x-ratelimit": {
           "limit": 100,
           "window": "60s"
@@ -47,7 +49,7 @@
               "example": {
                 "amount": {
                   "currency": "BRL",
-                  "value": 150.00
+                  "value": 150.0
                 },
                 "country": "BR",
                 "merchant_order_id": "order-20260301-001",
@@ -69,16 +71,22 @@
                   "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                   "amount": {
                     "currency": "BRL",
-                    "value": 150.00
+                    "value": 150.0
                   },
                   "country": "BR",
                   "merchant_order_id": "order-20260301-001",
                   "status": "ACTIVE",
                   "created_at": "2026-03-01T14:30:00.000Z",
                   "payment_methods": [
-                    { "type": "CARD" },
-                    { "type": "PIX" },
-                    { "type": "BOLETO" }
+                    {
+                      "type": "CARD"
+                    },
+                    {
+                      "type": "PIX"
+                    },
+                    {
+                      "type": "BOLETO"
+                    }
                   ]
                 }
               }
@@ -124,7 +132,9 @@
         "operationId": "getCheckoutSession",
         "summary": "Get checkout session",
         "description": "Retrieves the details of an existing checkout session.",
-        "tags": ["Checkout Sessions"],
+        "tags": [
+          "Checkout Sessions"
+        ],
         "parameters": [
           {
             "name": "checkout_session_id",
@@ -166,7 +176,9 @@
         "operationId": "createPayment",
         "summary": "Create payment",
         "description": "Creates a new payment using a checkout session.",
-        "tags": ["Payments"],
+        "tags": [
+          "Payments"
+        ],
         "x-ratelimit": {
           "limit": 100,
           "window": "60s"
@@ -186,7 +198,7 @@
                 },
                 "amount": {
                   "currency": "BRL",
-                  "value": 150.00
+                  "value": 150.0
                 },
                 "country": "BR",
                 "customer": {
@@ -219,7 +231,7 @@
                   "status": "SUCCEEDED",
                   "amount": {
                     "currency": "BRL",
-                    "value": 150.00
+                    "value": 150.0
                   },
                   "country": "BR",
                   "payment_method": {
@@ -258,7 +270,9 @@
         "operationId": "listPayments",
         "summary": "List payments",
         "description": "Returns a list of payments. Supports pagination.",
-        "tags": ["Payments"],
+        "tags": [
+          "Payments"
+        ],
         "x-ratelimit": {
           "limit": 100,
           "window": "60s"
@@ -312,7 +326,9 @@
         "operationId": "getPayment",
         "summary": "Get payment",
         "description": "Retrieves the details of an existing payment.",
-        "tags": ["Payments"],
+        "tags": [
+          "Payments"
+        ],
         "parameters": [
           {
             "name": "payment_id",
@@ -339,7 +355,7 @@
                   "status": "SUCCEEDED",
                   "amount": {
                     "currency": "BRL",
-                    "value": 150.00
+                    "value": 150.0
                   },
                   "country": "BR",
                   "payment_method": {
@@ -374,7 +390,9 @@
         "operationId": "capturePayment",
         "summary": "Capture payment",
         "description": "Captures a previously authorized payment.",
-        "tags": ["Payments"],
+        "tags": [
+          "Payments"
+        ],
         "parameters": [
           {
             "name": "payment_id",
@@ -401,7 +419,7 @@
               "example": {
                 "amount": {
                   "currency": "BRL",
-                  "value": 150.00
+                  "value": 150.0
                 }
               }
             }
@@ -421,7 +439,7 @@
                   "status": "SUCCEEDED",
                   "amount": {
                     "currency": "BRL",
-                    "value": 150.00
+                    "value": 150.0
                   },
                   "country": "BR",
                   "payment_method": {
@@ -462,7 +480,9 @@
         "operationId": "cancelPayment",
         "summary": "Cancel payment",
         "description": "Cancels a pending or authorized payment.",
-        "tags": ["Payments"],
+        "tags": [
+          "Payments"
+        ],
         "parameters": [
           {
             "name": "payment_id",
@@ -504,7 +524,9 @@
         "operationId": "refundPayment",
         "summary": "Refund payment",
         "description": "Creates a refund for a completed payment. Supports partial refunds.",
-        "tags": ["Payments"],
+        "tags": [
+          "Payments"
+        ],
         "parameters": [
           {
             "name": "payment_id",
@@ -536,7 +558,7 @@
               "example": {
                 "amount": {
                   "currency": "BRL",
-                  "value": 50.00
+                  "value": 50.0
                 },
                 "reason": "Customer requested partial refund"
               }
@@ -557,7 +579,7 @@
                   "status": "PARTIALLY_REFUNDED",
                   "amount": {
                     "currency": "BRL",
-                    "value": 150.00
+                    "value": 150.0
                   },
                   "country": "BR",
                   "payment_method": {
@@ -598,7 +620,9 @@
         "operationId": "listInstallmentsPlans",
         "summary": "List installment plans",
         "description": "Returns all installment plans configured for the account.",
-        "tags": ["Installments Plans"],
+        "tags": [
+          "Installments Plans"
+        ],
         "responses": {
           "200": {
             "description": "List of installment plans",
@@ -614,18 +638,33 @@
                   {
                     "id": "3e599453-e147-4d1c-8643-73e4d980c2ae",
                     "name": "Standard Plan",
-                    "account_id": ["1a3a576a-01d0-40ff-a68e-494f82145773"],
+                    "account_id": [
+                      "1a3a576a-01d0-40ff-a68e-494f82145773"
+                    ],
                     "merchant_reference": "001 08 Agosto 2023",
                     "installments_plan": [
-                      {"installment": 1, "rate": 1},
-                      {"installment": 2, "rate": 1.294},
-                      {"installment": 12, "rate": 1.525}
+                      {
+                        "installment": 1,
+                        "rate": 1
+                      },
+                      {
+                        "installment": 2,
+                        "rate": 1.294
+                      },
+                      {
+                        "installment": 12,
+                        "rate": 1.525
+                      }
                     ],
                     "brand": null,
                     "iin": null,
                     "country_code": "BR",
                     "first_installment_deferral": 1,
-                    "amount": {"Currency": "BRL", "min_value": 0, "max_value": 10000000000}
+                    "amount": {
+                      "Currency": "BRL",
+                      "min_value": 0,
+                      "max_value": 10000000000
+                    }
                   }
                 ]
               }
@@ -637,7 +676,9 @@
         "operationId": "createInstallmentsPlan",
         "summary": "Create installment plan",
         "description": "Creates a new installment plan for the account.",
-        "tags": ["Installments Plans"],
+        "tags": [
+          "Installments Plans"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -677,7 +718,9 @@
         "operationId": "getInstallmentsPlan",
         "summary": "Get installment plan",
         "description": "Retrieves a specific installment plan by ID.",
-        "tags": ["Installments Plans"],
+        "tags": [
+          "Installments Plans"
+        ],
         "parameters": [
           {
             "name": "installments_plan_id",
@@ -717,7 +760,9 @@
         "operationId": "updateInstallmentsPlan",
         "summary": "Update installment plan",
         "description": "Updates an existing installment plan.",
-        "tags": ["Installments Plans"],
+        "tags": [
+          "Installments Plans"
+        ],
         "parameters": [
           {
             "name": "installments_plan_id",
@@ -767,7 +812,9 @@
         "operationId": "deleteInstallmentsPlan",
         "summary": "Delete installment plan",
         "description": "Deletes an existing installment plan.",
-        "tags": ["Installments Plans"],
+        "tags": [
+          "Installments Plans"
+        ],
         "parameters": [
           {
             "name": "installments_plan_id",
@@ -802,7 +849,9 @@
         "operationId": "listIssuers",
         "summary": "List issuers",
         "description": "Returns a list of issuers (banks) available for a given country. Note: This endpoint returns HTTP 201 (unusual for GET requests, but confirmed behavior).",
-        "tags": ["Issuers"],
+        "tags": [
+          "Issuers"
+        ],
         "parameters": [
           {
             "name": "country",
@@ -834,9 +883,18 @@
                 },
                 "example": {
                   "issuers": [
-                    {"name": "BANCO QUE APRUEBA", "id": "1"},
-                    {"name": "BANCO QUE DECLINA", "id": "2"},
-                    {"name": "BANCO QUE SIMULA UN ERROR", "id": "3"}
+                    {
+                      "name": "BANCO QUE APRUEBA",
+                      "id": "1"
+                    },
+                    {
+                      "name": "BANCO QUE DECLINA",
+                      "id": "2"
+                    },
+                    {
+                      "name": "BANCO QUE SIMULA UN ERROR",
+                      "id": "3"
+                    }
                   ]
                 }
               }
@@ -850,7 +908,9 @@
         "operationId": "createCustomer",
         "summary": "Create customer",
         "description": "Creates a new customer record.",
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -912,7 +972,9 @@
         "operationId": "listCustomers",
         "summary": "List customers",
         "description": "Returns a list of customers.",
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "parameters": [
           {
             "name": "limit",
@@ -954,7 +1016,9 @@
         "operationId": "getCustomer",
         "summary": "Get customer",
         "description": "Retrieves a customer by ID.",
-        "tags": ["Customers"],
+        "tags": [
+          "Customers"
+        ],
         "parameters": [
           {
             "name": "customer_id",
@@ -996,7 +1060,9 @@
         "operationId": "createPayout",
         "summary": "Create payout",
         "description": "Creates a new payout to send funds to a recipient.",
-        "tags": ["Payouts"],
+        "tags": [
+          "Payouts"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1007,7 +1073,7 @@
               "example": {
                 "amount": {
                   "currency": "BRL",
-                  "value": 500.00
+                  "value": 500.0
                 },
                 "country": "BR",
                 "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
@@ -1031,7 +1097,7 @@
                   "status": "PENDING",
                   "amount": {
                     "currency": "BRL",
-                    "value": 500.00
+                    "value": 500.0
                   },
                   "country": "BR",
                   "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
@@ -1058,8 +1124,10 @@
       "get": {
         "operationId": "getPayout",
         "summary": "Get payout",
-        "description": "Retrieves the details of a payout by ID. Note: The path `/v1/payouts/merchant-ref/{reference}` may require a UUID format for the reference parameter — verify the correct format for your use case.",
-        "tags": ["Payouts"],
+        "description": "Retrieves the details of a payout by ID. Note: The path `/v1/payouts/merchant-ref/{reference}` may require a UUID format for the reference parameter \u2014 verify the correct format for your use case.",
+        "tags": [
+          "Payouts"
+        ],
         "parameters": [
           {
             "name": "payout_id",
@@ -1101,7 +1169,9 @@
         "operationId": "createReport",
         "summary": "Create report",
         "description": "Generates a new report for the specified date range.",
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1158,7 +1228,9 @@
         "operationId": "getReport",
         "summary": "Get report",
         "description": "Retrieves the status and details of a generated report.",
-        "tags": ["Reports"],
+        "tags": [
+          "Reports"
+        ],
         "parameters": [
           {
             "name": "report_id",
@@ -1200,7 +1272,9 @@
         "operationId": "createRecipient",
         "summary": "Create recipient",
         "description": "Creates a new payout recipient.",
-        "tags": ["Recipients"],
+        "tags": [
+          "Recipients"
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -1270,7 +1344,9 @@
         "operationId": "listRecipients",
         "summary": "List recipients",
         "description": "Returns a list of payout recipients. Requires `merchant_recipient_id` query parameter.",
-        "tags": ["Recipients"],
+        "tags": [
+          "Recipients"
+        ],
         "parameters": [
           {
             "name": "merchant_recipient_id",
@@ -1329,7 +1405,9 @@
         "operationId": "getRecipient",
         "summary": "Get recipient",
         "description": "Retrieves a recipient by ID.",
-        "tags": ["Recipients"],
+        "tags": [
+          "Recipients"
+        ],
         "parameters": [
           {
             "name": "recipient_id",
@@ -1355,6 +1433,1544 @@
           },
           "404": {
             "description": "Recipient not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{payment_id}/cancel-or-refund": {
+      "post": {
+        "operationId": "cancelOrRefundPayment",
+        "summary": "Cancel or refund payment",
+        "description": "Automatically determines whether to cancel or refund a payment based on its current status. If the payment is authorized but not captured, it cancels. If captured, it refunds.",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the payment",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "$ref": "#/components/schemas/Amount",
+                    "description": "Amount to refund. Omit for full cancellation/refund."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for the cancellation or refund"
+                  }
+                }
+              },
+              "example": {
+                "amount": {
+                  "currency": "BRL",
+                  "value": 50.0
+                },
+                "reason": "Customer request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment cancelled or refunded successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Payment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{payment_id}/notify-fulfillment": {
+      "post": {
+        "operationId": "notifyFulfillment",
+        "summary": "Notify fulfillment",
+        "description": "Notifies Yuno that the order associated with a payment has been fulfilled. This is used for fraud prevention and chargeback protection.",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the payment",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FulfillmentNotification"
+              },
+              "example": {
+                "status": "DELIVERED",
+                "tracking_number": "BR123456789",
+                "carrier": "Correios",
+                "shipped_at": "2026-03-01T10:00:00.000Z"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fulfillment notification received",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "RECEIVED"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/payments/{payment_id}/disputes/{dispute_id}": {
+      "patch": {
+        "operationId": "updateDispute",
+        "summary": "Update dispute",
+        "description": "Updates an existing dispute with additional evidence or status changes.",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "name": "payment_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the payment",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "dispute_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the dispute",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisputeUpdate"
+              },
+              "example": {
+                "evidence": {
+                  "description": "Order was delivered on 2026-02-28",
+                  "documents": [
+                    "https://example.com/proof-of-delivery.pdf"
+                  ]
+                },
+                "status": "EVIDENCE_SUBMITTED"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dispute updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Dispute"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/subscriptions/{subscription_id}/retry": {
+      "post": {
+        "operationId": "retrySubscription",
+        "summary": "Retry subscription",
+        "description": "Retries a failed subscription payment. Useful when a recurring payment has been declined and the customer has updated their payment method.",
+        "tags": [
+          "Subscriptions"
+        ],
+        "parameters": [
+          {
+            "name": "subscription_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the subscription",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subscription payment retried successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Subscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients/{recipient_id}/onboardings/{onboarding_id}/continue": {
+      "post": {
+        "operationId": "continueOnboarding",
+        "summary": "Continue onboarding",
+        "description": "Continues a paused or pending onboarding process for a recipient.",
+        "tags": [
+          "Recipients"
+        ],
+        "parameters": [
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the recipient",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "onboarding_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the onboarding",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Onboarding continued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Onboarding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients/{recipient_id}/onboardings/{onboarding_id}/block": {
+      "post": {
+        "operationId": "blockOnboarding",
+        "summary": "Block onboarding",
+        "description": "Blocks an onboarding process, preventing the recipient from completing it.",
+        "tags": [
+          "Recipients"
+        ],
+        "parameters": [
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the recipient",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "onboarding_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the onboarding",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for blocking"
+                  }
+                }
+              },
+              "example": {
+                "reason": "Pending compliance review"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Onboarding blocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Onboarding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients/{recipient_id}/onboardings/{onboarding_id}/unblock": {
+      "post": {
+        "operationId": "unblockOnboarding",
+        "summary": "Unblock onboarding",
+        "description": "Unblocks a previously blocked onboarding process.",
+        "tags": [
+          "Recipients"
+        ],
+        "parameters": [
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the recipient",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "onboarding_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the onboarding",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Onboarding unblocked",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Onboarding"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients/{recipient_id}/onboardings/transfer": {
+      "post": {
+        "operationId": "transferOnboarding",
+        "summary": "Transfer onboarding",
+        "description": "Initiates a fund transfer associated with a recipient onboarding.",
+        "tags": [
+          "Recipients"
+        ],
+        "parameters": [
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the recipient",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OnboardingTransferRequest"
+              },
+              "example": {
+                "amount": {
+                  "currency": "BRL",
+                  "value": 100.0
+                },
+                "description": "Onboarding verification transfer"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Transfer initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingTransfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients/{recipient_id}/onboardings/{onboarding_id}/reverse": {
+      "post": {
+        "operationId": "reverseTransfer",
+        "summary": "Reverse transfer",
+        "description": "Reverses a previously completed onboarding transfer.",
+        "tags": [
+          "Recipients"
+        ],
+        "parameters": [
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the recipient",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "onboarding_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the onboarding",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "description": "Reason for reversal"
+                  }
+                }
+              },
+              "example": {
+                "reason": "Onboarding cancelled"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Transfer reversed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingTransfer"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients/{recipient_id}/onboardings/{onboarding_id}/transfers/{transfer_id}": {
+      "get": {
+        "operationId": "getOnboardingTransfer",
+        "summary": "Get transfer",
+        "description": "Retrieves details of a specific onboarding transfer.",
+        "tags": [
+          "Recipients"
+        ],
+        "parameters": [
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the recipient",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "onboarding_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the onboarding",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "transfer_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the transfer",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Transfer details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OnboardingTransfer"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/recipients/{recipient_id}/onboardings/{onboarding_id}/transfers": {
+      "get": {
+        "operationId": "listOnboardingTransfers",
+        "summary": "List transfers",
+        "description": "Lists all transfers associated with a recipient onboarding.",
+        "tags": [
+          "Recipients"
+        ],
+        "parameters": [
+          {
+            "name": "recipient_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the recipient",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "onboarding_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the onboarding",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "Cursor for forward pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of transfers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/OnboardingTransfer"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/baas/accounts/{account_id}": {
+      "patch": {
+        "operationId": "updateBaasAccount",
+        "summary": "Update account",
+        "description": "Updates an existing BaaS account.",
+        "tags": [
+          "BaaS"
+        ],
+        "parameters": [
+          {
+            "name": "account_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the BaaS account",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "SUSPENDED",
+                      "CLOSED"
+                    ],
+                    "description": "New account status"
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Custom metadata"
+                  }
+                }
+              },
+              "example": {
+                "status": "ACTIVE",
+                "metadata": {
+                  "tier": "premium"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Account updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/baas/webhooks": {
+      "post": {
+        "operationId": "createBaasWebhook",
+        "summary": "Create BaaS webhook",
+        "description": "Registers a webhook endpoint to receive BaaS event notifications.",
+        "tags": [
+          "BaaS"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "url",
+                  "events"
+                ],
+                "properties": {
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Webhook endpoint URL"
+                  },
+                  "events": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "description": "Event types to subscribe to"
+                  },
+                  "secret": {
+                    "type": "string",
+                    "description": "Shared secret for signature verification"
+                  }
+                }
+              },
+              "example": {
+                "url": "https://example.com/webhooks/baas",
+                "events": [
+                  "account.updated",
+                  "transfer.completed",
+                  "transfer.failed"
+                ],
+                "secret": "whsec_your_secret_key"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "format": "uuid"
+                    },
+                    "url": {
+                      "type": "string"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/smart-support/external/payments/recover": {
+      "post": {
+        "operationId": "recoverDeclinedPayment",
+        "summary": "Recover declined payments",
+        "description": "Triggers automated outreach (AI caller) to recover declined payments by contacting the customer to update their payment method or resolve the issue.",
+        "tags": [
+          "Smart Support"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoverPaymentRequest"
+              },
+              "example": {
+                "payment_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+                "channel": "PHONE",
+                "language": "pt-BR"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Recovery process initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryAttempt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/smart-support/external/payments": {
+      "post": {
+        "operationId": "recoverAbandonedPayment",
+        "summary": "Recover abandoned payments",
+        "description": "Triggers automated outreach to recover abandoned payment flows by contacting the customer to complete their purchase.",
+        "tags": [
+          "Smart Support"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecoverAbandonedRequest"
+              },
+              "example": {
+                "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+                "channel": "SMS",
+                "language": "pt-BR"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Recovery process initiated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecoveryAttempt"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/campaigns": {
+      "post": {
+        "operationId": "createCampaign",
+        "summary": "Create campaign",
+        "description": "Creates a new campaign for payment promotions, discounts, or installment offers.",
+        "tags": [
+          "Campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignRequest"
+              },
+              "example": {
+                "name": "Summer Sale 2026",
+                "description": "Summer promotional campaign",
+                "start_date": "2026-06-01T00:00:00.000Z",
+                "end_date": "2026-08-31T23:59:59.999Z",
+                "country": "BR"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Campaign created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listCampaigns",
+        "summary": "List campaigns",
+        "description": "Returns a list of campaigns.",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Filter by status",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "INACTIVE",
+                "DRAFT",
+                "EXPIRED"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "Maximum number of results",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "starting_after",
+            "in": "query",
+            "description": "Cursor for forward pagination",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of campaigns",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Campaign"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/campaigns/{campaign_id}": {
+      "get": {
+        "operationId": "getCampaign",
+        "summary": "Get campaign",
+        "description": "Retrieves a campaign by ID.",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the campaign",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/campaigns/{campaign_id}/status": {
+      "patch": {
+        "operationId": "updateCampaignStatus",
+        "summary": "Update campaign status",
+        "description": "Updates the status of an existing campaign.",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "campaign_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the campaign",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE"
+                    ],
+                    "description": "New campaign status"
+                  }
+                }
+              },
+              "example": {
+                "status": "ACTIVE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Campaign status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Campaign"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/campaign-rules": {
+      "post": {
+        "operationId": "createCampaignRule",
+        "summary": "Create campaign rule",
+        "description": "Creates a new rule for a campaign that defines conditions and benefits.",
+        "tags": [
+          "Campaigns"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignRuleRequest"
+              },
+              "example": {
+                "campaign_id": "c1d2e3f4-a5b6-7c8d-9e0f-1a2b3c4d5e6f",
+                "name": "10% off cards",
+                "conditions": {
+                  "payment_method": "CARD",
+                  "min_amount": 100.0
+                },
+                "benefit": {
+                  "type": "DISCOUNT",
+                  "value": 10,
+                  "unit": "PERCENTAGE"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Campaign rule created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/campaign-rules/{rule_id}": {
+      "get": {
+        "operationId": "getCampaignRule",
+        "summary": "Get campaign rule",
+        "description": "Retrieves a campaign rule by ID.",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the campaign rule",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Campaign rule details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRule"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateCampaignRule",
+        "summary": "Update campaign rule",
+        "description": "Updates an existing campaign rule.",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the campaign rule",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CampaignRuleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Campaign rule updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/campaign-rules/{rule_id}/status": {
+      "patch": {
+        "operationId": "updateCampaignRuleStatus",
+        "summary": "Update campaign rule status",
+        "description": "Updates the status of a campaign rule.",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "rule_id",
+            "in": "path",
+            "required": true,
+            "description": "The unique identifier of the campaign rule",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "INACTIVE"
+                    ],
+                    "description": "New rule status"
+                  }
+                }
+              },
+              "example": {
+                "status": "ACTIVE"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Campaign rule status updated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CampaignRule"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -1391,7 +3007,10 @@
     "schemas": {
       "Amount": {
         "type": "object",
-        "required": ["currency", "value"],
+        "required": [
+          "currency",
+          "value"
+        ],
         "properties": {
           "currency": {
             "type": "string",
@@ -1401,21 +3020,33 @@
           "value": {
             "type": "number",
             "description": "Payment amount",
-            "example": 100.00
+            "example": 100.0
           }
         },
         "example": {
           "currency": "BRL",
-          "value": 100.00
+          "value": 100.0
         }
       },
       "CustomerDocument": {
         "type": "object",
-        "required": ["document_type", "document_number"],
+        "required": [
+          "document_type",
+          "document_number"
+        ],
         "properties": {
           "document_type": {
             "type": "string",
-            "enum": ["CPF", "CNPJ", "CC", "CE", "NIT", "PP", "CURP", "RFC"],
+            "enum": [
+              "CPF",
+              "CNPJ",
+              "CC",
+              "CE",
+              "NIT",
+              "PP",
+              "CURP",
+              "RFC"
+            ],
             "description": "Type of identification document"
           },
           "document_number": {
@@ -1431,7 +3062,11 @@
       },
       "CheckoutSessionRequest": {
         "type": "object",
-        "required": ["amount", "country", "merchant_order_id"],
+        "required": [
+          "amount",
+          "country",
+          "merchant_order_id"
+        ],
         "properties": {
           "amount": {
             "$ref": "#/components/schemas/Amount"
@@ -1460,7 +3095,11 @@
           },
           "workflow": {
             "type": "string",
-            "enum": ["SDK_CHECKOUT", "SDK_LITE", "DIRECT"],
+            "enum": [
+              "SDK_CHECKOUT",
+              "SDK_LITE",
+              "DIRECT"
+            ],
             "description": "Integration workflow type",
             "example": "SDK_CHECKOUT"
           }
@@ -1468,7 +3107,7 @@
         "example": {
           "amount": {
             "currency": "BRL",
-            "value": 150.00
+            "value": 150.0
           },
           "country": "BR",
           "merchant_order_id": "order-20260301-001",
@@ -1527,22 +3166,33 @@
           "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
           "amount": {
             "currency": "BRL",
-            "value": 150.00
+            "value": 150.0
           },
           "country": "BR",
           "merchant_order_id": "order-20260301-001",
           "status": "ACTIVE",
           "created_at": "2026-03-01T14:30:00.000Z",
           "payment_methods": [
-            { "type": "CARD" },
-            { "type": "PIX" },
-            { "type": "BOLETO" }
+            {
+              "type": "CARD"
+            },
+            {
+              "type": "PIX"
+            },
+            {
+              "type": "BOLETO"
+            }
           ]
         }
       },
       "PaymentRequest": {
         "type": "object",
-        "required": ["checkout_session", "payment_method", "amount", "country"],
+        "required": [
+          "checkout_session",
+          "payment_method",
+          "amount",
+          "country"
+        ],
         "properties": {
           "checkout_session": {
             "type": "string",
@@ -1552,11 +3202,23 @@
           },
           "payment_method": {
             "type": "object",
-            "required": ["type"],
+            "required": [
+              "type"
+            ],
             "properties": {
               "type": {
                 "type": "string",
-                "enum": ["CARD", "PIX", "BOLETO", "PSE", "SPEI", "OXXO", "BNPL", "GOOGLE_PAY", "APPLE_PAY"],
+                "enum": [
+                  "CARD",
+                  "PIX",
+                  "BOLETO",
+                  "PSE",
+                  "SPEI",
+                  "OXXO",
+                  "BNPL",
+                  "GOOGLE_PAY",
+                  "APPLE_PAY"
+                ],
                 "description": "Payment method type",
                 "example": "CARD"
               },
@@ -1626,7 +3288,7 @@
           },
           "amount": {
             "currency": "BRL",
-            "value": 150.00
+            "value": 150.0
           },
           "country": "BR",
           "customer": {
@@ -1658,7 +3320,16 @@
           },
           "status": {
             "type": "string",
-            "enum": ["SUCCEEDED", "PENDING", "DECLINED", "REJECTED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED", "AUTHORIZED"],
+            "enum": [
+              "SUCCEEDED",
+              "PENDING",
+              "DECLINED",
+              "REJECTED",
+              "CANCELLED",
+              "REFUNDED",
+              "PARTIALLY_REFUNDED",
+              "AUTHORIZED"
+            ],
             "description": "Current payment status",
             "example": "SUCCEEDED"
           },
@@ -1714,7 +3385,7 @@
           "status": "SUCCEEDED",
           "amount": {
             "currency": "BRL",
-            "value": 150.00
+            "value": 150.0
           },
           "country": "BR",
           "payment_method": {
@@ -1731,7 +3402,14 @@
       },
       "InstallmentsPlanRequest": {
         "type": "object",
-        "required": ["account_id", "name", "merchant_reference", "installments_plan", "country_code", "amount"],
+        "required": [
+          "account_id",
+          "name",
+          "merchant_reference",
+          "installments_plan",
+          "country_code",
+          "amount"
+        ],
         "properties": {
           "account_id": {
             "type": "array",
@@ -1740,7 +3418,9 @@
               "format": "uuid"
             },
             "description": "Account IDs this plan applies to",
-            "example": ["1a3a576a-01d0-40ff-a68e-494f82145773"]
+            "example": [
+              "1a3a576a-01d0-40ff-a68e-494f82145773"
+            ]
           },
           "name": {
             "type": "string",
@@ -1756,7 +3436,10 @@
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["installment", "rate"],
+              "required": [
+                "installment",
+                "rate"
+              ],
               "properties": {
                 "installment": {
                   "type": "integer",
@@ -1780,7 +3463,11 @@
           },
           "amount": {
             "type": "object",
-            "required": ["Currency", "min_value", "max_value"],
+            "required": [
+              "Currency",
+              "min_value",
+              "max_value"
+            ],
             "properties": {
               "Currency": {
                 "type": "string",
@@ -1811,17 +3498,35 @@
           }
         },
         "example": {
-          "account_id": ["1a3a576a-01d0-40ff-a68e-494f82145773"],
+          "account_id": [
+            "1a3a576a-01d0-40ff-a68e-494f82145773"
+          ],
           "name": "Standard Plan",
           "merchant_reference": "001 08 Agosto 2023",
           "installments_plan": [
-            {"installment": 1, "rate": 1},
-            {"installment": 2, "rate": 1.294},
-            {"installment": 6, "rate": 1.42},
-            {"installment": 12, "rate": 1.525}
+            {
+              "installment": 1,
+              "rate": 1
+            },
+            {
+              "installment": 2,
+              "rate": 1.294
+            },
+            {
+              "installment": 6,
+              "rate": 1.42
+            },
+            {
+              "installment": 12,
+              "rate": 1.525
+            }
           ],
           "country_code": "BR",
-          "amount": {"Currency": "BRL", "min_value": 0, "max_value": 10000000000},
+          "amount": {
+            "Currency": "BRL",
+            "min_value": 0,
+            "max_value": 10000000000
+          },
           "brand": null,
           "iin": null
         }
@@ -1845,7 +3550,9 @@
               "type": "string",
               "format": "uuid"
             },
-            "example": ["1a3a576a-01d0-40ff-a68e-494f82145773"]
+            "example": [
+              "1a3a576a-01d0-40ff-a68e-494f82145773"
+            ]
           },
           "merchant_reference": {
             "type": "string",
@@ -1900,18 +3607,33 @@
         "example": {
           "id": "3e599453-e147-4d1c-8643-73e4d980c2ae",
           "name": "Standard Plan",
-          "account_id": ["1a3a576a-01d0-40ff-a68e-494f82145773"],
+          "account_id": [
+            "1a3a576a-01d0-40ff-a68e-494f82145773"
+          ],
           "merchant_reference": "001 08 Agosto 2023",
           "installments_plan": [
-            {"installment": 1, "rate": 1},
-            {"installment": 2, "rate": 1.294},
-            {"installment": 12, "rate": 1.525}
+            {
+              "installment": 1,
+              "rate": 1
+            },
+            {
+              "installment": 2,
+              "rate": 1.294
+            },
+            {
+              "installment": 12,
+              "rate": 1.525
+            }
           ],
           "brand": null,
           "iin": null,
           "country_code": "BR",
           "first_installment_deferral": 1,
-          "amount": {"Currency": "BRL", "min_value": 0, "max_value": 10000000000}
+          "amount": {
+            "Currency": "BRL",
+            "min_value": 0,
+            "max_value": 10000000000
+          }
         }
       },
       "Issuer": {
@@ -1935,7 +3657,9 @@
       },
       "CustomerRequest": {
         "type": "object",
-        "required": ["email"],
+        "required": [
+          "email"
+        ],
         "properties": {
           "email": {
             "type": "string",
@@ -2034,7 +3758,11 @@
       },
       "PayoutRequest": {
         "type": "object",
-        "required": ["amount", "country", "recipient_id"],
+        "required": [
+          "amount",
+          "country",
+          "recipient_id"
+        ],
         "properties": {
           "amount": {
             "$ref": "#/components/schemas/Amount"
@@ -2070,7 +3798,7 @@
         "example": {
           "amount": {
             "currency": "BRL",
-            "value": 500.00
+            "value": 500.0
           },
           "country": "BR",
           "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
@@ -2089,7 +3817,12 @@
           },
           "status": {
             "type": "string",
-            "enum": ["SUCCEEDED", "PENDING", "FAILED", "CANCELLED"],
+            "enum": [
+              "SUCCEEDED",
+              "PENDING",
+              "FAILED",
+              "CANCELLED"
+            ],
             "description": "Current payout status",
             "example": "PENDING"
           },
@@ -2120,7 +3853,7 @@
           "status": "PENDING",
           "amount": {
             "currency": "BRL",
-            "value": 500.00
+            "value": 500.0
           },
           "country": "BR",
           "recipient_id": "d1e2f3a4-b5c6-7d8e-9f0a-1b2c3d4e5f6a",
@@ -2130,11 +3863,16 @@
       },
       "ReportRequest": {
         "type": "object",
-        "required": ["date_range"],
+        "required": [
+          "date_range"
+        ],
         "properties": {
           "date_range": {
             "type": "object",
-            "required": ["from", "to"],
+            "required": [
+              "from",
+              "to"
+            ],
             "properties": {
               "from": {
                 "type": "string",
@@ -2175,7 +3913,11 @@
           },
           "status": {
             "type": "string",
-            "enum": ["PROCESSING", "COMPLETED", "FAILED"],
+            "enum": [
+              "PROCESSING",
+              "COMPLETED",
+              "FAILED"
+            ],
             "description": "Report generation status",
             "example": "PROCESSING"
           },
@@ -2219,7 +3961,10 @@
       },
       "RecipientRequest": {
         "type": "object",
-        "required": ["merchant_recipient_id", "country"],
+        "required": [
+          "merchant_recipient_id",
+          "country"
+        ],
         "properties": {
           "merchant_recipient_id": {
             "type": "string",
@@ -2258,7 +4003,10 @@
               },
               "account_type": {
                 "type": "string",
-                "enum": ["CHECKING", "SAVINGS"],
+                "enum": [
+                  "CHECKING",
+                  "SAVINGS"
+                ],
                 "example": "CHECKING"
               }
             }
@@ -2377,7 +4125,12 @@
       },
       "WebhookEvent": {
         "type": "object",
-        "required": ["type", "data", "timestamp", "webhook_id"],
+        "required": [
+          "type",
+          "data",
+          "timestamp",
+          "webhook_id"
+        ],
         "properties": {
           "type": {
             "type": "string",
@@ -2393,7 +4146,9 @@
           },
           "data": {
             "oneOf": [
-              { "$ref": "#/components/schemas/PaymentWebhookData" }
+              {
+                "$ref": "#/components/schemas/PaymentWebhookData"
+              }
             ],
             "description": "Event-specific data payload"
           },
@@ -2418,7 +4173,7 @@
             "status": "SUCCEEDED",
             "amount": {
               "currency": "BRL",
-              "value": 150.00
+              "value": 150.0
             },
             "country": "BR",
             "payment_method_type": "CARD",
@@ -2447,7 +4202,15 @@
           },
           "status": {
             "type": "string",
-            "enum": ["SUCCEEDED", "PENDING", "DECLINED", "REJECTED", "CANCELLED", "REFUNDED", "PARTIALLY_REFUNDED"],
+            "enum": [
+              "SUCCEEDED",
+              "PENDING",
+              "DECLINED",
+              "REJECTED",
+              "CANCELLED",
+              "REFUNDED",
+              "PARTIALLY_REFUNDED"
+            ],
             "description": "The payment status that triggered this event",
             "example": "SUCCEEDED"
           },
@@ -2500,13 +4263,500 @@
           "status": "SUCCEEDED",
           "amount": {
             "currency": "BRL",
-            "value": 150.00
+            "value": 150.0
           },
           "country": "BR",
           "payment_method_type": "CARD",
           "provider_name": "stripe_connect",
           "provider_transaction_id": "pi_3abc123def456",
           "merchant_order_id": "order-20260301-001"
+        }
+      },
+      "FulfillmentNotification": {
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "SHIPPED",
+              "DELIVERED",
+              "RETURNED"
+            ],
+            "description": "Fulfillment status"
+          },
+          "tracking_number": {
+            "type": "string",
+            "description": "Shipment tracking number"
+          },
+          "carrier": {
+            "type": "string",
+            "description": "Shipping carrier name"
+          },
+          "shipped_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Shipment date"
+          }
+        }
+      },
+      "DisputeUpdate": {
+        "type": "object",
+        "properties": {
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "description": {
+                "type": "string",
+                "description": "Evidence description"
+              },
+              "documents": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "description": "URLs of supporting documents"
+              }
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "EVIDENCE_SUBMITTED",
+              "ACCEPTED"
+            ],
+            "description": "New dispute status"
+          }
+        }
+      },
+      "Dispute": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "payment_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "EVIDENCE_SUBMITTED",
+              "WON",
+              "LOST",
+              "ACCEPTED"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Subscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "PAUSED",
+              "CANCELLED",
+              "PAST_DUE",
+              "EXPIRED"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "interval": {
+            "type": "string",
+            "enum": [
+              "DAILY",
+              "WEEKLY",
+              "MONTHLY",
+              "YEARLY"
+            ]
+          },
+          "next_payment_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Onboarding": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recipient_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "IN_PROGRESS",
+              "BLOCKED",
+              "COMPLETED",
+              "FAILED"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OnboardingTransferRequest": {
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "properties": {
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "description": {
+            "type": "string",
+            "description": "Transfer description"
+          }
+        }
+      },
+      "OnboardingTransfer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "onboarding_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "COMPLETED",
+              "REVERSED",
+              "FAILED"
+            ]
+          },
+          "amount": {
+            "$ref": "#/components/schemas/Amount"
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "RecoverPaymentRequest": {
+        "type": "object",
+        "required": [
+          "payment_id"
+        ],
+        "properties": {
+          "payment_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The declined payment to recover"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "PHONE",
+              "SMS",
+              "EMAIL",
+              "WHATSAPP"
+            ],
+            "description": "Outreach channel"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code (e.g., pt-BR, es-MX)",
+            "example": "pt-BR"
+          }
+        }
+      },
+      "RecoverAbandonedRequest": {
+        "type": "object",
+        "required": [
+          "checkout_session"
+        ],
+        "properties": {
+          "checkout_session": {
+            "type": "string",
+            "format": "uuid",
+            "description": "The abandoned checkout session"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "PHONE",
+              "SMS",
+              "EMAIL",
+              "WHATSAPP"
+            ],
+            "description": "Outreach channel"
+          },
+          "language": {
+            "type": "string",
+            "description": "Language code",
+            "example": "pt-BR"
+          }
+        }
+      },
+      "RecoveryAttempt": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "IN_PROGRESS",
+              "COMPLETED",
+              "FAILED"
+            ]
+          },
+          "channel": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CampaignRequest": {
+        "type": "object",
+        "required": [
+          "name",
+          "start_date",
+          "end_date",
+          "country"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Campaign name"
+          },
+          "description": {
+            "type": "string",
+            "description": "Campaign description"
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Campaign start date"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Campaign end date"
+          },
+          "country": {
+            "type": "string",
+            "description": "ISO 3166-1 alpha-2 country code"
+          }
+        }
+      },
+      "Campaign": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE",
+              "DRAFT",
+              "EXPIRED"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "end_date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "country": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CampaignRuleRequest": {
+        "type": "object",
+        "required": [
+          "campaign_id",
+          "name",
+          "conditions",
+          "benefit"
+        ],
+        "properties": {
+          "campaign_id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Associated campaign ID"
+          },
+          "name": {
+            "type": "string",
+            "description": "Rule name"
+          },
+          "conditions": {
+            "type": "object",
+            "properties": {
+              "payment_method": {
+                "type": "string",
+                "description": "Payment method filter"
+              },
+              "min_amount": {
+                "type": "number",
+                "description": "Minimum transaction amount"
+              },
+              "max_amount": {
+                "type": "number",
+                "description": "Maximum transaction amount"
+              },
+              "bin_range": {
+                "type": "string",
+                "description": "Card BIN range filter"
+              }
+            }
+          },
+          "benefit": {
+            "type": "object",
+            "required": [
+              "type",
+              "value"
+            ],
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "DISCOUNT",
+                  "CASHBACK",
+                  "INSTALLMENT_RATE"
+                ],
+                "description": "Benefit type"
+              },
+              "value": {
+                "type": "number",
+                "description": "Benefit value"
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "PERCENTAGE",
+                  "FIXED"
+                ],
+                "description": "Benefit unit"
+              }
+            }
+          }
+        }
+      },
+      "CampaignRule": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "campaign_id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "INACTIVE"
+            ]
+          },
+          "conditions": {
+            "type": "object"
+          },
+          "benefit": {
+            "type": "object"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       }
     }

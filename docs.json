@@ -90,6 +90,19 @@
                 ]
               },
               {
+                "group": "Payment Methods",
+                "pages": [
+                  "guides/payment-methods/cards",
+                  "guides/payment-methods/pix",
+                  "guides/payment-methods/boleto",
+                  "guides/payment-methods/oxxo",
+                  "guides/payment-methods/bank-transfers",
+                  "guides/payment-methods/cash-vouchers",
+                  "guides/payment-methods/bnpl"
+                ]
+              },
+              "guides/postman-collections",
+              {
                 "group": "Orchestration & Optimization",
                 "pages": [
                   "guides/bin-routing-strategy",
@@ -137,6 +150,9 @@
                   "features/baas/overview"
                 ]
               },
+              "features/stored-credentials",
+              "features/transaction-retries",
+              "features/account-funding",
               "features/payment-links",
               "features/payouts",
               "features/reports",
@@ -176,7 +192,11 @@
                   "platform/dashboard/risk-conditions",
                   "platform/dashboard/checkout-builder",
                   "platform/dashboard/reconciliations",
-                  "platform/dashboard/settings"
+                  "platform/dashboard/monitors",
+                  "platform/dashboard/insights",
+                  "platform/dashboard/settings",
+                  "platform/dashboard/sso",
+                  "platform/dashboard/audit-logs"
                 ]
               },
               {
@@ -214,7 +234,14 @@
             "group": "Reference",
             "pages": [
               "reference/coverage",
-              "reference/glossary"
+              "reference/glossary",
+              "reference/payment-statuses",
+              "reference/response-codes",
+              "reference/country-reference",
+              "reference/eci-indicators",
+              "reference/industry-categories",
+              "reference/transaction-categories",
+              "reference/airline-information"
             ]
           }
         ]
@@ -243,13 +270,17 @@
             "group": "Payments",
             "pages": [
               "api-reference/payments/create",
+              "api-reference/payments/authorize",
               "api-reference/payments/get",
               "api-reference/payments/get-by-merchant-order",
               "api-reference/payments/list",
               "api-reference/payments/capture",
               "api-reference/payments/cancel",
               "api-reference/payments/refund",
-              "api-reference/payments/create-dispute"
+              "api-reference/payments/cancel-or-refund",
+              "api-reference/payments/notify-fulfillment",
+              "api-reference/payments/create-dispute",
+              "api-reference/payments/update-dispute"
             ]
           },
           {
@@ -294,7 +325,8 @@
               "api-reference/subscriptions/update",
               "api-reference/subscriptions/pause",
               "api-reference/subscriptions/resume",
-              "api-reference/subscriptions/cancel"
+              "api-reference/subscriptions/cancel",
+              "api-reference/subscriptions/retry"
             ]
           },
           {
@@ -328,7 +360,14 @@
               "api-reference/recipients/get",
               "api-reference/recipients/list",
               "api-reference/recipients/update",
-              "api-reference/recipients/delete"
+              "api-reference/recipients/delete",
+              "api-reference/recipients/continue-onboarding",
+              "api-reference/recipients/block-onboarding",
+              "api-reference/recipients/unblock-onboarding",
+              "api-reference/recipients/transfer-onboarding",
+              "api-reference/recipients/reverse-transfer",
+              "api-reference/recipients/get-transfer",
+              "api-reference/recipients/list-transfers"
             ]
           },
           {
@@ -374,6 +413,7 @@
             "pages": [
               "api-reference/baas/create-account",
               "api-reference/baas/get-account",
+              "api-reference/baas/update-account",
               "api-reference/baas/close-account"
             ]
           },
@@ -383,6 +423,32 @@
               "api-reference/baas/create-transfer",
               "api-reference/baas/get-transfer",
               "api-reference/baas/cancel-transfer"
+            ]
+          },
+          {
+            "group": "BaaS — Webhooks",
+            "pages": [
+              "api-reference/baas/webhook-notifications"
+            ]
+          },
+          {
+            "group": "Smart Support",
+            "pages": [
+              "api-reference/smart-support/recover-declined",
+              "api-reference/smart-support/recover-abandoned"
+            ]
+          },
+          {
+            "group": "Campaigns",
+            "pages": [
+              "api-reference/campaigns/create",
+              "api-reference/campaigns/get",
+              "api-reference/campaigns/list",
+              "api-reference/campaigns/update-status",
+              "api-reference/campaigns/create-rule",
+              "api-reference/campaigns/get-rule",
+              "api-reference/campaigns/update-rule",
+              "api-reference/campaigns/update-rule-status"
             ]
           }
         ]
@@ -395,7 +461,10 @@
             "pages": [
               "guides/sdk/overview",
               "guides/sdk/full-checkout",
-              "guides/sdk/seamless-checkout"
+              "guides/sdk/seamless-checkout",
+              "guides/sdk/lite-checkout",
+              "guides/sdk/secure-fields",
+              "guides/sdk/headless"
             ]
           },
           {
@@ -419,6 +488,14 @@
             "pages": [
               "guides/sdk/customization",
               "guides/sdk/enrollment"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "guides/sdk/web-reference",
+              "guides/sdk/android-reference",
+              "guides/sdk/ios-reference"
             ]
           }
         ]
