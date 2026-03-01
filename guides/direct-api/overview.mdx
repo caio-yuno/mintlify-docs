@@ -11,102 +11,308 @@ Direct API integration gives you complete control over the payment lifecycle thr
 Direct API integration for card payments requires **PCI DSS Level 1** certification because your servers handle raw card data. If you are not PCI Level 1 certified, use one of the [SDK integrations](/guides/sdk/overview) instead.
 </Warning>
 
+## When to Use Direct API
+
+| Use Case | Why Direct API |
+|----------|---------------|
+| **Custom checkout UI** | You control every pixel of the payment experience |
+| **Recurring/subscription billing** | Charge vaulted tokens server-side without customer presence |
+| **Marketplace payouts** | Orchestrate complex multi-party payment flows |
+| **Backend-only services** | No browser or mobile client involved |
+| **Multi-provider orchestration** | Fine-grained control over routing and retry logic |
+
 ## Payment Flow
 
-The Direct API payment flow consists of three steps:
+The Direct API payment flow consists of four steps:
 
-```mermaid
-graph LR
-  A[Create Session] --> B[Create/Use Token]
-  B --> C[Create Payment]
-  C --> D[Handle Result]
+```
+Your Server                        Yuno API
+    |                                  |
+    |  1. POST /v1/checkout/sessions   |
+    |--------------------------------->|
+    |   { checkout_session: "cs_..." } |
+    |<---------------------------------|
+    |                                  |
+    |  2. POST /v1/customers/{id}/     |
+    |     payment-methods  (optional)  |
+    |--------------------------------->|
+    |   { vaulted_token: "tok_..." }   |
+    |<---------------------------------|
+    |                                  |
+    |  3. POST /v1/payments            |
+    |--------------------------------->|
+    |   { id, status, transactions }   |
+    |<---------------------------------|
+    |                                  |
+    |  4. Webhook: payment.succeeded   |
+    |<---------------------------------|
+    |                                  |
 ```
 
 <Steps>
   <Step title="Create a checkout session">
-    Every payment starts with a checkout session that groups the transaction context:
+    Every payment starts with a checkout session that groups the transaction context -- amount, currency, country, and your order reference.
 
-    ```bash
+    <CodeGroup>
+    ```bash cURL
     curl -X POST https://api-sandbox.y.uno/v1/checkout/sessions \
-      -H "public-api-key: YOUR_PUBLIC_KEY" \
-      -H "private-secret-key: YOUR_PRIVATE_KEY" \
-      -H "account-code: YOUR_ACCOUNT_CODE" \
+      -H "public-api-key: $YUNO_PUBLIC_KEY" \
+      -H "private-secret-key: $YUNO_PRIVATE_KEY" \
       -H "Content-Type: application/json" \
       -d '{
         "amount": { "currency": "USD", "value": 100.00 },
         "country": "CO",
-        "merchant_order_id": "order-789"
+        "merchant_order_id": "order-789",
+        "payment_description": "Premium plan subscription",
+        "account_id": "your-account-id"
       }'
     ```
+
+    ```javascript Node.js
+    const response = await fetch('https://api-sandbox.y.uno/v1/checkout/sessions', {
+      method: 'POST',
+      headers: {
+        'public-api-key': process.env.YUNO_PUBLIC_KEY,
+        'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        amount: { currency: 'USD', value: 100.00 },
+        country: 'CO',
+        merchant_order_id: 'order-789',
+        payment_description: 'Premium plan subscription',
+        account_id: 'your-account-id',
+      }),
+    });
+
+    const session = await response.json();
+    // session.checkout_session => "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    ```
+
+    ```python Python
+    import requests
+    import os
+
+    response = requests.post(
+        'https://api-sandbox.y.uno/v1/checkout/sessions',
+        headers={
+            'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+            'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+            'Content-Type': 'application/json',
+        },
+        json={
+            'amount': {'currency': 'USD', 'value': 100.00},
+            'country': 'CO',
+            'merchant_order_id': 'order-789',
+            'payment_description': 'Premium plan subscription',
+            'account_id': 'your-account-id',
+        },
+    )
+
+    session = response.json()
+    # session['checkout_session'] => "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    ```
+    </CodeGroup>
 
     The response includes a `checkout_session` ID used in subsequent API calls.
   </Step>
 
-  <Step title="Tokenize payment data">
-    For card payments, create a one-time token with the raw card data:
+  <Step title="Enroll or tokenize payment data (optional)">
+    For **card payments**, enroll the card with the customer to get a `vaulted_token` for future use, or use a one-time token from the SDK.
 
-    ```bash
-    curl -X POST https://api-sandbox.y.uno/v1/payment-methods/tokens \
-      -H "public-api-key: YOUR_PUBLIC_KEY" \
+    For **alternative payment methods** (PIX, bank transfers, OXXO), tokenization is not required -- skip to Step 3.
+
+    <CodeGroup>
+    ```bash cURL
+    curl -X POST https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods \
+      -H "public-api-key: $YUNO_PUBLIC_KEY" \
+      -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+      -H "X-Idempotency-Key: enroll-$(uuidgen)" \
       -H "Content-Type: application/json" \
       -d '{
-        "card": {
+        "account_id": "your-account-id",
+        "country": "CO",
+        "type": "CARD",
+        "workflow": "DIRECT",
+        "card_data": {
+          "holder_name": "John Doe",
           "number": "4111111111111111",
-          "expiration_month": "12",
-          "expiration_year": "2028",
-          "cvv": "123",
-          "holder_name": "John Doe"
+          "expiration_month": 12,
+          "expiration_year": 2028,
+          "security_code": "123"
         }
       }'
     ```
 
-    For alternative payment methods (PIX, bank transfers), tokenization is not required.
+    ```javascript Node.js
+    const enrollment = await fetch(
+      `https://api-sandbox.y.uno/v1/customers/${customerId}/payment-methods`,
+      {
+        method: 'POST',
+        headers: {
+          'public-api-key': process.env.YUNO_PUBLIC_KEY,
+          'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+          'X-Idempotency-Key': `enroll-${crypto.randomUUID()}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          account_id: 'your-account-id',
+          country: 'CO',
+          type: 'CARD',
+          workflow: 'DIRECT',
+          card_data: {
+            holder_name: 'John Doe',
+            number: '4111111111111111',
+            expiration_month: 12,
+            expiration_year: 2028,
+            security_code: '123',
+          },
+        }),
+      }
+    );
+
+    const result = await enrollment.json();
+    // result.vaulted_token => "cbdcc878-ceb4-4dd8-b0f0-49d444855de0"
+    ```
+
+    ```python Python
+    import uuid
+
+    enrollment = requests.post(
+        f'https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods',
+        headers={
+            'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+            'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+            'X-Idempotency-Key': f'enroll-{uuid.uuid4()}',
+            'Content-Type': 'application/json',
+        },
+        json={
+            'account_id': 'your-account-id',
+            'country': 'CO',
+            'type': 'CARD',
+            'workflow': 'DIRECT',
+            'card_data': {
+                'holder_name': 'John Doe',
+                'number': '4111111111111111',
+                'expiration_month': 12,
+                'expiration_year': 2028,
+                'security_code': '123',
+            },
+        },
+    )
+
+    result = enrollment.json()
+    # result['vaulted_token'] => "cbdcc878-ceb4-4dd8-b0f0-49d444855de0"
+    ```
+    </CodeGroup>
   </Step>
 
   <Step title="Create the payment">
-    Submit the payment with the token and customer details:
+    Submit the payment with the checkout session, payment method, and customer details.
 
-    ```bash
+    <CodeGroup>
+    ```bash cURL
     curl -X POST https://api-sandbox.y.uno/v1/payments \
-      -H "public-api-key: YOUR_PUBLIC_KEY" \
-      -H "private-secret-key: YOUR_PRIVATE_KEY" \
-      -H "account-code: YOUR_ACCOUNT_CODE" \
+      -H "public-api-key: $YUNO_PUBLIC_KEY" \
+      -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+      -H "X-Idempotency-Key: pay-order-789" \
       -H "Content-Type: application/json" \
       -d '{
-        "checkout_session": "session-id",
-        "payment_method": { "type": "CARD", "token": "one-time-token" },
+        "checkout_session": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "payment_method": {
+          "type": "CARD",
+          "vaulted_token": "cbdcc878-ceb4-4dd8-b0f0-49d444855de0"
+        },
         "amount": { "currency": "USD", "value": 100.00 },
-        "country": "CO"
+        "country": "CO",
+        "description": "Order #789"
       }'
     ```
 
-    See [Create a Payment](/guides/direct-api/create-payment) for complete examples.
+    ```javascript Node.js
+    const payment = await fetch('https://api-sandbox.y.uno/v1/payments', {
+      method: 'POST',
+      headers: {
+        'public-api-key': process.env.YUNO_PUBLIC_KEY,
+        'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+        'X-Idempotency-Key': 'pay-order-789',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        checkout_session: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+        payment_method: {
+          type: 'CARD',
+          vaulted_token: 'cbdcc878-ceb4-4dd8-b0f0-49d444855de0',
+        },
+        amount: { currency: 'USD', value: 100.00 },
+        country: 'CO',
+        description: 'Order #789',
+      }),
+    });
+
+    const result = await payment.json();
+    ```
+
+    ```python Python
+    payment = requests.post(
+        'https://api-sandbox.y.uno/v1/payments',
+        headers={
+            'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+            'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+            'X-Idempotency-Key': 'pay-order-789',
+            'Content-Type': 'application/json',
+        },
+        json={
+            'checkout_session': 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
+            'payment_method': {
+                'type': 'CARD',
+                'vaulted_token': 'cbdcc878-ceb4-4dd8-b0f0-49d444855de0',
+            },
+            'amount': {'currency': 'USD', 'value': 100.00},
+            'country': 'CO',
+            'description': 'Order #789',
+        },
+    )
+
+    result = payment.json()
+    ```
+    </CodeGroup>
+
+    See [Create a Payment](/guides/direct-api/create-payment) for method-specific examples.
   </Step>
 
   <Step title="Handle the result">
-    The payment response contains a `status` field:
+    The payment response contains a `status` field. Handle each status appropriately:
 
     | Status | Meaning | Action |
     |--------|---------|--------|
-    | `SUCCEEDED` | Payment approved | Fulfill the order |
-    | `PENDING` | Awaiting async confirmation | Wait for webhook |
-    | `DECLINED` | Payment declined | Show error, allow retry |
+    | `SUCCEEDED` | Payment approved and captured | Fulfill the order |
+    | `AUTHORIZED` | Funds reserved (auth-only mode) | [Capture](/guides/direct-api/capture-and-cancel) when ready |
+    | `PENDING` | Awaiting async confirmation (PIX, Boleto) | Wait for [webhook](/core-concepts/webhooks) |
+    | `DECLINED` | Payment declined by provider/issuer | Show error, allow retry |
+    | `REJECTED` | Blocked by validation or fraud rules | Fix request and retry |
     | `REQUIRES_ACTION` | 3DS or redirect needed | Redirect the customer |
   </Step>
 </Steps>
 
 ## Authentication
 
-All API requests require three headers:
+All API requests require these headers:
 
 | Header | Description |
 |--------|-------------|
-| `public-api-key` | Your public API key |
+| `public-api-key` | Your public API key from the [Yuno Dashboard](https://dashboard.y.uno/) |
 | `private-secret-key` | Your private secret key (server-side only) |
-| `account-code` | Your merchant account code |
+
+Some endpoints also require:
+
+| Header | Description |
+|--------|-------------|
+| `X-Idempotency-Key` | Unique key to prevent duplicate operations (required for payments, captures, refunds, cancellations) |
+| `account-code` | Your merchant account code (alias: `X-Account-Code`) |
 
 <Note>
-Never expose your `private-secret-key` in client-side code or version control. Use environment variables.
+Never expose your `private-secret-key` in client-side code or version control. Use environment variables or a secrets manager.
 </Note>
 
 ## Base URLs
@@ -116,19 +322,32 @@ Never expose your `private-secret-key` in client-side code or version control. U
 | Sandbox | `https://api-sandbox.y.uno` |
 | Production | `https://api.y.uno` |
 
+## Error Handling
+
+All errors return a consistent JSON structure with a `code` and `messages` array:
+
+```json
+{
+  "code": "INVALID_REQUEST",
+  "messages": ["Invalid request"]
+}
+```
+
+See [Error Handling](/core-concepts/error-handling) for the full error catalog and retry strategies.
+
 ## Next Steps
 
 <CardGroup cols={2}>
   <Card title="Create a Payment" icon="credit-card" href="/guides/direct-api/create-payment">
-    Detailed payment creation with method-specific examples.
+    Method-specific examples for cards, PIX, bank transfers, and more.
   </Card>
   <Card title="Capture & Cancel" icon="rotate-left" href="/guides/direct-api/capture-and-cancel">
-    Two-step authorization flows.
+    Two-step authorization flows with capture and void.
   </Card>
   <Card title="Refunds" icon="arrow-rotate-left" href="/guides/direct-api/refunds">
     Process full and partial refunds.
   </Card>
-  <Card title="Webhooks" icon="bell" href="/guides/webhooks/setup">
+  <Card title="Webhooks" icon="bell" href="/core-concepts/webhooks">
     Receive real-time payment notifications.
   </Card>
 </CardGroup>
