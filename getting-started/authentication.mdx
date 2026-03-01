@@ -10,7 +10,7 @@ All Yuno API requests require three authentication headers:
 | Header | Description | Usage |
 |--------|-------------|-------|
 | `public-api-key` | Your public API key | Client-side SDK initialization and server-side calls |
-| `private-secret-key` | Your private secret key | Server-side API calls only |
+| `private-secret-key` | Your private secret key | **Server-side API calls only** |
 | `account-code` | Your account identifier | All API calls |
 
 <Warning>
@@ -19,47 +19,247 @@ All Yuno API requests require three authentication headers:
 
 ## Getting Your API Keys
 
-1. Log in to the [Yuno Dashboard](https://dashboard.y.uno)
-2. Navigate to **Settings > API Keys**
-3. Copy your sandbox keys for testing, or production keys for live transactions
+<Steps>
+  <Step title="Log in to the Dashboard">
+    Go to [dashboard.y.uno](https://dashboard.y.uno) and log in with your credentials.
+  </Step>
+  <Step title="Select your environment">
+    Use the environment toggle to select **Sandbox** (for testing) or **Production** (for live transactions).
+  </Step>
+  <Step title="Navigate to API Keys">
+    Go to **Settings > API Keys**. Copy your `public-api-key`, `private-secret-key`, and `account-code`.
+  </Step>
+  <Step title="Store keys securely">
+    Save your keys as environment variables. Never commit them to version control.
 
-## Header Format
+    ```bash
+    # .env (add to .gitignore)
+    YUNO_PUBLIC_KEY=your-public-api-key
+    YUNO_PRIVATE_KEY=your-private-secret-key
+    YUNO_ACCOUNT_CODE=your-account-code
+    ```
+  </Step>
+</Steps>
+
+## Making Authenticated Requests
 
 Include all three headers in every API request:
 
-```bash
+<CodeGroup>
+```bash cURL
 curl -X POST https://api-sandbox.y.uno/v1/checkout/sessions \
   -H "public-api-key: your-public-api-key" \
   -H "private-secret-key: your-private-secret-key" \
   -H "account-code: your-account-code" \
-  -H "Content-Type: application/json"
+  -H "Content-Type: application/json" \
+  -d '{"amount": {"currency": "USD", "value": 50.00}, "country": "CO"}'
 ```
+
+```javascript Node.js
+const YUNO_BASE_URL = 'https://api-sandbox.y.uno';
+
+async function yunoRequest(path, body) {
+  const response = await fetch(`${YUNO_BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'public-api-key': process.env.YUNO_PUBLIC_KEY,
+      'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+      'account-code': process.env.YUNO_ACCOUNT_CODE,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(`Yuno API error: ${response.status} - ${error.message}`);
+  }
+
+  return response.json();
+}
+
+// Usage
+const session = await yunoRequest('/v1/checkout/sessions', {
+  amount: { currency: 'USD', value: 50.00 },
+  country: 'CO',
+  merchant_order_id: 'order-001',
+});
+```
+
+```python Python
+import os
+import requests
+
+YUNO_BASE_URL = 'https://api-sandbox.y.uno'
+
+def yuno_request(path, body):
+    response = requests.post(
+        f'{YUNO_BASE_URL}{path}',
+        headers={
+            'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+            'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+            'account-code': os.environ['YUNO_ACCOUNT_CODE'],
+            'Content-Type': 'application/json',
+        },
+        json=body,
+    )
+    response.raise_for_status()
+    return response.json()
+
+# Usage
+session = yuno_request('/v1/checkout/sessions', {
+    'amount': {'currency': 'USD', 'value': 50.00},
+    'country': 'CO',
+    'merchant_order_id': 'order-001',
+})
+```
+
+```go Go
+package main
+
+import (
+    "bytes"
+    "encoding/json"
+    "fmt"
+    "net/http"
+    "os"
+)
+
+const yunoBaseURL = "https://api-sandbox.y.uno"
+
+func yunoRequest(path string, body interface{}) (*http.Response, error) {
+    jsonBody, _ := json.Marshal(body)
+
+    req, _ := http.NewRequest("POST",
+        fmt.Sprintf("%s%s", yunoBaseURL, path),
+        bytes.NewBuffer(jsonBody),
+    )
+
+    req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
+    req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
+    req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
+    req.Header.Set("Content-Type", "application/json")
+
+    return http.DefaultClient.Do(req)
+}
+```
+
+```php PHP
+<?php
+$baseUrl = 'https://api-sandbox.y.uno';
+
+function yunoRequest(string $path, array $body): array {
+    $ch = curl_init($GLOBALS['baseUrl'] . $path);
+
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'public-api-key: ' . getenv('YUNO_PUBLIC_KEY'),
+            'private-secret-key: ' . getenv('YUNO_PRIVATE_KEY'),
+            'account-code: ' . getenv('YUNO_ACCOUNT_CODE'),
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode($body),
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode >= 400) {
+        throw new Exception("Yuno API error: $httpCode");
+    }
+
+    return json_decode($response, true);
+}
+
+// Usage
+$session = yunoRequest('/v1/checkout/sessions', [
+    'amount' => ['currency' => 'USD', 'value' => 50.00],
+    'country' => 'CO',
+    'merchant_order_id' => 'order-001',
+]);
+```
+
+```java Java
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
+public class YunoClient {
+    private static final String BASE_URL = "https://api-sandbox.y.uno";
+    private final HttpClient client = HttpClient.newHttpClient();
+
+    public String request(String path, String jsonBody) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder()
+            .uri(URI.create(BASE_URL + path))
+            .header("public-api-key", System.getenv("YUNO_PUBLIC_KEY"))
+            .header("private-secret-key", System.getenv("YUNO_PRIVATE_KEY"))
+            .header("account-code", System.getenv("YUNO_ACCOUNT_CODE"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
+            .build();
+
+        HttpResponse<String> response = client.send(request,
+            HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() >= 400) {
+            throw new RuntimeException(
+                "Yuno API error: " + response.statusCode());
+        }
+
+        return response.body();
+    }
+}
+```
+</CodeGroup>
 
 ## Header Name Aliases
 
-The `account-code` header is the primary and recommended header name. The alias `X-Account-Code` is also accepted by the API and functions identically. Use `account-code` for consistency with Yuno's official examples and documentation.
+The `account-code` header is the primary and recommended header name. The alias `X-Account-Code` is also accepted and functions identically.
 
-| Primary Header | Alias | Notes |
-|---------------|-------|-------|
-| `account-code` | `X-Account-Code` | Both accepted; use `account-code` as primary |
+| Primary Header | Alias | Recommendation |
+|---------------|-------|----------------|
+| `account-code` | `X-Account-Code` | Use `account-code` for consistency |
 
 ## Sandbox vs Production Keys
 
-Each environment has its own set of API keys:
+Each environment has its own set of API keys. They are not interchangeable.
 
 | Environment | Base URL | Key Type |
 |-------------|----------|----------|
-| Sandbox | `https://api-sandbox.y.uno` | Test keys (no real transactions) |
-| Production | `https://api.y.uno` | Live keys (real transactions) |
+| **Sandbox** | `https://api-sandbox.y.uno` | Test keys (no real transactions) |
+| **Production** | `https://api.y.uno` | Live keys (real transactions) |
 
 <Note>
-  Sandbox and production keys are not interchangeable. Using sandbox keys against the production URL (or vice versa) will result in authentication errors.
+  Using sandbox keys against the production URL (or vice versa) will result in `401 UNAUTHORIZED` errors.
 </Note>
+
+## Client-Side vs Server-Side Usage
+
+| Key | Client-Side (SDK) | Server-Side (API) |
+|-----|-------------------|-------------------|
+| `public-api-key` | Yes | Yes |
+| `private-secret-key` | **Never** | Yes |
+| `account-code` | Yes | Yes |
+
+The `public-api-key` is safe to include in client-side code and mobile apps. It is used to initialize the Yuno SDK and create checkout sessions. The `private-secret-key` must only be used in server-side code for operations like creating payments, processing refunds, and managing webhooks.
+
+## Authentication Errors
+
+| HTTP Status | Error Code | Cause | Solution |
+|-------------|-----------|-------|----------|
+| `401` | `UNAUTHORIZED` | Missing or invalid API keys | Verify all three headers are present and correct |
+| `401` | `UNAUTHORIZED` | Using sandbox keys in production (or vice versa) | Use environment-specific keys |
+| `403` | `FORBIDDEN` | Account not authorized for requested resource | Check account permissions in Dashboard |
 
 ## Security Best Practices
 
-- Store API keys in environment variables, not in source code
-- Use different keys for sandbox and production environments
-- Rotate keys periodically through the Yuno Dashboard
-- Restrict `private-secret-key` access to server-side code only
-- Monitor API usage in the Dashboard for unauthorized access
+- **Environment variables** -- Store API keys in environment variables, never in source code
+- **Separate keys** -- Use different keys for sandbox and production
+- **Key rotation** -- Rotate keys periodically through the Dashboard
+- **Access control** -- Restrict `private-secret-key` to server-side code
+- **Monitoring** -- Review API usage in the Dashboard for unauthorized access
+- **`.gitignore`** -- Add `.env` files to `.gitignore` to prevent accidental commits
