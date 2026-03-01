@@ -1,6 +1,6 @@
 ---
 title: "What is Yuno?"
-description: "Yuno is a payment infrastructure and orchestration company connecting businesses to 1000+ payment methods across 190+ countries through a single API"
+description: "Yuno is a payment orchestration platform connecting businesses to 300+ providers and 1000+ payment methods across 190+ countries through a single API"
 ---
 
 ## Overview
@@ -49,6 +49,50 @@ Yuno is built for businesses processing payments in Latin America and globally:
 <Note>
   Yuno handles PCI compliance, provider certifications, and regulatory requirements so your team can focus on building your product.
 </Note>
+
+## Integration Options
+
+Yuno offers multiple ways to integrate depending on your needs:
+
+| Option | Best For | Effort |
+|--------|----------|--------|
+| **Full Checkout SDK** | Fastest integration; pre-built UI for payment method selection and card input | Low |
+| **Seamless Checkout SDK** | Custom payment method selection with Yuno-hosted card input | Medium |
+| **Secure Fields SDK** | Full UI control with PCI-compliant card input fields | Medium |
+| **Direct API** | Complete control over every step; no SDK dependency | High |
+
+## Onboarding Flow
+
+```
+1. Create Account     2. Get API Keys       3. Configure Sandbox
+   dashboard.y.uno       Settings > API Keys    Enable providers
+        |                     |                       |
+        v                     v                       v
+4. Integrate API/SDK   5. Test in Sandbox    6. Go Live
+   Choose integration     Use test cards        Switch to prod keys
+   method                 Verify webhooks       Enable real providers
+```
+
+<Steps>
+  <Step title="Create your account">
+    Sign up at [dashboard.y.uno](https://dashboard.y.uno). Your sandbox environment is ready immediately.
+  </Step>
+  <Step title="Get your API keys">
+    Navigate to **Settings > API Keys** to copy your sandbox credentials. See [Authentication](/getting-started/authentication) for details.
+  </Step>
+  <Step title="Follow the Quickstart">
+    Complete the [Quickstart guide](/getting-started/quickstart) to make your first test payment in minutes.
+  </Step>
+  <Step title="Set up webhooks">
+    Configure [webhook endpoints](/guides/webhooks/setup) to receive real-time payment notifications.
+  </Step>
+  <Step title="Test thoroughly">
+    Use [test cards](/guides/testing/test-cards) and the [sandbox environment](/guides/testing/sandbox-guide) to validate your integration.
+  </Step>
+  <Step title="Go live">
+    Switch to production API keys, configure real providers, and process your first real payment.
+  </Step>
+</Steps>
 
 ## Next Steps
 

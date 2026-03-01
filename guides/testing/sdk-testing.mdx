@@ -5,13 +5,13 @@ description: "Mock setup, error state testing, integration patterns, and CI/CD p
 
 ## Overview
 
-Testing SDK integrations requires a different approach than API testing. The SDK renders UI components, handles tokenization, and manages client-side state. This guide covers mock setup for unit tests, error state testing, integration test patterns, and CI/CD configuration.
+Testing SDK integrations requires a different approach than API testing. The SDK renders UI components, handles tokenization, and manages client-side state. This guide covers mock setup for unit tests, error state testing, integration test patterns with Playwright, and CI/CD pipeline configuration.
 
 ## SDK Mock Setup for Unit Tests
 
-When unit testing your application code that integrates with the Yuno SDK, mock the SDK to isolate your business logic from the SDK internals.
+When unit testing your application code that integrates with the Yuno SDK, mock the SDK to isolate your business logic.
 
-### Mocking the Web SDK
+### Web SDK Mock
 
 <CodeGroup>
 ```javascript Jest (JavaScript)
@@ -59,7 +59,7 @@ describe('CheckoutPage', () => {
 });
 ```
 
-```python pytest (Python)
+```python pytest (Python -- server-side)
 # test_payment_flow.py
 import pytest
 from unittest.mock import MagicMock, AsyncMock
@@ -79,16 +79,17 @@ def mock_yuno_client():
     })
     return client
 
-async def test_create_payment(mock_yuno_client):
+async def test_create_checkout_session(mock_yuno_client):
     session = await mock_yuno_client.create_checkout_session()
     assert session['checkout_session'] == 'mock-session-id'
 
+async def test_create_payment(mock_yuno_client):
     payment = await mock_yuno_client.create_payment()
     assert payment['status'] == 'SUCCEEDED'
 ```
 </CodeGroup>
 
-### Mocking the Mobile SDK
+### Mobile SDK Mock
 
 <CodeGroup>
 ```javascript React Native (Jest)
@@ -112,8 +113,18 @@ jest.mock('@yuno/react-native-sdk');
 
 describe('CheckoutScreen', () => {
   it('renders payment button when SDK is ready', () => {
-    const { getByText } = render(<CheckoutScreen sessionId="session-123" />);
+    const { getByText } = render(
+      <CheckoutScreen sessionId="session-123" />
+    );
     expect(getByText('Pay Now')).toBeTruthy();
+  });
+
+  it('starts payment on button press', async () => {
+    const { getByText } = render(
+      <CheckoutScreen sessionId="session-123" />
+    );
+    fireEvent.press(getByText('Pay Now'));
+    // Assert payment flow initiated
   });
 });
 ```
@@ -129,16 +140,31 @@ class PaymentViewModelTest {
     @Test
     fun `startPayment calls SDK with correct session`() = runTest {
         every { mockYunoSDK.isInitialized } returns true
-        coEvery { mockYunoSDK.startPayment(any()) } returns PaymentResult.Success(
-            paymentId = "pay_mock123",
-            status = "SUCCEEDED"
-        )
+        coEvery { mockYunoSDK.startPayment(any()) } returns
+            PaymentResult.Success(
+                paymentId = "pay_mock123",
+                status = "SUCCEEDED"
+            )
 
         val viewModel = PaymentViewModel(mockYunoSDK)
         viewModel.startPayment("session-123")
 
         coVerify { mockYunoSDK.startPayment("session-123") }
         assert(viewModel.paymentState.value is PaymentState.Success)
+    }
+
+    @Test
+    fun `handles payment failure gracefully`() = runTest {
+        coEvery { mockYunoSDK.startPayment(any()) } returns
+            PaymentResult.Failure(
+                errorCode = "DECLINED",
+                message = "Insufficient funds"
+            )
+
+        val viewModel = PaymentViewModel(mockYunoSDK)
+        viewModel.startPayment("session-123")
+
+        assert(viewModel.paymentState.value is PaymentState.Error)
     }
 }
 ```
@@ -148,20 +174,20 @@ class PaymentViewModelTest {
 
 Test how your integration handles SDK errors and edge cases.
 
-### Common error scenarios
+### Common Error Scenarios
 
 | Scenario | How to Simulate | Expected Behavior |
 |----------|----------------|-------------------|
 | Invalid checkout session | Pass expired/invalid session ID | SDK fires `onError` callback |
-| Network failure | Disable network in test environment | SDK shows retry option or fires error |
+| Network failure | Disable network in test environment | SDK shows retry or fires error |
 | Tokenization failure | Use invalid card data | `generateToken` rejects with error |
 | Session timeout | Wait >30 minutes after session creation | SDK fires session expired error |
 | SDK load failure | Block CDN in test | Your fallback UI renders |
 
-### Testing error callbacks
+### Testing Error Callbacks
 
 <CodeGroup>
-```javascript Web SDK
+```javascript Web SDK (Jest)
 describe('Error handling', () => {
   it('handles tokenization failure gracefully', async () => {
     mockYuno.generateToken.mockRejectedValue(
@@ -171,14 +197,19 @@ describe('Error handling', () => {
     const { getByText, findByText } = render(<CheckoutPage />);
     fireEvent.click(getByText('Pay Now'));
 
-    const errorMessage = await findByText('Payment could not be processed');
+    const errorMessage = await findByText(
+      'Payment could not be processed'
+    );
     expect(errorMessage).toBeInTheDocument();
   });
 
   it('handles session expiry', async () => {
     const onError = jest.fn();
     mockYuno.initialize.mockImplementation(({ onError: cb }) => {
-      cb({ code: 'SESSION_EXPIRED', message: 'Checkout session expired' });
+      cb({
+        code: 'SESSION_EXPIRED',
+        message: 'Checkout session expired',
+      });
     });
 
     await initializePayment('expired-session', { onError });
@@ -189,9 +220,10 @@ describe('Error handling', () => {
 
   it('handles network timeout', async () => {
     mockYuno.generateToken.mockImplementation(
-      () => new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 5000)
-      )
+      () =>
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('TIMEOUT')), 5000)
+        )
     );
 
     const result = await submitPaymentWithTimeout();
@@ -200,7 +232,7 @@ describe('Error handling', () => {
 });
 ```
 
-```python Server-side error testing
+```python Server-side error testing (pytest)
 async def test_invalid_session_returns_error(mock_yuno_client):
     mock_yuno_client.create_payment = AsyncMock(
         side_effect=Exception('INVALID_SESSION')
@@ -219,11 +251,9 @@ async def test_network_timeout(mock_yuno_client):
 ```
 </CodeGroup>
 
-## Integration Test Patterns
+## Integration Tests with Playwright
 
-Integration tests validate the full flow from your frontend through your backend to the Yuno sandbox API.
-
-### End-to-end with Playwright
+End-to-end tests validate the full flow from your frontend through your backend to the Yuno sandbox API.
 
 ```javascript
 // e2e/payment.spec.js
@@ -231,20 +261,23 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Payment flow', () => {
   test('completes card payment successfully', async ({ page }) => {
-    // Navigate to checkout
     await page.goto('/checkout?orderId=test-001');
 
-    // Wait for SDK to load
+    // Wait for Yuno SDK to load
     await page.waitForSelector('[data-yuno-sdk-ready]');
 
     // Select card payment method
     await page.click('[data-payment-method="CARD"]');
 
     // Fill card details in secure fields (iframe)
-    const cardFrame = page.frameLocator('[data-yuno-field="card-number"]');
+    const cardFrame = page.frameLocator(
+      '[data-yuno-field="card-number"]'
+    );
     await cardFrame.locator('input').fill('4111111111111111');
 
-    const expiryFrame = page.frameLocator('[data-yuno-field="expiry"]');
+    const expiryFrame = page.frameLocator(
+      '[data-yuno-field="expiry"]'
+    );
     await expiryFrame.locator('input').fill('12/30');
 
     const cvvFrame = page.frameLocator('[data-yuno-field="cvv"]');
@@ -253,9 +286,11 @@ test.describe('Payment flow', () => {
     // Submit payment
     await page.click('#pay-button');
 
-    // Wait for success page
+    // Verify success page
     await expect(page).toHaveURL(/\/payment\/success/);
-    await expect(page.locator('.payment-status')).toHaveText('Payment Successful');
+    await expect(page.locator('.payment-status')).toHaveText(
+      'Payment Successful'
+    );
   });
 
   test('handles declined card', async ({ page }) => {
@@ -264,10 +299,14 @@ test.describe('Payment flow', () => {
     await page.click('[data-payment-method="CARD"]');
 
     // Use decline test card
-    const cardFrame = page.frameLocator('[data-yuno-field="card-number"]');
+    const cardFrame = page.frameLocator(
+      '[data-yuno-field="card-number"]'
+    );
     await cardFrame.locator('input').fill('4000000000000002');
 
-    const expiryFrame = page.frameLocator('[data-yuno-field="expiry"]');
+    const expiryFrame = page.frameLocator(
+      '[data-yuno-field="expiry"]'
+    );
     await expiryFrame.locator('input').fill('12/30');
 
     const cvvFrame = page.frameLocator('[data-yuno-field="cvv"]');
@@ -275,19 +314,52 @@ test.describe('Payment flow', () => {
 
     await page.click('#pay-button');
 
-    // Verify error message shown
+    // Verify error message
     await expect(page.locator('.payment-error')).toBeVisible();
-    await expect(page.locator('.payment-error')).toContainText('declined');
+    await expect(page.locator('.payment-error')).toContainText(
+      'declined'
+    );
+  });
+
+  test('handles 3DS challenge flow', async ({ page }) => {
+    await page.goto('/checkout?orderId=test-003');
+    await page.waitForSelector('[data-yuno-sdk-ready]');
+    await page.click('[data-payment-method="CARD"]');
+
+    // Use 3DS challenge test card
+    const cardFrame = page.frameLocator(
+      '[data-yuno-field="card-number"]'
+    );
+    await cardFrame.locator('input').fill('4000000000003220');
+
+    // ... fill expiry and CVV ...
+
+    await page.click('#pay-button');
+
+    // Verify redirect to 3DS challenge
+    await page.waitForURL(/.*3ds.*|.*challenge.*/);
+
+    // Complete simulated challenge
+    await page.click('[data-testid="complete-challenge"]');
+
+    // Verify redirect back and success
+    await expect(page).toHaveURL(/\/payment\/success/);
   });
 });
 ```
 
-### API integration tests
+## API Integration Tests
 
 <CodeGroup>
 ```javascript Node.js (Jest)
 // integration/payment-api.test.js
 const API_URL = 'https://api-sandbox.y.uno';
+const headers = {
+  'public-api-key': process.env.YUNO_PUBLIC_KEY,
+  'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+  'account-code': process.env.YUNO_ACCOUNT_CODE,
+  'Content-Type': 'application/json',
+};
 
 describe('Payment API Integration', () => {
   let checkoutSession;
@@ -295,12 +367,7 @@ describe('Payment API Integration', () => {
   beforeAll(async () => {
     const response = await fetch(`${API_URL}/v1/checkout/sessions`, {
       method: 'POST',
-      headers: {
-        'public-api-key': process.env.YUNO_PUBLIC_KEY,
-        'private-secret-key': process.env.YUNO_PRIVATE_KEY,
-        'account-code': process.env.YUNO_ACCOUNT_CODE,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         amount: { currency: 'USD', value: 50.00 },
         country: 'CO',
@@ -311,15 +378,10 @@ describe('Payment API Integration', () => {
     checkoutSession = data.checkout_session;
   });
 
-  it('creates a payment with valid data', async () => {
+  it('creates a successful payment', async () => {
     const response = await fetch(`${API_URL}/v1/payments`, {
       method: 'POST',
-      headers: {
-        'public-api-key': process.env.YUNO_PUBLIC_KEY,
-        'private-secret-key': process.env.YUNO_PRIVATE_KEY,
-        'account-code': process.env.YUNO_ACCOUNT_CODE,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         checkout_session: checkoutSession,
         payment_method: { type: 'CARD', token: 'test-token' },
@@ -337,19 +399,28 @@ describe('Payment API Integration', () => {
   it('returns 400 for missing required fields', async () => {
     const response = await fetch(`${API_URL}/v1/payments`, {
       method: 'POST',
-      headers: {
-        'public-api-key': process.env.YUNO_PUBLIC_KEY,
-        'private-secret-key': process.env.YUNO_PRIVATE_KEY,
-        'account-code': process.env.YUNO_ACCOUNT_CODE,
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify({
         checkout_session: checkoutSession,
-        // Missing payment_method, amount, country
       }),
     });
 
     expect(response.status).toBe(400);
+  });
+
+  it('returns 401 for invalid credentials', async () => {
+    const response = await fetch(`${API_URL}/v1/payments`, {
+      method: 'POST',
+      headers: { ...headers, 'private-secret-key': 'invalid' },
+      body: JSON.stringify({
+        checkout_session: checkoutSession,
+        payment_method: { type: 'CARD', token: 'test-token' },
+        amount: { currency: 'USD', value: 50.00 },
+        country: 'CO',
+      }),
+    });
+
+    expect(response.status).toBe(401);
   });
 });
 ```
@@ -407,7 +478,7 @@ def test_missing_fields_returns_400(checkout_session):
 ```
 </CodeGroup>
 
-## CI/CD Pipeline Integration
+## CI/CD Pipeline Configuration
 
 ### GitHub Actions
 
@@ -463,29 +534,26 @@ jobs:
           YUNO_ACCOUNT_CODE: ${{ secrets.YUNO_SANDBOX_ACCOUNT_CODE }}
 ```
 
-### Environment secrets
+### CI/CD Secrets
 
-Store your Yuno sandbox credentials as CI/CD secrets:
+Store your sandbox credentials as CI/CD secrets. Never use production credentials in automated pipelines.
 
 | Secret Name | Value | Notes |
 |-------------|-------|-------|
 | `YUNO_SANDBOX_PUBLIC_KEY` | Your sandbox public API key | Safe for client and server |
 | `YUNO_SANDBOX_PRIVATE_KEY` | Your sandbox private secret key | Server-side only |
 | `YUNO_SANDBOX_ACCOUNT_CODE` | Your sandbox account code | Required for all requests |
-| `YUNO_SANDBOX_WEBHOOK_SECRET` | Your sandbox webhook signing secret | For webhook tests |
+| `YUNO_SANDBOX_WEBHOOK_SECRET` | Your sandbox webhook signing secret | For webhook handler tests |
 
 <Warning>
 Never use production credentials in CI/CD pipelines. Always use sandbox credentials for automated testing.
 </Warning>
 
-## Testing Different Payment Methods
-
-### Payment method test matrix
+## Payment Method Test Matrix
 
 Structure your tests to cover each payment method you support:
 
 ```javascript
-// test/payment-methods.test.js
 const paymentMethods = [
   {
     name: 'Card (Visa)',
@@ -501,7 +569,10 @@ const paymentMethods = [
     currency: 'BRL',
     extra: {},
     customer: {
-      document: { document_type: 'CPF', document_number: '12345678901' },
+      document: {
+        document_type: 'CPF',
+        document_number: '12345678901',
+      },
     },
   },
   {
@@ -514,8 +585,11 @@ const paymentMethods = [
 ];
 
 describe.each(paymentMethods)('$name payment', (method) => {
-  it(`creates a ${method.type} payment successfully`, async () => {
-    const session = await createSession(method.country, method.currency);
+  it(`creates a ${method.type} payment`, async () => {
+    const session = await createSession(
+      method.country,
+      method.currency
+    );
     const payment = await createPayment({
       checkout_session: session,
       payment_method: { type: method.type, ...method.extra },
@@ -531,18 +605,3 @@ describe.each(paymentMethods)('$name payment', (method) => {
   });
 });
 ```
-
-### Sandbox vs. production parity
-
-| Aspect | Sandbox | Production |
-|--------|---------|------------|
-| API URL | `api-sandbox.y.uno` | `api.y.uno` |
-| Test cards | All test numbers work | Real cards only |
-| Payment completion | Simulated | Real provider processing |
-| Webhooks | Test events available | Real events only |
-| Rate limits | Relaxed | Standard limits |
-| Funds | No real money | Real transactions |
-
-<Note>
-Always run your full test suite against sandbox before deploying to production. Use feature flags to switch between sandbox and production API URLs based on your environment.
-</Note>

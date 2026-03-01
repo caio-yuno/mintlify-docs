@@ -1,12 +1,12 @@
 ---
 title: "Quickstart"
-description: "Create your first payment with Yuno in minutes"
+description: "Create your first payment with Yuno in 5 minutes"
 ---
 
 ## Prerequisites
 
-- A Yuno account with sandbox access
-- Your API keys from the [Yuno Dashboard](https://dashboard.y.uno)
+- A Yuno account ([sign up at dashboard.y.uno](https://dashboard.y.uno))
+- Your sandbox API keys from **Settings > API Keys**
 
 ## Create Your First Payment
 
@@ -14,9 +14,17 @@ description: "Create your first payment with Yuno in minutes"
   <Step title="Get your API keys">
     Log in to the [Yuno Dashboard](https://dashboard.y.uno) and navigate to **Settings > API Keys**. You need three values:
 
-    - `public-api-key` — Used for client-side SDK initialization and server-side calls
-    - `private-secret-key` — Used for server-side API calls only
-    - `account-code` — Your account identifier
+    - `public-api-key` -- Client-side SDK initialization and server-side calls
+    - `private-secret-key` -- Server-side API calls only
+    - `account-code` -- Your account identifier
+
+    Store them as environment variables:
+
+    ```bash
+    export YUNO_PUBLIC_KEY="your-public-api-key"
+    export YUNO_PRIVATE_KEY="your-private-secret-key"
+    export YUNO_ACCOUNT_CODE="your-account-code"
+    ```
 
     <Warning>
       Never expose your `private-secret-key` in client-side code or version control.
@@ -24,14 +32,14 @@ description: "Create your first payment with Yuno in minutes"
   </Step>
 
   <Step title="Create a checkout session">
-    Create a checkout session on your server to initialize the payment flow.
+    A checkout session initializes a purchase intent and determines which payment methods are available.
 
     <CodeGroup>
     ```bash cURL
     curl -X POST https://api-sandbox.y.uno/v1/checkout/sessions \
-      -H "public-api-key: your-public-api-key" \
-      -H "private-secret-key: your-private-secret-key" \
-      -H "account-code: your-account-code" \
+      -H "public-api-key: $YUNO_PUBLIC_KEY" \
+      -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+      -H "account-code: $YUNO_ACCOUNT_CODE" \
       -H "Content-Type: application/json" \
       -d '{
         "amount": {
@@ -45,35 +53,40 @@ description: "Create your first payment with Yuno in minutes"
     ```
 
     ```javascript Node.js
-    const response = await fetch('https://api-sandbox.y.uno/v1/checkout/sessions', {
-      method: 'POST',
-      headers: {
-        'public-api-key': 'your-public-api-key',
-        'private-secret-key': 'your-private-secret-key',
-        'account-code': 'your-account-code',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        amount: { currency: 'BRL', value: 100.00 },
-        country: 'BR',
-        merchant_order_id: 'order-001',
-        payment_description: 'Test payment',
-      }),
-    });
+    const response = await fetch(
+      'https://api-sandbox.y.uno/v1/checkout/sessions',
+      {
+        method: 'POST',
+        headers: {
+          'public-api-key': process.env.YUNO_PUBLIC_KEY,
+          'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+          'account-code': process.env.YUNO_ACCOUNT_CODE,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          amount: { currency: 'BRL', value: 100.0 },
+          country: 'BR',
+          merchant_order_id: 'order-001',
+          payment_description: 'Test payment',
+        }),
+      }
+    );
 
     const session = await response.json();
-    // Use session.checkout_session for SDK initialization
+    console.log('Checkout session:', session.checkout_session);
+    // Save this ID for the next step
     ```
 
     ```python Python
     import requests
+    import os
 
     response = requests.post(
         'https://api-sandbox.y.uno/v1/checkout/sessions',
         headers={
-            'public-api-key': 'your-public-api-key',
-            'private-secret-key': 'your-private-secret-key',
-            'account-code': 'your-account-code',
+            'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+            'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+            'account-code': os.environ['YUNO_ACCOUNT_CODE'],
             'Content-Type': 'application/json',
         },
         json={
@@ -85,52 +98,32 @@ description: "Create your first payment with Yuno in minutes"
     )
 
     session = response.json()
-    # Use session['checkout_session'] for SDK initialization
+    print(f"Checkout session: {session['checkout_session']}")
     ```
 
     ```go Go
-    package main
+    payload := map[string]interface{}{
+        "amount":              map[string]interface{}{"currency": "BRL", "value": 100.00},
+        "country":             "BR",
+        "merchant_order_id":   "order-001",
+        "payment_description": "Test payment",
+    }
 
-    import (
-        "bytes"
-        "encoding/json"
-        "net/http"
+    body, _ := json.Marshal(payload)
+    req, _ := http.NewRequest("POST",
+        "https://api-sandbox.y.uno/v1/checkout/sessions",
+        bytes.NewBuffer(body),
     )
 
-    func createCheckoutSession() (*http.Response, error) {
-        payload := map[string]interface{}{
-            "amount": map[string]interface{}{
-                "currency": "BRL",
-                "value":    100.00,
-            },
-            "country":             "BR",
-            "merchant_order_id":   "order-001",
-            "payment_description": "Test payment",
-        }
+    req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
+    req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
+    req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
+    req.Header.Set("Content-Type", "application/json")
 
-        body, _ := json.Marshal(payload)
-        req, _ := http.NewRequest("POST",
-            "https://api-sandbox.y.uno/v1/checkout/sessions",
-            bytes.NewBuffer(body),
-        )
-
-        req.Header.Set("public-api-key", "your-public-api-key")
-        req.Header.Set("private-secret-key", "your-private-secret-key")
-        req.Header.Set("account-code", "your-account-code")
-        req.Header.Set("Content-Type", "application/json")
-
-        return http.DefaultClient.Do(req)
-    }
+    resp, _ := http.DefaultClient.Do(req)
     ```
 
     ```java Java
-    import java.net.URI;
-    import java.net.http.HttpClient;
-    import java.net.http.HttpRequest;
-    import java.net.http.HttpResponse;
-
-    HttpClient client = HttpClient.newHttpClient();
-
     String body = """
         {
           "amount": { "currency": "BRL", "value": 100.00 },
@@ -142,9 +135,9 @@ description: "Create your first payment with Yuno in minutes"
 
     HttpRequest request = HttpRequest.newBuilder()
         .uri(URI.create("https://api-sandbox.y.uno/v1/checkout/sessions"))
-        .header("public-api-key", "your-public-api-key")
-        .header("private-secret-key", "your-private-secret-key")
-        .header("account-code", "your-account-code")
+        .header("public-api-key", System.getenv("YUNO_PUBLIC_KEY"))
+        .header("private-secret-key", System.getenv("YUNO_PRIVATE_KEY"))
+        .header("account-code", System.getenv("YUNO_ACCOUNT_CODE"))
         .header("Content-Type", "application/json")
         .POST(HttpRequest.BodyPublishers.ofString(body))
         .build();
@@ -152,25 +145,49 @@ description: "Create your first payment with Yuno in minutes"
     HttpResponse<String> response = client.send(request,
         HttpResponse.BodyHandlers.ofString());
     ```
+
+    ```php PHP
+    $ch = curl_init('https://api-sandbox.y.uno/v1/checkout/sessions');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER => [
+            'public-api-key: ' . getenv('YUNO_PUBLIC_KEY'),
+            'private-secret-key: ' . getenv('YUNO_PRIVATE_KEY'),
+            'account-code: ' . getenv('YUNO_ACCOUNT_CODE'),
+            'Content-Type: application/json',
+        ],
+        CURLOPT_POSTFIELDS => json_encode([
+            'amount' => ['currency' => 'BRL', 'value' => 100.00],
+            'country' => 'BR',
+            'merchant_order_id' => 'order-001',
+            'payment_description' => 'Test payment',
+        ]),
+    ]);
+    $response = json_decode(curl_exec($ch), true);
+    curl_close($ch);
+
+    echo "Checkout session: " . $response['checkout_session'];
+    ```
     </CodeGroup>
 
     <Note>
-      This endpoint returns HTTP **200** (not 201). The checkout session ID is returned in the response body.
+      This endpoint returns HTTP **200** (not 201). The `checkout_session` ID is in the response body.
     </Note>
   </Step>
 
   <Step title="Create a payment">
-    Use the checkout session to create a payment.
+    Use the checkout session ID from the previous step to create a payment. In sandbox, use the test card `4111111111111111` for an approved payment.
 
     <CodeGroup>
     ```bash cURL
     curl -X POST https://api-sandbox.y.uno/v1/payments \
-      -H "public-api-key: your-public-api-key" \
-      -H "private-secret-key: your-private-secret-key" \
-      -H "account-code: your-account-code" \
+      -H "public-api-key: $YUNO_PUBLIC_KEY" \
+      -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+      -H "account-code: $YUNO_ACCOUNT_CODE" \
       -H "Content-Type: application/json" \
       -d '{
-        "checkout_session": "your-checkout-session-id",
+        "checkout_session": "YOUR_CHECKOUT_SESSION_ID",
         "payment_method": {
           "type": "CARD"
         },
@@ -190,45 +207,49 @@ description: "Create your first payment with Yuno in minutes"
     ```
 
     ```javascript Node.js
-    const response = await fetch('https://api-sandbox.y.uno/v1/payments', {
-      method: 'POST',
-      headers: {
-        'public-api-key': 'your-public-api-key',
-        'private-secret-key': 'your-private-secret-key',
-        'account-code': 'your-account-code',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        checkout_session: 'your-checkout-session-id',
-        payment_method: { type: 'CARD' },
-        amount: { currency: 'BRL', value: 100.00 },
-        country: 'BR',
-        customer: {
-          document: {
-            document_type: 'CPF',
-            document_number: '12345678901',
-          },
-          email: 'customer@example.com',
+    const paymentResponse = await fetch(
+      'https://api-sandbox.y.uno/v1/payments',
+      {
+        method: 'POST',
+        headers: {
+          'public-api-key': process.env.YUNO_PUBLIC_KEY,
+          'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+          'account-code': process.env.YUNO_ACCOUNT_CODE,
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          checkout_session: session.checkout_session,
+          payment_method: { type: 'CARD' },
+          amount: { currency: 'BRL', value: 100.0 },
+          country: 'BR',
+          customer: {
+            document: {
+              document_type: 'CPF',
+              document_number: '12345678901',
+            },
+            email: 'customer@example.com',
+          },
+        }),
+      }
+    );
 
-    const payment = await response.json();
+    const payment = await paymentResponse.json();
+    console.log('Payment ID:', payment.id);
+    console.log('Status:', payment.status);
+    // Expected: "SUCCEEDED"
     ```
 
     ```python Python
-    import requests
-
-    response = requests.post(
+    payment_response = requests.post(
         'https://api-sandbox.y.uno/v1/payments',
         headers={
-            'public-api-key': 'your-public-api-key',
-            'private-secret-key': 'your-private-secret-key',
-            'account-code': 'your-account-code',
+            'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+            'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+            'account-code': os.environ['YUNO_ACCOUNT_CODE'],
             'Content-Type': 'application/json',
         },
         json={
-            'checkout_session': 'your-checkout-session-id',
+            'checkout_session': session['checkout_session'],
             'payment_method': {'type': 'CARD'},
             'amount': {'currency': 'BRL', 'value': 100.00},
             'country': 'BR',
@@ -242,142 +263,76 @@ description: "Create your first payment with Yuno in minutes"
         },
     )
 
-    payment = response.json()
-    ```
-
-    ```go Go
-    payload := map[string]interface{}{
-        "checkout_session": "your-checkout-session-id",
-        "payment_method":   map[string]interface{}{"type": "CARD"},
-        "amount":           map[string]interface{}{"currency": "BRL", "value": 100.00},
-        "country":          "BR",
-        "customer": map[string]interface{}{
-            "document": map[string]interface{}{
-                "document_type":   "CPF",
-                "document_number": "12345678901",
-            },
-            "email": "customer@example.com",
-        },
-    }
-
-    body, _ := json.Marshal(payload)
-    req, _ := http.NewRequest("POST",
-        "https://api-sandbox.y.uno/v1/payments",
-        bytes.NewBuffer(body),
-    )
-
-    req.Header.Set("public-api-key", "your-public-api-key")
-    req.Header.Set("private-secret-key", "your-private-secret-key")
-    req.Header.Set("account-code", "your-account-code")
-    req.Header.Set("Content-Type", "application/json")
-
-    resp, err := http.DefaultClient.Do(req)
-    ```
-
-    ```java Java
-    String body = """
-        {
-          "checkout_session": "your-checkout-session-id",
-          "payment_method": { "type": "CARD" },
-          "amount": { "currency": "BRL", "value": 100.00 },
-          "country": "BR",
-          "customer": {
-            "document": {
-              "document_type": "CPF",
-              "document_number": "12345678901"
-            },
-            "email": "customer@example.com"
-          }
-        }
-        """;
-
-    HttpRequest request = HttpRequest.newBuilder()
-        .uri(URI.create("https://api-sandbox.y.uno/v1/payments"))
-        .header("public-api-key", "your-public-api-key")
-        .header("private-secret-key", "your-private-secret-key")
-        .header("account-code", "your-account-code")
-        .header("Content-Type", "application/json")
-        .POST(HttpRequest.BodyPublishers.ofString(body))
-        .build();
-
-    HttpResponse<String> response = client.send(request,
-        HttpResponse.BodyHandlers.ofString());
+    payment = payment_response.json()
+    print(f"Payment ID: {payment['id']}")
+    print(f"Status: {payment['status']}")
+    # Expected: "SUCCEEDED"
     ```
     </CodeGroup>
-
-    ### Other Country Examples
-
-    The example above uses Brazil (BRL/CPF). Below are equivalent payment examples for Mexico and Colombia.
-
-    <Tabs>
-      <Tab title="Mexico — OXXO">
-        OXXO is a cash voucher payment method popular in Mexico. The customer receives a voucher to pay at any OXXO convenience store.
-
-        ```bash cURL
-        curl -X POST https://api-sandbox.y.uno/v1/payments \
-          -H "public-api-key: your-public-api-key" \
-          -H "private-secret-key: your-private-secret-key" \
-          -H "account-code: your-account-code" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "checkout_session": "your-checkout-session-id",
-            "payment_method": {
-              "type": "OXXO"
-            },
-            "amount": {
-              "currency": "MXN",
-              "value": 500.00
-            },
-            "country": "MX",
-            "customer": {
-              "email": "cliente@example.com"
-            }
-          }'
-        ```
-      </Tab>
-      <Tab title="Colombia — PSE">
-        PSE (Pagos Seguros en Linea) is a bank transfer method used in Colombia. It requires a Colombian identification document (CC or NIT).
-
-        ```bash cURL
-        curl -X POST https://api-sandbox.y.uno/v1/payments \
-          -H "public-api-key: your-public-api-key" \
-          -H "private-secret-key: your-private-secret-key" \
-          -H "account-code: your-account-code" \
-          -H "Content-Type: application/json" \
-          -d '{
-            "checkout_session": "your-checkout-session-id",
-            "payment_method": {
-              "type": "PSE"
-            },
-            "amount": {
-              "currency": "COP",
-              "value": 50000
-            },
-            "country": "CO",
-            "customer": {
-              "document": {
-                "document_type": "CC",
-                "document_number": "1234567890"
-              },
-              "email": "cliente@example.com"
-            }
-          }'
-        ```
-      </Tab>
-    </Tabs>
   </Step>
 
   <Step title="Handle the response">
     Check the payment status in the response:
 
-    - `SUCCEEDED` — Payment completed successfully
-    - `PENDING` — Payment is awaiting confirmation (common for PIX, Boleto)
-    - `DECLINED` — Payment was declined by the provider
-    - `REJECTED` — Payment was rejected due to validation errors
+    | Status | Meaning | Action |
+    |--------|---------|--------|
+    | `SUCCEEDED` | Payment completed successfully | Fulfill the order |
+    | `PENDING` | Awaiting confirmation (PIX, Boleto, OXXO) | Show pending UI; wait for webhook |
+    | `DECLINED` | Declined by the provider/issuer | Show error; let customer retry with different method |
+    | `REJECTED` | Rejected due to validation errors | Check error details and fix the request |
 
-    For asynchronous payment methods (PIX, Boleto, OXXO), set up [webhooks](/guides/webhooks/setup) to receive status updates.
+    For asynchronous payment methods (PIX, Boleto, OXXO), the initial response will be `PENDING`. The final status arrives via [webhook](/guides/webhooks/setup).
   </Step>
 </Steps>
+
+## Verify the Payment
+
+Check your payment in two ways:
+
+### Via the API
+
+```bash
+curl https://api-sandbox.y.uno/v1/payments/YOUR_PAYMENT_ID \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "account-code: $YUNO_ACCOUNT_CODE"
+```
+
+### Via the Dashboard
+
+Navigate to **Dashboard > Payments** to see your test payment with its status, amount, and provider details.
+
+## What Just Happened?
+
+```
+1. Checkout Session         2. Payment Created          3. Routed & Processed
+   POST /checkout/sessions     POST /payments              Yuno Testing Gateway
+   -> session ID               -> payment with              simulated an approved
+                                  test card data             card transaction
+
+4. Response Returned        5. Webhook Sent (async)
+   status: "SUCCEEDED"        payment.succeeded
+   payment ID returned         to your endpoint
+```
+
+1. You created a **checkout session** that defined the purchase intent (amount, currency, country)
+2. You created a **payment** using that session with a test card
+3. Yuno routed the transaction to the **Testing Gateway** (sandbox's built-in simulated provider)
+4. The Testing Gateway approved the transaction and returned `SUCCEEDED`
+5. If you have webhooks configured, Yuno sent a `payment.succeeded` event to your endpoint
+
+## Try Different Outcomes
+
+Swap the test card number to simulate different scenarios:
+
+| Card | Result |
+|------|--------|
+| `4111 1111 1111 1111` | Approved |
+| `4000 0000 0000 0002` | Declined (insufficient funds) |
+| `4000 0000 0000 3220` | 3DS challenge required |
+| `4000 0000 0000 0051` | Timeout |
+
+See [Test Cards](/guides/testing/test-cards) for the complete list.
 
 ## Next Steps
 
@@ -385,11 +340,17 @@ description: "Create your first payment with Yuno in minutes"
   <Card title="Authentication" icon="lock" href="/getting-started/authentication">
     Learn about authentication headers and security best practices.
   </Card>
+  <Card title="How Payments Work" icon="arrows-spin" href="/getting-started/how-payments-work">
+    Understand the end-to-end payment flow through Yuno.
+  </Card>
+  <Card title="Webhook Setup" icon="bell" href="/guides/webhooks/setup">
+    Receive real-time payment notifications.
+  </Card>
   <Card title="SDK Integration" icon="window" href="/guides/sdk/overview">
     Use the Yuno SDK for a pre-built checkout experience.
   </Card>
-  <Card title="Payment Methods" icon="credit-card" href="/guides/payment-flows/card">
-    Explore integration guides for specific payment methods.
+  <Card title="Test Cards" icon="credit-card" href="/guides/testing/test-cards">
+    Simulate different payment outcomes in sandbox.
   </Card>
   <Card title="API Reference" icon="code" href="/api-reference/introduction">
     Browse all available API endpoints.

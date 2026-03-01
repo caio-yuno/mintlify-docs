@@ -1,66 +1,127 @@
 ---
 title: "Test Cards"
-description: "Test card numbers for simulating different payment outcomes in sandbox"
+description: "Test card numbers and payment data for simulating different payment outcomes in the Yuno sandbox"
 ---
 
 ## Overview
 
-Use these test card numbers in the Yuno sandbox environment to simulate various payment outcomes. These cards work with any expiry date in the future and any 3-digit CVV.
+Use these test card numbers in the Yuno sandbox environment to simulate various payment outcomes -- approvals, declines, 3DS challenges, and error conditions. These cards work with any future expiry date and any CVV.
 
 <Warning>
 Test cards only work in the **sandbox environment** (`api-sandbox.y.uno`). Never use real card numbers in sandbox or test card numbers in production.
 </Warning>
 
-## Test Card Numbers
+## Shared Test Card Details
 
-### Successful Payments
-
-| Card Number | Brand | Result | Description |
-|-------------|-------|--------|-------------|
-| `4111111111111111` | Visa | Approved | Standard successful payment |
-| `5500000000000004` | Mastercard | Approved | Standard successful payment |
-| `378282246310005` | Amex | Approved | American Express approved |
-| `6011111111111117` | Discover | Approved | Discover approved |
-
-### Declined Payments
-
-| Card Number | Brand | Result | Decline Reason |
-|-------------|-------|--------|----------------|
-| `4000000000000002` | Visa | Declined | Generic decline |
-| `4000000000000069` | Visa | Declined | Expired card |
-| `4000000000000127` | Visa | Declined | Incorrect CVV |
-| `4000000000009995` | Visa | Declined | Insufficient funds |
-| `4000000000000119` | Visa | Declined | Processing error |
-
-### 3DS Authentication
-
-| Card Number | Brand | Result | 3DS Behavior |
-|-------------|-------|--------|--------------|
-| `4000000000003220` | Visa | 3DS Required | Full 3DS challenge flow |
-| `4000000000003063` | Visa | 3DS Frictionless | 3DS passes without challenge |
-| `4000000000003097` | Visa | 3DS Failed | 3DS authentication fails |
-
-### Special Scenarios
-
-| Card Number | Brand | Result | Scenario |
-|-------------|-------|--------|----------|
-| `4000000000000259` | Visa | Pending | Async payment processing |
-| `4000000000003436` | Visa | Requires Action | Redirect required |
-
-## Test Card Details
-
-For all test cards, use:
+For **all** test cards below, use these values:
 
 | Field | Value |
 |-------|-------|
 | **Expiry Month** | Any future month (e.g., `12`) |
 | **Expiry Year** | Any future year (e.g., `2028`) |
-| **CVV** | Any 3 digits (e.g., `123`), 4 digits for Amex |
+| **CVV** | Any 3 digits (e.g., `123`); 4 digits for Amex (e.g., `1234`) |
 | **Cardholder Name** | Any name (e.g., `Test User`) |
+
+---
+
+## Successful Payments
+
+| Card Number | Brand | Result | Description |
+|-------------|-------|--------|-------------|
+| `4111 1111 1111 1111` | Visa | **Approved** | Standard successful payment |
+| `5500 0000 0000 0004` | Mastercard | **Approved** | Standard successful payment |
+| `3782 8224 6310 005` | American Express | **Approved** | Amex approved (4-digit CVV) |
+| `6011 1111 1111 1117` | Discover | **Approved** | Discover approved |
+| `3530 1113 3330 0000` | JCB | **Approved** | JCB approved |
+
+---
+
+## Declined Payments
+
+### Soft Declines (Retriable)
+
+These declines may succeed if retried (e.g., after the customer adds funds). Your integration should allow the customer to retry.
+
+| Card Number | Brand | Decline Code | Scenario |
+|-------------|-------|--------------|----------|
+| `4000 0000 0000 0002` | Visa | `INSUFFICIENT_FUNDS` | Card has insufficient funds |
+| `5500 0000 0000 0012` | Mastercard | `GENERIC_DECLINE` | Generic soft decline |
+
+### Hard Declines (Do Not Retry)
+
+These declines indicate a permanent issue. Your integration should not retry and should prompt the customer to use a different payment method.
+
+| Card Number | Brand | Decline Code | Scenario |
+|-------------|-------|--------------|----------|
+| `4000 0000 0000 0010` | Visa | `DO_NOT_HONOR` | Issuer refuses transaction |
+| `4000 0000 0000 0028` | Visa | `INVALID_CARD` | Card number is invalid |
+| `4000 0000 0000 0036` | Visa | `EXPIRED_CARD` | Card is expired |
+| `4000 0000 0000 0044` | Visa | `STOLEN_CARD` | Card reported stolen |
+| `4000 0000 0000 0069` | Visa | `EXPIRED_CARD` | Expired card (alternate) |
+| `4000 0000 0000 0127` | Visa | `INCORRECT_CVV` | CVV does not match |
+| `4000 0000 0000 9995` | Visa | `INSUFFICIENT_FUNDS` | Insufficient funds |
+| `4000 0000 0000 0119` | Visa | `PROCESSING_ERROR` | Processing error at provider |
+
+---
+
+## 3DS Authentication
+
+3D Secure adds an authentication step to card payments. Use these cards to test different 3DS outcomes.
+
+### Frictionless Flow (No Customer Interaction)
+
+The issuer authenticates silently based on risk signals. No redirect or challenge is shown.
+
+| Card Number | 3DS Version | Result | Description |
+|-------------|-------------|--------|-------------|
+| `4000 0000 0000 3063` | 3DS2 | **Frictionless Success** | 3DS passes without challenge |
+| `4000 0000 0000 0085` | 3DS2 | **Frictionless Success** | Authenticated silently |
+| `4000 0000 0000 0093` | 3DS2 | **Frictionless Failure** | Authentication denied silently |
+
+**Expected flow:**
+1. Create payment with card token
+2. Response returns `status: SUCCEEDED` directly (no redirect)
+3. `payment_method.three_d_secure.status` = `AUTHENTICATED`
+
+### Challenge Flow (Customer Interaction Required)
+
+The issuer requires the customer to complete a challenge (SMS code, biometric, etc.).
+
+| Card Number | 3DS Version | Result | Description |
+|-------------|-------------|--------|-------------|
+| `4000 0000 0000 3220` | 3DS2 | **Challenge Required** | Full 3DS challenge flow |
+| `4000 0000 0000 0101` | 3DS2 | **Challenge Success** | Customer completes challenge |
+| `4000 0000 0000 0119` | 3DS2 | **Challenge Failed** | Customer fails/abandons challenge |
+| `4000 0000 0000 3097` | 3DS2 | **3DS Failed** | 3DS authentication fails |
+
+**Expected flow:**
+1. Create payment with card token
+2. Response returns `status: PENDING` and `redirect_url`
+3. Redirect the customer to `redirect_url`
+4. In sandbox, a simulated challenge page appears
+5. Customer completes (or fails) the challenge
+6. Customer is redirected back to your `callback_url`
+7. Final payment status delivered via webhook
+
+---
+
+## Special Scenarios
+
+| Card Number | Brand | Behavior | Use Case |
+|-------------|-------|----------|----------|
+| `4000 0000 0000 0259` | Visa | **Pending** | Async payment processing (resolves via webhook) |
+| `4000 0000 0000 3436` | Visa | **Requires Action** | Redirect required (e.g., bank authentication) |
+| `4000 0000 0000 0051` | Visa | **Timeout** | Simulates slow provider (30s delay, then timeout error) |
+| `4000 0000 0000 0069` | Visa | **Gateway Error** | Provider returns 500 internal server error |
+| `4000 0000 0000 0077` | Visa | **Pending (async)** | Payment resolves asynchronously via webhook |
+
+---
 
 ## Test Customer Data
 
-Use these values for customer fields in sandbox:
+Use these values for customer fields in sandbox requests:
+
+### Brazil (BR)
 
 ```json
 {
@@ -80,25 +141,194 @@ Use these values for customer fields in sandbox:
 }
 ```
 
+### Colombia (CO)
+
+```json
+{
+  "customer": {
+    "email": "test@example.com",
+    "first_name": "Test",
+    "last_name": "User",
+    "document": {
+      "document_type": "CC",
+      "document_number": "1234567890"
+    },
+    "phone": {
+      "country_code": "57",
+      "number": "3001234567"
+    }
+  }
+}
+```
+
+### Mexico (MX)
+
+```json
+{
+  "customer": {
+    "email": "test@example.com",
+    "first_name": "Test",
+    "last_name": "User",
+    "document": {
+      "document_type": "CURP",
+      "document_number": "ABCD010101HDFRRN01"
+    },
+    "phone": {
+      "country_code": "52",
+      "number": "5551234567"
+    }
+  }
+}
+```
+
+### Argentina (AR)
+
+```json
+{
+  "customer": {
+    "email": "test@example.com",
+    "first_name": "Test",
+    "last_name": "User",
+    "document": {
+      "document_type": "DNI",
+      "document_number": "12345678"
+    },
+    "phone": {
+      "country_code": "54",
+      "number": "1112345678"
+    }
+  }
+}
+```
+
+### Chile (CL)
+
+```json
+{
+  "customer": {
+    "email": "test@example.com",
+    "first_name": "Test",
+    "last_name": "User",
+    "document": {
+      "document_type": "RUT",
+      "document_number": "111111111"
+    },
+    "phone": {
+      "country_code": "56",
+      "number": "912345678"
+    }
+  }
+}
+```
+
 <Note>
-Document validation is relaxed in sandbox. The CPF number `12345678901` is accepted for testing purposes even though it is not a valid CPF.
+Document validation is relaxed in sandbox. Test document numbers like `12345678901` (CPF) are accepted even though they are not valid in real life.
 </Note>
+
+---
 
 ## Usage Example
 
-```javascript
-const payment = await fetch('https://api-sandbox.y.uno/v1/payments', {
-  method: 'POST',
-  headers: { /* sandbox auth headers */ },
-  body: JSON.stringify({
-    checkout_session: 'session-id',
-    payment_method: {
-      type: 'CARD',
-      token: tokenFromTestCard,  // Token created with 4111111111111111
+Complete example of creating a test payment with the approved Visa card:
+
+<CodeGroup>
+```javascript Node.js
+const checkoutResponse = await fetch(
+  'https://api-sandbox.y.uno/v1/checkout/sessions',
+  {
+    method: 'POST',
+    headers: {
+      'public-api-key': process.env.YUNO_PUBLIC_KEY,
+      'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+      'account-code': process.env.YUNO_ACCOUNT_CODE,
+      'Content-Type': 'application/json',
     },
-    amount: { currency: 'USD', value: 10.00 },
-    country: 'CO',
-  }),
-});
-// Expected: 200 with status "SUCCEEDED"
+    body: JSON.stringify({
+      amount: { currency: 'USD', value: 10.00 },
+      country: 'CO',
+      merchant_order_id: `test-${Date.now()}`,
+    }),
+  }
+);
+
+const { checkout_session } = await checkoutResponse.json();
+
+const paymentResponse = await fetch(
+  'https://api-sandbox.y.uno/v1/payments',
+  {
+    method: 'POST',
+    headers: {
+      'public-api-key': process.env.YUNO_PUBLIC_KEY,
+      'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+      'account-code': process.env.YUNO_ACCOUNT_CODE,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      checkout_session,
+      payment_method: { type: 'CARD', token: 'test-token' },
+      amount: { currency: 'USD', value: 10.00 },
+      country: 'CO',
+      customer: { email: 'test@example.com' },
+    }),
+  }
+);
+
+const payment = await paymentResponse.json();
+console.log(`Payment status: ${payment.status}`);
+// Expected: "SUCCEEDED" (with card 4111111111111111)
 ```
+
+```python Python
+import requests
+import os
+import time
+
+BASE_URL = 'https://api-sandbox.y.uno'
+headers = {
+    'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+    'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+    'account-code': os.environ['YUNO_ACCOUNT_CODE'],
+    'Content-Type': 'application/json',
+}
+
+# Create checkout session
+session_resp = requests.post(
+    f'{BASE_URL}/v1/checkout/sessions',
+    headers=headers,
+    json={
+        'amount': {'currency': 'USD', 'value': 10.00},
+        'country': 'CO',
+        'merchant_order_id': f'test-{int(time.time())}',
+    },
+)
+checkout_session = session_resp.json()['checkout_session']
+
+# Create payment
+payment_resp = requests.post(
+    f'{BASE_URL}/v1/payments',
+    headers=headers,
+    json={
+        'checkout_session': checkout_session,
+        'payment_method': {'type': 'CARD', 'token': 'test-token'},
+        'amount': {'currency': 'USD', 'value': 10.00},
+        'country': 'CO',
+        'customer': {'email': 'test@example.com'},
+    },
+)
+
+payment = payment_resp.json()
+print(f"Payment status: {payment['status']}")
+# Expected: "SUCCEEDED" (with card 4111111111111111)
+```
+</CodeGroup>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Test Scenarios" icon="list-check" href="/guides/testing/test-scenarios">
+    End-to-end test checklists for common payment flows.
+  </Card>
+  <Card title="Testing Gateway" icon="flask" href="/guides/testing/yuno-testing-gateway">
+    Learn about the built-in simulated payment provider.
+  </Card>
+</CardGroup>
