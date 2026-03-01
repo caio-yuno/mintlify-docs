@@ -7,7 +7,7 @@ description: "Payment provider abstraction, smart routing, and failover configur
 
 A provider in Yuno is a payment processor, acquirer, or gateway that executes transactions. Yuno abstracts the complexity of individual provider APIs behind a unified interface, so you integrate once and route to any connected provider.
 
-Examples of providers include Stripe, Adyen, Mercado Pago, dLocal, PagSeguro, and dozens of regional acquirers across Latin America and globally.
+Examples include Stripe, Adyen, Mercado Pago, dLocal, PagSeguro, and dozens of regional acquirers across Latin America and globally.
 
 ## Multi-Provider Architecture
 
@@ -18,10 +18,10 @@ Examples of providers include Stripe, Adyen, Mercado Pago, dLocal, PagSeguro, an
                           |
            +--------------+--------------+
            |              |              |
-     +-----+-----+  +----+----+  +------+------+
+     +-----+-----+  +----+-----+  +-----+------+
      | Provider A |  | Provider B|  | Provider C |
      | (Primary)  |  | (Fallback)|  | (Regional) |
-     +-----------+  +----------+  +-------------+
+     +-----------+  +----------+  +------------+
 ```
 
 You can connect multiple providers for the same payment method and country. Yuno selects the optimal provider for each transaction based on your routing rules.
@@ -39,19 +39,21 @@ Smart routing determines which provider processes each transaction. Configure ro
 | **Custom rules** | Route based on BIN, amount, payment method, or metadata | Advanced orchestration |
 
 <Note>
-  Smart routing decisions are made per-transaction, not per-payment. If a payment cascades to a second provider, the routing engine evaluates the best option for the retry independently.
+Smart routing decisions are made per-transaction, not per-payment. If a payment cascades to a second provider, the routing engine evaluates the best option for the retry independently.
 </Note>
 
 ## Failover and Cascading
 
-When a provider declines or fails to respond, Yuno can automatically retry with the next provider in your routing configuration.
+When a provider declines or fails to respond, Yuno can automatically retry with the next provider in your routing configuration. This creates multiple [transactions](/core-concepts/transactions) under the same payment:
 
 ```
-Transaction 1: Provider A  -->  DECLINED (insufficient funds)
-Transaction 2: Provider B  -->  SUCCEEDED
+Payment:
+  Transaction 1: Provider A  -->  DECLINED (insufficient funds)
+  Transaction 2: Provider B  -->  SUCCEEDED
+  Final Status: SUCCEEDED
 ```
 
-Configure cascading behavior:
+Configure cascading behavior in **Dashboard > Routing**:
 
 | Setting | Description |
 |---------|-------------|
@@ -60,7 +62,7 @@ Configure cascading behavior:
 | **Exclude on** | Which decline codes should NOT retry (e.g., fraud, lost card) |
 
 <Warning>
-  Not all declines should trigger a cascade. Hard declines (stolen card, fraud) should not be retried with another provider. Configure your exclude rules to prevent unnecessary retries.
+Not all declines should trigger a cascade. Hard declines (stolen card, fraud) should not be retried with another provider. Configure your exclude rules to prevent unnecessary retries.
 </Warning>
 
 ## Provider Configuration
@@ -84,7 +86,7 @@ Set up providers in **Dashboard > Providers**:
 
 ## Provider Response Mapping
 
-Yuno normalizes provider responses into a standard format. The raw provider response is preserved in the [transaction](/core-concepts/transactions) for debugging:
+Yuno normalizes provider responses into a standard format. The raw provider response is preserved in the [transaction](/core-concepts/transactions) `provider_data` field for debugging:
 
 | Yuno Status | Typical Provider Meaning |
 |-------------|-------------------------|
@@ -92,3 +94,31 @@ Yuno normalizes provider responses into a standard format. The raw provider resp
 | `DECLINED` | Insufficient funds, do not honor, restricted card |
 | `REJECTED` | Invalid data, fraud suspicion |
 | `FAILED` | Timeout, network error, provider outage |
+
+The `provider_data` object includes:
+
+```json
+{
+  "provider_data": {
+    "id": "STRIPE",
+    "transaction_id": "pi_3abc123",
+    "status": "SUCCEEDED",
+    "status_detail": "SUCCEEDED",
+    "response_code": "SUCCEEDED",
+    "response_message": null,
+    "iso8583_response_code": "00",
+    "iso8583_response_message": "Approved or completed successfully"
+  }
+}
+```
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Transactions" icon="arrow-right-arrow-left" href="/core-concepts/transactions">
+    See how cascading creates multiple transactions per payment.
+  </Card>
+  <Card title="Payment Flow" icon="arrow-right" href="/core-concepts/payment-flow">
+    Understand the complete payment lifecycle.
+  </Card>
+</CardGroup>

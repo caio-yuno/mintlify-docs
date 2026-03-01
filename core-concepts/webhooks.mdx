@@ -7,18 +7,27 @@ description: "Receive real-time event notifications for payment status changes"
 
 Webhooks are HTTP POST requests that Yuno sends to your server when events occur -- such as a payment succeeding, being declined, or a refund being processed. They are essential for asynchronous payment methods (PIX, Boleto, OXXO) where the customer completes payment after the initial API call.
 
+## Why You Need Webhooks
+
+- **Asynchronous payments**: PIX, Boleto, OXXO, and bank transfers complete _after_ the API response. Without webhooks, you would not know when the customer paid.
+- **Status changes**: Payments can transition states after the initial response (e.g., a pending authorization captured later).
+- **Reliability**: Network issues may prevent your server from receiving the synchronous API response. Webhooks provide a second delivery path.
+
 ## Setting Up Webhooks
 
 Configure your webhook endpoint in **Dashboard > Settings > Webhooks**:
 
 <Steps>
   <Step title="Add endpoint URL">
-    Enter the HTTPS URL where Yuno should send event notifications. This must be a publicly accessible endpoint.
+    Enter the HTTPS URL where Yuno should send event notifications. This must be a publicly accessible endpoint that returns HTTP 200 within 30 seconds.
   </Step>
   <Step title="Select events">
-    Choose which event types you want to receive (e.g., `payment.succeeded`, `payment.failed`, `payment.declined`).
+    Choose which event types you want to receive (e.g., `payment.succeeded`, `payment.declined`, `refund.succeeded`).
   </Step>
-  <Step title="Save and test">
+  <Step title="Copy webhook secret">
+    Save the webhook secret displayed in the Dashboard. You will use it to [verify signatures](#signature-verification).
+  </Step>
+  <Step title="Test the endpoint">
     Use the Dashboard's test feature to send a sample event to your endpoint and verify it responds with HTTP 200.
   </Step>
 </Steps>
@@ -29,12 +38,10 @@ Configure your webhook endpoint in **Dashboard > Settings > Webhooks**:
 |-------|-------------|---------------|
 | `payment.created` | A new payment was created | After `POST /v1/payments` |
 | `payment.succeeded` | Payment was captured successfully | After successful capture |
-| `payment.failed` | Payment processing failed (timeout, provider error) | After a processing error |
-| `payment.declined` | Payment was declined by issuer or provider | After provider/issuer decline |
-| `payment.cancelled` | Payment was cancelled or voided | After cancellation request |
-| `payment.expired` | Payment authorization expired without capture | After authorization window closes |
-| `payment.refunded` | Full refund was processed | After successful full refund |
-| `payment.partially_refunded` | Partial refund was processed | After successful partial refund |
+| `payment.declined` | Payment was declined by provider | After provider decline |
+| `payment.cancelled` | Payment was cancelled | After cancellation request |
+| `refund.succeeded` | Refund was processed | After successful refund |
+| `refund.failed` | Refund attempt failed | After refund failure |
 
 ## Payload Structure
 
@@ -43,9 +50,9 @@ Every webhook delivery includes a JSON payload with the event type, timestamp, a
 ```json
 {
   "event_type": "payment.succeeded",
-  "timestamp": "2026-02-28T14:30:00Z",
+  "timestamp": "2026-03-01T14:30:00Z",
   "data": {
-    "payment_id": "pay_abc123",
+    "payment_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
     "status": "SUCCEEDED",
     "amount": {
       "currency": "BRL",
@@ -57,10 +64,101 @@ Every webhook delivery includes a JSON payload with the event type, timestamp, a
     "country": "BR",
     "merchant_order_id": "order-9876",
     "provider": "provider_a",
-    "created_at": "2026-02-28T14:29:55Z"
+    "created_at": "2026-03-01T14:29:55Z"
   }
 }
 ```
+
+## Implementing a Webhook Handler
+
+<CodeGroup>
+```javascript Node.js (Express)
+const express = require('express');
+const crypto = require('crypto');
+const app = express();
+
+app.post('/webhooks/yuno', express.raw({ type: 'application/json' }), (req, res) => {
+  const signature = req.headers['x-yuno-signature'];
+  const body = req.body;
+
+  // 1. Verify the signature
+  if (!verifySignature(body, signature, process.env.YUNO_WEBHOOK_SECRET)) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  // 2. Respond immediately with 200
+  res.status(200).send('OK');
+
+  // 3. Process the event asynchronously
+  const event = JSON.parse(body);
+  processEvent(event).catch(console.error);
+});
+
+function verifySignature(body, signature, secret) {
+  const computed = crypto
+    .createHmac('sha256', secret)
+    .update(body, 'utf8')
+    .digest('hex');
+  return crypto.timingSafeEqual(
+    Buffer.from(computed),
+    Buffer.from(signature)
+  );
+}
+
+async function processEvent(event) {
+  switch (event.event_type) {
+    case 'payment.succeeded':
+      await fulfillOrder(event.data.merchant_order_id);
+      break;
+    case 'payment.declined':
+      await notifyCustomer(event.data.merchant_order_id, 'declined');
+      break;
+    case 'refund.succeeded':
+      await updateRefundStatus(event.data.payment_id);
+      break;
+  }
+}
+```
+
+```python Python (Flask)
+import hmac
+import hashlib
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+@app.route('/webhooks/yuno', methods=['POST'])
+def handle_webhook():
+    signature = request.headers.get('X-Yuno-Signature')
+    body = request.get_data()
+
+    # 1. Verify the signature
+    if not verify_signature(body, signature, YUNO_WEBHOOK_SECRET):
+        return jsonify({'error': 'Invalid signature'}), 401
+
+    # 2. Parse the event
+    event = request.get_json()
+
+    # 3. Process the event
+    if event['event_type'] == 'payment.succeeded':
+        fulfill_order(event['data']['merchant_order_id'])
+    elif event['event_type'] == 'payment.declined':
+        notify_customer(event['data']['merchant_order_id'], 'declined')
+    elif event['event_type'] == 'refund.succeeded':
+        update_refund_status(event['data']['payment_id'])
+
+    # 4. Respond with 200
+    return jsonify({'received': True}), 200
+
+def verify_signature(body, signature, secret):
+    computed = hmac.new(
+        secret.encode('utf-8'),
+        body,
+        hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(computed, signature)
+```
+</CodeGroup>
 
 ## Delivery and Retry Policy
 
@@ -75,7 +173,7 @@ Yuno expects your endpoint to respond with HTTP **200** within **30 seconds**. I
 | 5th retry | 12 hours |
 
 <Warning>
-  After all retry attempts are exhausted, the event is marked as failed. You can manually re-trigger delivery from the Dashboard or use the API to retrieve missed events.
+After all retry attempts are exhausted, the event is marked as failed. You can manually re-trigger delivery from the Dashboard or use the API to retrieve missed events.
 </Warning>
 
 ## Signature Verification
@@ -84,33 +182,38 @@ Yuno signs every webhook payload so you can verify it was sent by Yuno and was n
 
 To verify:
 
-1. Extract the `X-Yuno-Signature` header from the request
-2. Compute an HMAC-SHA256 of the raw request body using your webhook secret (found in Dashboard)
-3. Compare the computed signature with the received header value
-
-```javascript
-const crypto = require('crypto');
-
-function verifyWebhookSignature(body, signature, secret) {
-  const computed = crypto
-    .createHmac('sha256', secret)
-    .update(body, 'utf8')
-    .digest('hex');
-  return crypto.timingSafeEqual(
-    Buffer.from(computed),
-    Buffer.from(signature)
-  );
-}
-```
+<Steps>
+  <Step title="Extract the signature">
+    Read the `X-Yuno-Signature` header from the incoming request.
+  </Step>
+  <Step title="Compute the expected signature">
+    Create an HMAC-SHA256 hash of the raw request body using your webhook secret (from Dashboard).
+  </Step>
+  <Step title="Compare securely">
+    Use a constant-time comparison to prevent timing attacks.
+  </Step>
+</Steps>
 
 <Warning>
-  Always verify webhook signatures in production. Without verification, attackers could send fake events to your endpoint and trigger unauthorized actions (e.g., marking orders as paid).
+Always verify webhook signatures in production. Without verification, attackers could send fake events to your endpoint and trigger unauthorized actions (e.g., marking orders as paid).
 </Warning>
 
 ## Best Practices
 
-- **Respond quickly**: Return HTTP 200 immediately, then process the event asynchronously
-- **Handle duplicates**: Yuno may deliver the same event more than once; use `payment_id` as an idempotency key
-- **Verify signatures**: Always validate the `X-Yuno-Signature` header in production
-- **Log everything**: Store raw webhook payloads for debugging and audit trails
-- **Use HTTPS**: Webhook endpoints must use HTTPS for security
+- **Respond quickly**: Return HTTP 200 immediately, then process the event asynchronously. Heavy processing in the request handler risks timeouts.
+- **Handle duplicates**: Yuno may deliver the same event more than once. Use `payment_id` or `merchant_order_id` as an idempotency key in your handler.
+- **Verify signatures**: Always validate the `X-Yuno-Signature` header in production.
+- **Log everything**: Store raw webhook payloads for debugging and audit trails.
+- **Use HTTPS**: Webhook endpoints must use HTTPS for security.
+- **Monitor failures**: Check the Dashboard for failed webhook deliveries and re-trigger them as needed.
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Idempotency" icon="shield" href="/core-concepts/idempotency">
+    Handle duplicate webhook deliveries safely.
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/core-concepts/error-handling">
+    Full error catalog and retry strategies.
+  </Card>
+</CardGroup>

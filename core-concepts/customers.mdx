@@ -9,44 +9,114 @@ Customer profiles in Yuno store identity information, documents, and associated 
 
 ## Creating a Customer
 
-```bash
+<CodeGroup>
+```bash cURL
 curl -X POST https://api-sandbox.y.uno/v1/customers \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code" \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "merchant_customer_id": "your-internal-id-123",
     "first_name": "Maria",
     "last_name": "Silva",
     "email": "maria@example.com",
+    "gender": "F",
+    "date_of_birth": "1990-02-28",
     "country": "BR",
     "document": {
       "document_type": "CPF",
       "document_number": "12345678901"
+    },
+    "phone": {
+      "number": "11999990000",
+      "country_code": "55"
+    },
+    "billing_address": {
+      "address_line_1": "Rua Example 123",
+      "city": "Sao Paulo",
+      "state": "SP",
+      "country": "BR",
+      "zip_code": "01310-100"
     }
   }'
 ```
 
-The response includes a Yuno-generated `customer_id` that you use in subsequent API calls.
+```javascript Node.js
+const response = await fetch('https://api-sandbox.y.uno/v1/customers', {
+  method: 'POST',
+  headers: {
+    'public-api-key': process.env.YUNO_PUBLIC_KEY,
+    'private-secret-key': process.env.YUNO_PRIVATE_KEY,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    merchant_customer_id: 'your-internal-id-123',
+    first_name: 'Maria',
+    last_name: 'Silva',
+    email: 'maria@example.com',
+    gender: 'F',
+    date_of_birth: '1990-02-28',
+    country: 'BR',
+    document: {
+      document_type: 'CPF',
+      document_number: '12345678901',
+    },
+    phone: { number: '11999990000', country_code: '55' },
+  }),
+});
+
+const customer = await response.json();
+// customer.id => Yuno-generated customer ID (UUID)
+```
+
+```python Python
+import requests
+import os
+
+response = requests.post(
+    'https://api-sandbox.y.uno/v1/customers',
+    headers={
+        'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+        'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+        'Content-Type': 'application/json',
+    },
+    json={
+        'merchant_customer_id': 'your-internal-id-123',
+        'first_name': 'Maria',
+        'last_name': 'Silva',
+        'email': 'maria@example.com',
+        'country': 'BR',
+        'document': {
+            'document_type': 'CPF',
+            'document_number': '12345678901',
+        },
+    },
+)
+
+customer = response.json()
+# customer['id'] => Yuno-generated customer ID
+```
+</CodeGroup>
+
+The only required field is `merchant_customer_id` (your internal user identifier). However, providing more customer information improves approval rates, conversion, and fraud prevention.
 
 ## Customer Identifiers
 
 | Identifier | Source | Purpose |
-|------------|--------|---------|
-| `customer_id` | Yuno-generated | Primary key for Yuno API calls |
+|------------|--------|--------|
+| `id` (or `customer_id`) | Yuno-generated (UUID) | Primary key for Yuno API calls |
 | `merchant_customer_id` | Your system | Maps to your internal user ID |
 
 <Note>
-  Always store the Yuno `customer_id` alongside your internal user ID. You need it to retrieve enrolled payment methods, create one-click payments, and manage the customer profile.
+Always store the Yuno `customer_id` alongside your internal user ID. You need it to retrieve enrolled payment methods, create one-click payments, and manage the customer profile.
 </Note>
 
 ## Document Types
 
-Many payment methods -- especially in Latin America -- require customer identification documents. Yuno supports the following document types:
+Many payment methods -- especially in Latin America -- require customer identification documents:
 
 | Document Type | Country | Format | Example |
-|---------------|---------|--------|---------|
+|---------------|---------|--------|--------|
 | `CPF` | Brazil | 11 digits | `12345678901` |
 | `CNPJ` | Brazil | 14 digits | `12345678000195` |
 | `CC` | Colombia | 6-10 digits | `1234567890` |
@@ -55,24 +125,24 @@ Many payment methods -- especially in Latin America -- require customer identifi
 | `RUT` | Chile | 8-9 chars | `12345678K` |
 | `DNI` | Argentina, Peru | 7-8 digits | `12345678` |
 | `CURP` | Mexico | 18 chars | `ABCD123456HDFRRL09` |
+| `SSN` | United States | 9 digits | `123456789` |
 | `PASSPORT` | Global | Varies | `AB1234567` |
 
 <Warning>
-  Document numbers must be sent as digits only (no dots, dashes, or formatting). For example, a CPF of `123.456.789-01` should be sent as `12345678901`.
+Document numbers must be sent as **digits only** (no dots, dashes, or formatting). For example, a CPF of `123.456.789-01` should be sent as `12345678901`.
 </Warning>
 
 ## Associating Payment Methods
 
-When a customer completes a payment with `"vaulted_token": true`, the payment method is automatically associated with their profile. You can retrieve all enrolled methods for a customer:
+Save payment methods for future use by enrolling them with the customer. See [Payment Methods](/core-concepts/payment-methods) for enrollment details.
+
+Retrieve all enrolled payment methods for a customer:
 
 ```bash
-curl -X GET https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
+curl -X GET https://api-sandbox.y.uno/v1/customers/{customer_id}/payment-methods/{payment_method_id} \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY"
 ```
-
-This returns a list of vaulted payment methods (masked card numbers, PIX keys, etc.) that can be used for one-click checkout.
 
 ## Customer in Payments
 
@@ -81,7 +151,7 @@ Include customer details in payment requests to satisfy payment-method-specific 
 ```json
 {
   "customer": {
-    "customer_id": "yuno-customer-id",
+    "customer_id": "c9d0e1f2-3a4b-5c6d-7e8f-9a0b1c2d3e4f",
     "document": {
       "document_type": "CPF",
       "document_number": "12345678901"
@@ -92,5 +162,31 @@ Include customer details in payment requests to satisfy payment-method-specific 
 ```
 
 <Note>
-  If you pass `customer_id`, Yuno pulls stored profile data. You can still override specific fields (like `email`) in the same request.
+If you pass `customer_id`, Yuno pulls stored profile data. You can still override specific fields (like `email`) in the same request.
 </Note>
+
+## Customer in Checkout Sessions
+
+Link a customer to a checkout session to enable one-click checkout. Pass the `customer_id` when creating the session:
+
+```json
+{
+  "amount": { "currency": "BRL", "value": 100.00 },
+  "country": "BR",
+  "merchant_order_id": "order-001",
+  "customer_id": "c9d0e1f2-3a4b-5c6d-7e8f-9a0b1c2d3e4f"
+}
+```
+
+When a customer ID is linked, the Yuno SDK can display previously saved payment methods for quick re-use.
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Payment Methods" icon="credit-card" href="/core-concepts/payment-methods">
+    Enroll and manage customer payment methods.
+  </Card>
+  <Card title="Tokens" icon="key" href="/core-concepts/tokens">
+    Understand vaulted tokens for returning customers.
+  </Card>
+</CardGroup>

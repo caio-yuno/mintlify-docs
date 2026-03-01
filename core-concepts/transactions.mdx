@@ -8,9 +8,14 @@ description: "Understand the relationship between payments and individual proces
 A **payment** represents the merchant's intent to collect funds. A **transaction** represents a single processing attempt against a provider. One payment can have multiple transactions when Yuno retries or cascades across providers.
 
 ```
-Payment (1)  ──>  Transaction 1: Provider A (DECLINED)
-             ──>  Transaction 2: Provider B (SUCCEEDED)  <-- final result
+Payment (order-123)
+  |
+  +-- Transaction 1: Provider A  -->  DECLINED (insufficient funds)
+  |
+  +-- Transaction 2: Provider B  -->  SUCCEEDED  <-- final result
 ```
+
+The payment status reflects the **final outcome** across all transactions. If the first transaction is declined but a cascade succeeds, the payment status is `SUCCEEDED`.
 
 ## Why Multiple Transactions?
 
@@ -18,22 +23,23 @@ Yuno creates additional transactions in these scenarios:
 
 | Scenario | Description |
 |----------|-------------|
-| **Provider decline** | Primary provider declines; Yuno retries with a fallback provider |
+| **Provider decline + cascade** | Primary provider declines; Yuno retries with a fallback provider |
 | **Provider timeout** | Primary provider does not respond within the configured window |
-| **Cascading rules** | Your routing configuration specifies retry behavior across providers |
+| **Cascading rules** | Your [routing configuration](/core-concepts/providers) specifies retry behavior across providers |
 | **Capture** | A separate transaction records the capture of an authorized payment |
 | **Refund** | Each refund (full or partial) creates its own transaction |
+| **Cancellation** | Cancelling an authorized payment creates a cancel transaction |
 
 ## Transaction Types
 
 | Type | Description |
 |------|-------------|
-| `AUTHORIZATION` | Reserves funds on the customer's payment instrument |
+| `AUTHORIZE` | Reserves funds on the customer's payment instrument |
 | `CAPTURE` | Transfers previously authorized funds to the merchant |
 | `SALE` | Combined authorization and capture in a single step (auto-capture) |
 | `REFUND` | Returns captured funds to the customer |
-| `VOID` | Releases an authorization without capturing funds |
-| `CANCELLATION` | Cancels a pending or authorized payment |
+| `CANCEL` | Releases an authorization without capturing funds |
+| `VERIFY` | Zero-amount authorization to verify a card during enrollment |
 
 ## Transaction Statuses
 
@@ -46,52 +52,135 @@ Yuno creates additional transactions in these scenarios:
 | `FAILED` | Processing error (network issue, provider error) |
 | `CANCELLED` | Transaction cancelled before completion |
 
-## Viewing Transactions
+## Transaction Response Structure
 
-Retrieve all transactions for a payment:
-
-```bash
-curl -X GET https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions \
-  -H "public-api-key: your-public-api-key" \
-  -H "private-secret-key: your-private-secret-key" \
-  -H "account-code: your-account-code"
-```
-
-Each transaction includes the provider used, the provider's raw response code, and timing information:
+Each transaction includes the provider used, the provider's raw response, and timing information:
 
 ```json
 {
+  "id": "438bea6c-9061-4416-b824-469c3c05868d",
+  "type": "SALE",
+  "status": "SUCCEEDED",
+  "category": "CARD",
+  "amount": {
+    "captured": 100.00,
+    "currency": "USD",
+    "refunded": 0,
+    "value": 100.00
+  },
+  "merchant_reference": "order-123",
+  "created_at": "2026-03-01T14:30:00.000Z",
+  "updated_at": "2026-03-01T14:30:01.000Z",
+  "provider_data": {
+    "id": "STRIPE",
+    "transaction_id": "pi_3abc123",
+    "account_id": "",
+    "status": "SUCCEEDED",
+    "status_detail": "SUCCEEDED",
+    "response_code": "SUCCEEDED",
+    "response_message": null,
+    "raw_response": {
+      "message": "provider response"
+    },
+    "iso8583_response_code": "00",
+    "iso8583_response_message": "Approved or completed successfully"
+  },
+  "response_code": "SUCCEEDED",
+  "response_message": "Transaction successful",
+  "payment": {
+    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "status": "SUCCEEDED",
+    "amount": {
+      "captured": 100.00,
+      "currency": "USD",
+      "refunded": 0,
+      "value": 100.00
+    }
+  }
+}
+```
+
+### Key Fields
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique transaction identifier (UUID). Used in capture, refund, and cancel endpoints. |
+| `type` | Transaction type (`SALE`, `AUTHORIZE`, `CAPTURE`, `REFUND`, `CANCEL`, `VERIFY`) |
+| `status` | Transaction processing result |
+| `provider_data.id` | Which provider processed this transaction |
+| `provider_data.transaction_id` | The provider's own reference ID |
+| `provider_data.raw_response` | The provider's unmodified response (for debugging) |
+| `provider_data.iso8583_response_code` | ISO 8583 response code when available |
+| `payment` | The parent payment's current status and amounts |
+
+## Cascading Example
+
+When a payment cascades across providers, each attempt creates a separate transaction:
+
+```json
+{
+  "payment": {
+    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "status": "SUCCEEDED"
+  },
   "transactions": [
     {
-      "transaction_id": "txn_001",
+      "id": "txn-001",
       "type": "SALE",
       "status": "DECLINED",
-      "provider": "provider_a",
-      "provider_response_code": "51",
-      "provider_response_message": "Insufficient funds",
-      "created_at": "2026-02-28T10:00:00Z"
+      "provider_data": {
+        "id": "PROVIDER_A",
+        "response_code": "51",
+        "response_message": "Insufficient funds"
+      },
+      "created_at": "2026-03-01T14:30:00.000Z"
     },
     {
-      "transaction_id": "txn_002",
+      "id": "txn-002",
       "type": "SALE",
       "status": "SUCCEEDED",
-      "provider": "provider_b",
-      "provider_response_code": "00",
-      "provider_response_message": "Approved",
-      "created_at": "2026-02-28T10:00:02Z"
+      "provider_data": {
+        "id": "PROVIDER_B",
+        "response_code": "00",
+        "response_message": "Approved"
+      },
+      "created_at": "2026-03-01T14:30:02.000Z"
     }
   ]
 }
 ```
 
-<Note>
-  The `provider_response_code` and `provider_response_message` contain the raw response from the acquirer or issuer. These are useful for debugging declines but vary across providers.
-</Note>
-
 ## Transaction vs Payment Status
 
-The payment status reflects the **final outcome** across all transactions. If the first transaction is declined but a cascade succeeds, the payment status is `SUCCEEDED` even though one transaction was `DECLINED`.
+| Use Case | Look At |
+|----------|---------|
+| **Order fulfillment** | Payment status |
+| **Customer notifications** | Payment status |
+| **Debugging declines** | Transaction status + provider_data |
+| **Analytics / reporting** | Transaction-level data |
+| **Provider performance** | Transaction-level data per provider |
 
 <Warning>
-  Always use the **payment status** for business logic (order fulfillment, notifications to customers). Use transaction-level data only for debugging and analytics.
+Always use the **payment status** for business logic (order fulfillment, notifications to customers). Use transaction-level data only for debugging and analytics.
 </Warning>
+
+<Note>
+The `provider_data.raw_response` and `iso8583_response_code` fields are useful for understanding exactly why a provider declined a transaction. These vary across providers but can be included in support tickets.
+</Note>
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Providers" icon="server" href="/core-concepts/providers">
+    Configure multi-provider routing and cascading.
+  </Card>
+  <Card title="Payment Flow" icon="arrow-right" href="/core-concepts/payment-flow">
+    Understand the complete payment lifecycle.
+  </Card>
+  <Card title="Capture & Cancel" icon="rotate-left" href="/guides/direct-api/capture-and-cancel">
+    Use transaction IDs for capture and cancel operations.
+  </Card>
+  <Card title="Refunds" icon="arrow-rotate-left" href="/guides/direct-api/refunds">
+    Use transaction IDs for refund operations.
+  </Card>
+</CardGroup>

@@ -8,142 +8,197 @@ description: "Process full and partial refunds through the Yuno API"
 Refunds return funds to the customer after a payment has been captured. Yuno supports both full refunds (entire amount) and partial refunds (a portion of the original amount).
 
 <Note>
-Refunds can only be issued for payments with status `SUCCEEDED`. For authorized but uncaptured payments, use [Cancel](/guides/direct-api/capture-and-cancel) instead (no processing fees).
+Refunds can only be issued for payments with status `SUCCEEDED`. For authorized but uncaptured payments, use [Cancel](/guides/direct-api/capture-and-cancel) instead -- it releases the hold without processing fees.
 </Note>
+
+## Endpoint
+
+```
+POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/refund
+```
+
+### Required Headers
+
+| Header | Value |
+|--------|-------|
+| `public-api-key` | Your public API key |
+| `private-secret-key` | Your private secret key |
+| `X-Idempotency-Key` | Unique key to prevent duplicate refunds |
+| `Content-Type` | `application/json` |
+
+### Request Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `amount` | object | No | Amount to refund. Omit for full refund. |
+| `amount.currency` | string | Yes (if amount) | ISO 4217 currency code |
+| `amount.value` | number | Yes (if amount) | Amount to refund |
+| `description` | string | No | Description of the refund (3-255 chars) |
+| `reason` | string | No | Reason code: `DUPLICATE`, `FRAUDULENT`, or `REQUESTED_BY_CUSTOMER` |
+| `merchant_reference` | string | Yes | Your reference for this refund (3-255 chars) |
 
 ## Create a Full Refund
 
+Omit the `amount` field to refund the full captured amount.
+
 <CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/refund \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: refund-order-123-full" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "description": "Customer requested full refund",
+    "merchant_reference": "refund-order-123"
+  }'
+```
+
 ```javascript Node.js
 const refund = await fetch(
-  `https://api-sandbox.y.uno/v1/payments/${paymentId}/refund`,
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/transactions/${transactionId}/refund`,
   {
     method: 'POST',
     headers: {
       'public-api-key': process.env.YUNO_PUBLIC_KEY,
       'private-secret-key': process.env.YUNO_PRIVATE_KEY,
-      'account-code': process.env.YUNO_ACCOUNT_CODE,
+      'X-Idempotency-Key': 'refund-order-123-full',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      reason: 'Customer requested refund',
+      reason: 'REQUESTED_BY_CUSTOMER',
+      description: 'Customer requested full refund',
+      merchant_reference: 'refund-order-123',
     }),
   }
 );
+
 const refundResult = await refund.json();
+// refundResult.type === 'REFUND'
+// refundResult.status === 'SUCCEEDED'
 ```
 
 ```python Python
 import requests
+import os
 
 refund = requests.post(
-    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/refund',
+    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/refund',
     headers={
-        'public-api-key': YUNO_PUBLIC_KEY,
-        'private-secret-key': YUNO_PRIVATE_KEY,
-        'account-code': YUNO_ACCOUNT_CODE,
+        'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+        'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+        'X-Idempotency-Key': 'refund-order-123-full',
         'Content-Type': 'application/json',
     },
     json={
-        'reason': 'Customer requested refund',
+        'reason': 'REQUESTED_BY_CUSTOMER',
+        'description': 'Customer requested full refund',
+        'merchant_reference': 'refund-order-123',
     },
 )
+
 refund_result = refund.json()
-```
-
-```go Go
-payload := map[string]interface{}{
-    "reason": "Customer requested refund",
-}
-
-body, _ := json.Marshal(payload)
-req, _ := http.NewRequest("POST",
-    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/refund", paymentID),
-    bytes.NewBuffer(body),
-)
-
-req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
-req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
-req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
-req.Header.Set("Content-Type", "application/json")
-
-resp, err := http.DefaultClient.Do(req)
 ```
 </CodeGroup>
 
 ## Create a Partial Refund
 
-Specify the amount to refund:
+Specify the `amount` object to refund a portion of the payment.
 
 <CodeGroup>
+```bash cURL
+curl -X POST https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/refund \
+  -H "public-api-key: $YUNO_PUBLIC_KEY" \
+  -H "private-secret-key: $YUNO_PRIVATE_KEY" \
+  -H "X-Idempotency-Key: refund-order-123-partial" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": { "currency": "USD", "value": 25.00 },
+    "reason": "REQUESTED_BY_CUSTOMER",
+    "description": "Partial refund - item returned",
+    "merchant_reference": "refund-order-123-item-a"
+  }'
+```
+
 ```javascript Node.js
 const partialRefund = await fetch(
-  `https://api-sandbox.y.uno/v1/payments/${paymentId}/refund`,
+  `https://api-sandbox.y.uno/v1/payments/${paymentId}/transactions/${transactionId}/refund`,
   {
     method: 'POST',
     headers: {
       'public-api-key': process.env.YUNO_PUBLIC_KEY,
       'private-secret-key': process.env.YUNO_PRIVATE_KEY,
-      'account-code': process.env.YUNO_ACCOUNT_CODE,
+      'X-Idempotency-Key': 'refund-order-123-partial',
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       amount: { currency: 'USD', value: 25.00 },
-      reason: 'Partial refund - item returned',
+      reason: 'REQUESTED_BY_CUSTOMER',
+      description: 'Partial refund - item returned',
+      merchant_reference: 'refund-order-123-item-a',
     }),
   }
 );
 ```
 
 ```python Python
-import requests
-
 partial_refund = requests.post(
-    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/refund',
+    f'https://api-sandbox.y.uno/v1/payments/{payment_id}/transactions/{transaction_id}/refund',
     headers={
-        'public-api-key': YUNO_PUBLIC_KEY,
-        'private-secret-key': YUNO_PRIVATE_KEY,
-        'account-code': YUNO_ACCOUNT_CODE,
+        'public-api-key': os.environ['YUNO_PUBLIC_KEY'],
+        'private-secret-key': os.environ['YUNO_PRIVATE_KEY'],
+        'X-Idempotency-Key': 'refund-order-123-partial',
         'Content-Type': 'application/json',
     },
     json={
         'amount': {'currency': 'USD', 'value': 25.00},
-        'reason': 'Partial refund - item returned',
+        'reason': 'REQUESTED_BY_CUSTOMER',
+        'description': 'Partial refund - item returned',
+        'merchant_reference': 'refund-order-123-item-a',
     },
 )
-```
-
-```go Go
-payload := map[string]interface{}{
-    "amount": map[string]interface{}{"currency": "USD", "value": 25.00},
-    "reason": "Partial refund - item returned",
-}
-
-body, _ := json.Marshal(payload)
-req, _ := http.NewRequest("POST",
-    fmt.Sprintf("https://api-sandbox.y.uno/v1/payments/%s/refund", paymentID),
-    bytes.NewBuffer(body),
-)
-
-req.Header.Set("public-api-key", os.Getenv("YUNO_PUBLIC_KEY"))
-req.Header.Set("private-secret-key", os.Getenv("YUNO_PRIVATE_KEY"))
-req.Header.Set("account-code", os.Getenv("YUNO_ACCOUNT_CODE"))
-req.Header.Set("Content-Type", "application/json")
-
-resp, err := http.DefaultClient.Do(req)
 ```
 </CodeGroup>
 
 ## Refund Response
 
+The refund response includes the transaction details and the updated payment status:
+
 ```json
 {
-  "id": "ref_xyz789",
-  "payment_id": "pay_abc123",
+  "id": "438bea6c-9061-4416-b824-469c3c05868d",
+  "type": "REFUND",
   "status": "SUCCEEDED",
-  "amount": { "currency": "USD", "value": 25.00 },
-  "reason": "Partial refund - item returned",
-  "created_at": "2026-02-28T14:30:00Z"
+  "category": "CARD",
+  "amount": {
+    "captured": 0,
+    "currency": "USD",
+    "refunded": 25.00,
+    "value": 50.00
+  },
+  "merchant_reference": "refund-order-123-item-a",
+  "created_at": "2026-03-01T14:30:00.000Z",
+  "updated_at": "2026-03-01T14:30:01.000Z",
+  "provider_data": {
+    "id": "STRIPE",
+    "transaction_id": "re_abc123",
+    "status": "SUCCEEDED",
+    "response_code": "SUCCEEDED",
+    "response_message": null
+  },
+  "response_code": "SUCCEEDED",
+  "response_message": "Transaction successful",
+  "payment": {
+    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+    "status": "REFUNDED",
+    "amount": {
+      "captured": 25.00,
+      "currency": "USD",
+      "refunded": 25.00,
+      "value": 50.00
+    }
+  }
 }
 ```
 
@@ -153,20 +208,21 @@ resp, err := http.DefaultClient.Do(req)
 |--------|-------------|
 | `SUCCEEDED` | Refund processed and funds returned |
 | `PENDING` | Refund submitted, awaiting provider confirmation |
-| `FAILED` | Refund could not be processed |
+| `DECLINED` | Refund could not be processed |
 
 ## Multiple Partial Refunds
 
 You can issue multiple partial refunds against a single payment, as long as the total refunded amount does not exceed the original captured amount:
 
 ```
-Original payment: $100.00
-First partial refund:  -$30.00 (remaining: $70.00)
-Second partial refund: -$20.00 (remaining: $50.00)
+Original payment:       $100.00
+First partial refund:   - $30.00  (remaining: $70.00)
+Second partial refund:  - $20.00  (remaining: $50.00)
+Third partial refund:   - $50.00  (remaining: $0.00, fully refunded)
 ```
 
 <Warning>
-Attempting to refund more than the remaining capturable amount will result in an error. Track cumulative refunds on your side for accurate reconciliation.
+Attempting to refund more than the remaining capturable amount will result in an error. Track cumulative refunds on your side for accurate reconciliation. Do not execute a refund while another is in progress -- wait for the current operation to complete.
 </Warning>
 
 ## Refund Timelines
@@ -180,10 +236,38 @@ Refund processing time depends on the payment method and provider:
 | PIX | Instant to 1 business day |
 | Bank Transfer | 3-7 business days |
 
+## Error Handling
+
+| HTTP Status | Error Code | Cause | Resolution |
+|-------------|-----------|-------|------------|
+| `400` | `INVALID_REQUEST` | Missing required fields | Check `merchant_reference` is provided |
+| `400` | `PAYMENT_NOT_REFUNDABLE` | Payment not in succeeded state | Verify payment status before refunding |
+| `400` | `REFUND_AMOUNT_EXCEEDED` | Refund amount > remaining capturable amount | Reduce the refund amount |
+| `401` | `INVALID_CREDENTIALS` | Invalid API keys | Check authentication headers |
+| `409` | `CONFLICT` | Duplicate idempotency key | Use a new idempotency key |
+
 ## Best Practices
 
-- Always include a descriptive `reason` for audit and reconciliation purposes
-- Use webhooks to track refund status changes asynchronously
-- Implement idempotency keys to prevent duplicate refund requests
-- Prefer cancel/void over refund for same-day reversals to minimize fees
-- Keep a log mapping refund IDs to order/item-level details
+- **Always include a descriptive `reason`** for audit and reconciliation purposes
+- **Use webhooks** to track refund status changes asynchronously
+- **Implement idempotency keys** to prevent duplicate refund requests
+- **Prefer cancel/void over refund** for same-day reversals to minimize fees
+- **Keep a log mapping refund IDs** to order/item-level details
+- **Do not overlap refund operations** -- wait for one to complete before starting another
+
+## What's Next
+
+<CardGroup cols={2}>
+  <Card title="Capture & Cancel" icon="rotate-left" href="/guides/direct-api/capture-and-cancel">
+    Void authorized payments instead of refunding.
+  </Card>
+  <Card title="Webhooks" icon="bell" href="/core-concepts/webhooks">
+    Receive refund status notifications.
+  </Card>
+  <Card title="Transactions" icon="arrow-right-arrow-left" href="/core-concepts/transactions">
+    How refund transactions relate to the original payment.
+  </Card>
+  <Card title="Error Handling" icon="triangle-exclamation" href="/core-concepts/error-handling">
+    Full error catalog and retry strategies.
+  </Card>
+</CardGroup>
